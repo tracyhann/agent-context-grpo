@@ -1,0 +1,22 @@
+#!/bin/bash
+# Crash supervisor for the verl run: if the trainer dies inside acg_persist,
+# rotate the log and exec-relaunch (verl resume_mode=auto continues from the
+# newest checkpoint). Survives Claude session restarts (plain setsid process).
+# Guards: max 6 auto-resumes, 10-min backoff, stops if no checkpoint exists.
+cd /DATA/tracy/agentic-context-grpo
+TAG=verl_ccpo_alfworld
+N=0
+while [ $N -lt 6 ]; do
+  sleep 300
+  docker ps --format '{{.Names}}' | grep -q '^acg_persist$' || { echo "$(date '+%m-%d %H:%M') persist container gone — supervisor exiting" >> experiments/08-27/logs/auto_resume.log; exit 1; }
+  if docker exec acg_persist pgrep -f main_ppo > /dev/null 2>&1; then continue; fi
+  # trainer is down — only resume if we have a checkpoint to stand on
+  [ -f experiments/08-27/results/$TAG/latest_checkpointed_iteration.txt ] || { echo "$(date '+%m-%d %H:%M') trainer dead, no checkpoint — not resuming" >> experiments/08-27/logs/auto_resume.log; exit 1; }
+  N=$((N+1))
+  last=$(cat experiments/08-27/results/$TAG/latest_checkpointed_iteration.txt)
+  echo "$(date '+%m-%d %H:%M') trainer dead (tail: $(tail -1 experiments/08-27/logs/$TAG.log | cut -c1-80)) — auto-resume #$N from step $last" >> experiments/08-27/logs/auto_resume.log
+  mv experiments/08-27/logs/$TAG.log experiments/08-27/logs/$TAG.crash$N.log 2>/dev/null
+  bash experiments/08-27/run_exec_ccpo.sh ccpo $TAG >> experiments/08-27/logs/auto_resume.log 2>&1
+  sleep 600   # backoff: let spin-up finish before re-checking
+done
+echo "$(date '+%m-%d %H:%M') 6 auto-resumes exhausted — human needed" >> experiments/08-27/logs/auto_resume.log
