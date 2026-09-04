@@ -81,12 +81,21 @@ made anywhere in this repository.
 
 ---
 
+## Method write-up
+
+[`docs/method.html`](docs/method.html) is a standalone page (open it in a browser)
+covering the estimator's derivation, worked examples of how the grouping differs
+from GRPO and G²PO, per-mechanism figures for the context-conditioned credit
+term, the full training-configuration comparison against published methods, and
+the measurement log — including the negative results.
+
 ## Layout
 
 ```
 ccpo/                     the estimator (core_ccpo.py) and a learned-φ variant
 patches/verl-agent/       files that replace their verl-agent counterparts
 scripts/                  training, eval, generation-sidecar and supervisor scripts
+docs/                     method write-up (method.html)
 docker/                   container build + flash-attn import stub (sm_120)
 ```
 

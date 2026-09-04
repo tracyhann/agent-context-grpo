@@ -1,0 +1,957 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
+<title>Context-Conditioned Predictive Grouping</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+:root{
+  color-scheme: light;
+  --ground:#f7f8f7; --surface:#ffffff; --surface-2:#f1f4f3; --sunk:#eaeeed;
+  --ink:#14181a; --ink-2:#525c5e; --ink-3:#8b9599;
+  --rule:#dfe4e3; --rule-2:#c9d2d0;
+  --accent:#0f5d63; --accent-soft:#e2eeee;
+  --ok:#1a6b4d; --ok-soft:#e2efe9;
+  --warn:#8a5d0f; --warn-soft:#f5ecda;
+  --crit:#9a3229; --crit-soft:#f6e6e3;
+  --shadow:0 1px 2px rgba(20,24,26,.05), 0 8px 24px -16px rgba(20,24,26,.25);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --ground:#0e1213; --surface:#161b1c; --surface-2:#1b2122; --sunk:#111617;
+    --ink:#edf2f1; --ink-2:#a4afae; --ink-3:#6b7776;
+    --rule:#252f30; --rule-2:#354041;
+    --accent:#5cb9c0; --accent-soft:#12292b;
+    --ok:#4dbb8d; --ok-soft:#12261e;
+    --warn:#d2a24f; --warn-soft:#2a2113;
+    --crit:#e07a6f; --crit-soft:#2c1917;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -18px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --ground:#0e1213; --surface:#161b1c; --surface-2:#1b2122; --sunk:#111617;
+  --ink:#edf2f1; --ink-2:#a4afae; --ink-3:#6b7776;
+  --rule:#252f30; --rule-2:#354041;
+  --accent:#5cb9c0; --accent-soft:#12292b;
+  --ok:#4dbb8d; --ok-soft:#12261e;
+  --warn:#d2a24f; --warn-soft:#2a2113;
+  --crit:#e07a6f; --crit-soft:#2c1917;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -18px rgba(0,0,0,.8);
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  font-size:16px; line-height:1.62; margin:0;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1080px; margin:0 auto; padding:0 28px 96px}
+.narrow{max-width:68ch}
+
+h1,h2,h3{font-family:"Newsreader", Georgia, serif; text-wrap:balance; margin:0}
+h1{font-size:clamp(2.3rem,5.2vw,3.4rem); font-weight:500; letter-spacing:-.018em; line-height:1.08}
+h2{font-size:1.72rem; font-weight:500; letter-spacing:-.01em}
+h3{font-size:1.12rem; font-weight:600; font-family:"IBM Plex Sans",sans-serif; letter-spacing:-.005em}
+p{margin:0}
+a{color:var(--accent)}
+
+.eyebrow{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:.7rem; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--ink-3); font-weight:500;
+}
+code,.mono{font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:.86em}
+.num{font-variant-numeric:tabular-nums}
+
+/* ---------- masthead ---------- */
+header.mast{border-bottom:1px solid var(--rule); background:var(--surface)}
+.mast-in{max-width:1080px; margin:0 auto; padding:56px 28px 40px; display:flex; flex-direction:column; gap:22px}
+.thesis{font-family:"Newsreader",Georgia,serif; font-size:1.3rem; line-height:1.5; color:var(--ink-2); max-width:60ch}
+.thesis b{color:var(--ink); font-weight:600}
+.mast-meta{display:flex; flex-wrap:wrap; gap:8px 26px; padding-top:6px; border-top:1px solid var(--rule); color:var(--ink-3); font-size:.83rem}
+
+/* ---------- status strip ---------- */
+.status{display:grid; grid-template-columns:repeat(auto-fit,minmax(178px,1fr)); gap:10px; margin-top:6px}
+.st{border:1px solid var(--rule); border-radius:3px; padding:12px 14px; background:var(--surface); display:flex; flex-direction:column; gap:5px}
+.st .k{font-family:"IBM Plex Mono",monospace; font-size:.74rem; letter-spacing:.06em; color:var(--ink-3)}
+.st .v{font-weight:600; font-size:.95rem; line-height:1.25}
+.st.ok{border-left:3px solid var(--ok)}      .st.ok .v{color:var(--ok)}
+.st.warn{border-left:3px solid var(--warn)}  .st.warn .v{color:var(--warn)}
+.st.crit{border-left:3px solid var(--crit)}  .st.crit .v{color:var(--crit)}
+.st .n{font-size:.79rem; color:var(--ink-2); line-height:1.4}
+
+section{padding-top:60px}
+.sec-head{display:flex; flex-direction:column; gap:9px; margin-bottom:26px}
+.sec-head p{color:var(--ink-2); max-width:66ch}
+
+/* ---------- grouping ladder ---------- */
+.ladder{display:flex; flex-direction:column; gap:0; border:1px solid var(--rule); border-radius:4px; overflow:hidden; background:var(--surface)}
+.rung{display:grid; grid-template-columns:132px 1fr 250px; gap:20px; align-items:center;
+      padding:15px 18px; border-bottom:1px solid var(--rule)}
+.rung:last-child{border-bottom:none}
+.rung.ours{background:var(--accent-soft)}
+.rung .who{font-weight:600; font-size:.95rem; display:flex; flex-direction:column; gap:2px}
+.rung .who span{font-weight:400; font-size:.74rem; color:var(--ink-3); font-family:"IBM Plex Mono",monospace}
+.rung.ours .who{color:var(--accent)}
+.key{font-family:"IBM Plex Mono",monospace; font-size:.9rem; color:var(--ink);
+     background:var(--sunk); border:1px solid var(--rule); border-radius:3px; padding:7px 11px; display:inline-block}
+.rung.ours .key{background:var(--surface); border-color:var(--accent)}
+.rung .note{font-size:.83rem; color:var(--ink-2); line-height:1.45}
+
+/* ---------- equations ---------- */
+.eqs{display:flex; flex-direction:column; gap:12px}
+.eq{background:var(--surface); border:1px solid var(--rule); border-radius:4px; padding:16px 18px;
+    display:grid; grid-template-columns:26px 1fr; gap:16px; align-items:start}
+.eq .i{font-family:"IBM Plex Mono",monospace; font-size:.78rem; color:var(--ink-3); padding-top:3px; font-weight:500}
+.eq .body{display:flex; flex-direction:column; gap:8px; min-width:0}
+.eq .math{font-family:"IBM Plex Mono",monospace; font-size:.94rem; line-height:1.75; color:var(--ink);
+          overflow-x:auto; padding-bottom:2px; white-space:nowrap}
+.eq .gloss{font-size:.87rem; color:var(--ink-2); line-height:1.5}
+.eq.flag{border-left:3px solid var(--warn)}
+.eq .rev{display:inline-block; font-family:"IBM Plex Mono",monospace; font-size:.7rem; letter-spacing:.07em;
+         text-transform:uppercase; color:var(--warn); background:var(--warn-soft);
+         border:1px solid var(--warn); border-radius:2px; padding:1px 6px; margin-right:7px}
+
+/* ---------- tables ---------- */
+.scroll{overflow-x:auto; border:1px solid var(--rule); border-radius:4px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:.86rem; min-width:820px}
+th,td{text-align:left; padding:11px 14px; border-bottom:1px solid var(--rule); vertical-align:top; line-height:1.45}
+thead th{position:sticky; top:0; background:var(--surface-2); font-weight:600; font-size:.76rem;
+         letter-spacing:.05em; text-transform:uppercase; color:var(--ink-2); white-space:nowrap; z-index:1}
+tbody tr:last-child td{border-bottom:none}
+td.dim{font-weight:600; color:var(--ink); white-space:nowrap}
+col.ourcol{background:var(--accent-soft)}
+th.ourhead{color:var(--accent)}
+td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
+.yes{color:var(--ok); font-weight:600} .no{color:var(--crit); font-weight:600}
+.tbl-cap{font-size:.79rem; color:var(--ink-3); margin-top:9px; line-height:1.5}
+
+/* ---------- evidence ---------- */
+.ev{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:12px}
+.card{background:var(--surface); border:1px solid var(--rule); border-radius:4px; padding:16px 18px;
+      display:flex; flex-direction:column; gap:9px}
+.card .tag{display:flex; align-items:center; gap:9px}
+.card .id{font-family:"IBM Plex Mono",monospace; font-size:.74rem; font-weight:600; color:var(--ink-3)}
+.card .verdict{font-family:"IBM Plex Mono",monospace; font-size:.68rem; letter-spacing:.08em; text-transform:uppercase;
+               padding:2px 7px; border-radius:2px; font-weight:600}
+.v-ok{color:var(--ok); background:var(--ok-soft); border:1px solid var(--ok)}
+.v-warn{color:var(--warn); background:var(--warn-soft); border:1px solid var(--warn)}
+.v-crit{color:var(--crit); background:var(--crit-soft); border:1px solid var(--crit)}
+.card h3{font-size:1rem}
+.card p{font-size:.87rem; color:var(--ink-2)}
+.card .fig{font-family:"IBM Plex Mono",monospace; font-size:.8rem; color:var(--ink);
+           background:var(--sunk); border-radius:3px; padding:8px 11px; line-height:1.6}
+
+.callout{border:1px solid var(--rule-2); border-left:3px solid var(--accent); background:var(--surface);
+         border-radius:3px; padding:16px 20px; display:flex; flex-direction:column; gap:8px}
+.callout .lbl{font-family:"IBM Plex Mono",monospace; font-size:.7rem; letter-spacing:.12em;
+              text-transform:uppercase; color:var(--accent); font-weight:600}
+.callout p{color:var(--ink-2); font-size:.92rem}
+.callout b{color:var(--ink)}
+
+.foot{margin-top:70px; padding-top:22px; border-top:1px solid var(--rule); color:var(--ink-3); font-size:.81rem; line-height:1.6}
+
+@media (max-width:760px){
+  .rung{grid-template-columns:1fr; gap:9px}
+  .rung .note{border-top:1px solid var(--rule); padding-top:9px}
+}
+</style>
+
+<header class="mast">
+  <div class="mast-in">
+    <div class="eyebrow">Group-relative RL · credit assignment · method note</div>
+    <h1>Context-Conditioned<br>Predictive Grouping</h1>
+    <p class="thesis">Existing group-based RL methods <b>prescribe</b> state equivalence — from task, observation, or exact history identity. Ours <b>learns</b> which experiences are equivalent for credit assignment, from their trajectory context, without ever letting reward touch the grouping.</p>
+    <div class="status">
+      <div class="st ok">
+        <div class="k">PROBE STATIONARITY</div>
+        <div class="v">Confirmed</div>
+        <div class="n">Decoupled probe keeps 3–5.5× more signal as π sharpens. 3 benchmarks.</div>
+      </div>
+      <div class="st ok">
+        <div class="k">FALSE-MERGE BIAS</div>
+        <div class="v">Significant</div>
+        <div class="n">η² excess over permutation null, p = 0.008 / 0.013. Bias 0.26–0.36 sd.</div>
+      </div>
+      <div class="st ok">
+        <div class="k">WHAT WORKS</div>
+        <div class="v">Summarised memory</div>
+        <div class="n">Frozen φ + memory is the only arm beating plain GRPO on held-out ALFWorld (0.625 vs 0.604; peak 0.917).</div>
+      </div>
+      <div class="st warn">
+        <div class="k">LEARNED COMPONENTS</div>
+        <div class="v">Not earning cost</div>
+        <div class="n">Learned φ is worst on 2 of 3 benchmarks; learned affinity ties plain Euclidean (0.515 vs 0.514).</div>
+      </div>
+      <div class="st crit">
+        <div class="k">MOTIVATING PREMISE</div>
+        <div class="v">Not supported</div>
+        <div class="n">46–78% of steps already sit in usable buckets. Exact matching does not degenerate.</div>
+      </div>
+    </div>
+    <div class="mast-meta">
+      <span>ALFWorld · WebShop · ScienceWorld</span>
+      <span>Qwen3-1.7B/8B · Qwen3.5-2B/9B</span>
+      <span>1,428 logged rollouts</span>
+      <span>2026-08-26</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">01 — the one axis that separates these methods</div>
+    <h2>Everything differs on the grouping key</h2>
+    <p>A group-relative policy gradient replaces a learned critic with a baseline computed from a set of comparable experiences. The entire design question is which experiences count as comparable — every method below is a different answer to that, and nothing else about them differs much.</p>
+  </div>
+
+  <div class="ladder">
+    <div class="rung">
+      <div class="who">GRPO<span>2402.03300</span></div>
+      <div><span class="key">x₀ &nbsp;→&nbsp; group</span></div>
+      <div class="note">Same task. One flat group per prompt; no notion of a step.</div>
+    </div>
+    <div class="rung">
+      <div class="who">GiGPO<span>2505.10978</span></div>
+      <div><span class="key">s_t &nbsp;→&nbsp; group</span></div>
+      <div class="note">Same current state, matched exactly. Anchor states bucket steps inside the rollout group.</div>
+    </div>
+    <div class="rung">
+      <div class="who">HGPO<span>2602.22817</span></div>
+      <div><span class="key">(s_{t−k}, …, s_t) &nbsp;→&nbsp; group</span></div>
+      <div class="note">Same exact k-step history. Nested buckets by depth; support decays fast in k.</div>
+    </div>
+    <div class="rung">
+      <div class="who">G²PO<span>2606.22995</span></div>
+      <div><span class="key">o_t &nbsp;→&nbsp; graph node</span></div>
+      <div class="note">Same observation. Occurrences become nodes in an observation-transition graph.</div>
+    </div>
+    <div class="rung ours">
+      <div class="who">Ours<span>this note</span></div>
+      <div><span class="key">(o_t, c_t) &nbsp;—f_φ→&nbsp; z_t &nbsp;→&nbsp; weighted neighbourhood</span></div>
+      <div class="note">Same observation <em>and</em> similar action-conditioned future consequences. The observation bucket is refined, not replaced.</div>
+    </div>
+  </div>
+  <p class="tbl-cap">The first four prescribe equivalence by identity; the fifth infers it. Note ours still requires <span class="mono">o_u = o_v</span> as a hard gate — it only ever <em>splits</em> a G²PO bucket, never merges across observations.</p>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">02 — the executable MVP</div>
+    <h2>Five equations</h2>
+    <p>The credit oracle sits entirely outside this loop. Online, nothing in the grouping sees a reward, a return, or an advantage — that is what keeps the leave-one-out baseline valid.</p>
+  </div>
+
+  <div class="eqs">
+    <div class="eq">
+      <div class="i">1</div>
+      <div class="body">
+        <div class="math">C_x(o_u) = { v = (j, t′) : o_v = o_u , j ≠ i }</div>
+        <div class="gloss">Candidate pool: same task, same observation, <b>different trajectory</b>. The <span class="mono">j ≠ i</span> exclusion is load-bearing — if <span class="mono">v</span> came from <span class="mono">u</span>'s own rollout, <span class="mono">G_v</span> would lie downstream of <span class="mono">a_u</span> and the baseline would depend on the action it is meant to evaluate.</div>
+      </div>
+    </div>
+    <div class="eq">
+      <div class="i">2</div>
+      <div class="body">
+        <div class="math">P_u = Law<sub>a∼q</sub> [ μ̃_ψ⁻(χ_u, a) ] ,&nbsp;&nbsp; H(q) ≥ H_min</div>
+        <div class="gloss">Predicted-consequence distribution over probe actions, from a <b>frozen, reward-free</b> successor-feature model. The entropy floor is the fix in <b>E1</b>: with <span class="mono">q = π</span> the law collapses to a point mass as the policy sharpens, and the method silently reverts to G²PO.</div>
+      </div>
+    </div>
+    <div class="eq flag">
+      <div class="i">3</div>
+      <div class="body">
+        <div class="math">d<sup>pred</sup>_uv = D(P_u, P_v)&nbsp;&nbsp;over a <b>shared</b> action set, scale-free</div>
+        <div class="gloss"><span class="rev">revised</span>Originally an action-set-free distributional distance. Two measured defects forced the change: probing each occurrence's own top-<span class="mono">M</span> makes this measure <em>probe mismatch</em> rather than context (<b>E2</b>), and raw distances are dominated by episode position rather than credit (<b>E3</b>).</div>
+      </div>
+    </div>
+    <div class="eq">
+      <div class="i">4</div>
+      <div class="body">
+        <div class="math">w_uv = 1[o_u = o_v] · 1[i_u ≠ i_v] · exp( −d<sup>pred</sup>_uv / τ_b ) ,&nbsp;&nbsp; τ_b = median d<sup>pred</sup></div>
+        <div class="gloss">Affinity, with <span class="mono">w_uu = 0</span>. The adaptive median bandwidth makes the weights invariant to global drift in ψ — but it is also why <span class="mono">E[w]</span> is a <em>useless</em> collapse diagnostic: being scale-invariant, it absorbs the very collapse it was meant to detect.</div>
+      </div>
+    </div>
+    <div class="eq">
+      <div class="i">5</div>
+      <div class="body">
+        <div class="math">b_u<sup>LOO</sup> = Σ<sub>j≠i</sub> α_uj Ḡ_u,j ⁄ Σ<sub>j≠i</sub> α_uj ,&nbsp;&nbsp; A_u<sup>CC</sup> = G_u − b_u<sup>LOO</sup></div>
+        <div class="gloss">Repeated visits are aggregated <b>within</b> each reference trajectory first, so the effective sample size counts trajectories, not correlated repeat visits. Total advantage: <span class="mono">A_u = A_i<sup>EP</sup> + λ_CC · A_u<sup>CC</sup></span>.</div>
+        <div class="gloss"><span class="rev">revised</span>Shrinkage was <span class="mono">λ = f(n_eff)</span> alone. That is backwards: concentrating weights onto genuinely comparable neighbours is the method's <em>purpose</em>, yet it lowers <span class="mono">n_eff</span> and so triggered fallback to G²PO. It measured the variance cost of conditioning and was blind to the bias benefit. Now an MSE-optimal trade-off, <span class="mono">λ* = (ρB)² / [ (ρB)² + σ²(1/n_eff − 1/J) ]</span>, where <span class="mono">B</span> is the measured false-merge bias (0.26–0.36 sd) and <span class="mono">ρ</span> is confidence in the metric — the point where <b>grouping uncertainty</b> enters. <span class="mono">ρ→0</span> collapses exactly to G²PO.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">02b — one training step, end to end</div>
+    <h2>The pipeline</h2>
+    <p>What happens in each of the 150 steps of the matched-scale run — rollout on the left rail, then credit assignment
+    forking into the episode-level and step-level estimators that sum into the PPO update.</p>
+  </div>
+
+  <style>
+    .pipe{display:flex;flex-direction:column;gap:0;max-width:860px}
+    .pstep{display:grid;grid-template-columns:44px 1fr;gap:14px;align-items:stretch}
+    .pnum{display:flex;flex-direction:column;align-items:center}
+    .pnum .n{width:30px;height:30px;border-radius:50%;background:var(--accent);color:var(--surface);
+             font-family:"IBM Plex Mono",monospace;font-size:.82rem;font-weight:600;
+             display:flex;align-items:center;justify-content:center;flex:none}
+    .pnum .stem{width:2px;flex:1;background:var(--rule-2);min-height:14px}
+    .pstep:last-child .stem{display:none}
+    .pbox{background:var(--surface);border:1px solid var(--rule);border-radius:4px;
+          padding:12px 16px 13px;margin-bottom:14px}
+    .pbox h4{margin:0 0 4px;font-size:.95rem;font-family:"IBM Plex Sans",sans-serif}
+    .pbox p{font-size:.85rem;color:var(--ink-2);line-height:1.5}
+    .pbox .m{font-family:"IBM Plex Mono",monospace;font-size:.85em;color:var(--ink)}
+    .pfork{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 0 14px}
+    .pfork .pbox{margin:0;border-top:3px solid var(--rule-2)}
+    .pfork .pbox.ours{border-top:3px solid var(--accent);background:var(--accent-soft)}
+    .plabel{font-family:"IBM Plex Mono",monospace;font-size:.68rem;letter-spacing:.09em;
+            text-transform:uppercase;color:var(--ink-3);margin:0 0 6px}
+    .pex{border-left:3px solid var(--accent);background:var(--surface);border-radius:2px;
+         padding:7px 10px;margin-top:8px;font-size:.8rem;color:var(--ink-2);line-height:1.5}
+    @media (max-width:640px){.pfork{grid-template-columns:1fr}}
+  </style>
+
+  <div class="pipe">
+    <div class="pstep"><div class="pnum"><div class="n">1</div><div class="stem"></div></div>
+      <div class="pbox"><h4>Sample tasks &amp; replicate into groups</h4>
+      <p>Draw <span class="m">18</span> ALFWorld games from the official train split; replicate each
+      <span class="m">×8</span> (same game, same start) → <span class="m">144</span> concurrent episodes.
+      The 8 siblings of a task are the comparison group — no critic anywhere.</p></div></div>
+
+    <div class="pstep"><div class="pnum"><div class="n">2</div><div class="stem"></div></div>
+      <div class="pbox"><h4>Multi-turn rollout (≤50 turns each)</h4>
+      <p>Per turn: prompt = task + last-2 history + observation + admissible actions → policy generates
+      ≤<span class="m">768</span> tokens of <span class="m">&lt;think&gt;…&lt;/think&gt;&lt;action&gt;…&lt;/action&gt;</span>
+      (the CoT itself is trained) → parser extracts the action → env returns reward (success 10 / invalid −0.1).
+      Generation runs on the FSDP training model itself (HF path — vLLM was retired for this stack after the sm_120 forensics; see the fix ledger in RESULTS_0827). Sampling per the Qwen3 model card: temp 1.0, top-p 0.95, top-k 20 (val: 0.7/0.8/20).</p></div></div>
+
+    <div class="pstep"><div class="pnum"><div class="n">3</div><div class="stem"></div></div>
+      <div class="pbox"><h4>Flatten to occurrences</h4>
+      <p>Episodes break into ≈6,000 transitions <span class="m">u=(trajectory i, turn t)</span>, each carrying its
+      observation text, its position in the trajectory, and its discounted return-to-go
+      (<span class="m">γ=0.95</span>).</p></div></div>
+
+    <div class="pstep"><div class="pnum"><div class="n">4</div><div class="stem"></div></div>
+      <div class="pbox" style="background:transparent;border:none;padding:0 0 0 2px">
+      <div class="pfork">
+        <div class="pbox"><div class="plabel">episode level — shared with GRPO</div>
+          <h4>A<sup>EP</sup>: group-relative return</h4>
+          <p>Episode return standardised against the 7 siblings
+          (<span class="m">mean_std_norm</span>) and broadcast to the trajectory's tokens. This half is identical in
+          the GRPO baseline arm.</p></div>
+        <div class="pbox ours"><div class="plabel">step level — ours (ccpo)</div>
+          <h4>A<sup>CC</sup>: context-conditioned step credit</h4>
+          <p><strong>Gate:</strong> occurrences with the same (task, observation text) share a bucket — G²PO's node.<br>
+          <strong>Context:</strong> φ = frozen projection of obs-bag ‖ thermometer-coded
+          <span class="m">{t, n_unique, revisit, progress}</span>.<br>
+          <strong>Baseline:</strong> leave-one-out over <em>other</em> trajectories, weighted
+          <span class="m">exp(−d(φ)/τ_b)</span>, τ_b = bucket median.<br>
+          <strong>Trust:</strong> λ* = (ρB)²⁄((ρB)² + σ²(1/n_eff − 1/J)) shrinks toward the uniform bucket mean when
+          contexts can't be told apart.</p>
+          <div class="pex">Same screen, different history: at <em>"You open the microwave 1…"</em>, the rollout that
+          arrived at t=5 carrying the apple is not judged by the one that wandered in at t=23 empty-handed — its weight
+          decays with context distance.</div></div>
+      </div></div></div>
+
+    <div class="pstep"><div class="pnum"><div class="n">5</div><div class="stem"></div></div>
+      <div class="pbox"><h4>Combine &amp; normalise</h4>
+      <p><span class="m">A = A<sup>EP</sup> + w·std-norm(A<sup>CC</sup>)</span> with <span class="m">w=1</span>; the
+      step term is standardised per task so equal weight means equal scale (the family's
+      <span class="m">mean_std_norm</span> convention). Buckets with identical contexts collapse to the plain G²PO
+      baseline by construction.</p></div></div>
+
+    <div class="pstep"><div class="pnum"><div class="n">6</div><div class="stem"></div></div>
+      <div class="pbox"><h4>Token-level PPO update</h4>
+      <p>~25 minibatches of 240 transitions: PPO clip on every response token, KL-to-reference penalty
+      <span class="m">0.01</span> with the log-ratio clamped to ±20 before <span class="m">exp</span> (the NaN fix),
+      grad-clip 1.0, lr <span class="m">1e-6</span>. FSDP updates the weights — and the same module generates the next step's rollouts (no engine, no weight sync).</p></div></div>
+
+    <div class="pstep"><div class="pnum"><div class="n">7</div><div class="stem"></div></div>
+      <div class="pbox"><h4>Evaluate &amp; checkpoint</h4>
+      <p>Every 5 steps: 128 episodes on ALFWorld <em>unseen</em> (temp 0.4). Every 25 steps: checkpoint to
+      <span class="m">results/verl_ccpo_alfworld/</span>. Curves land in
+      <span class="m">fig_verl_curves.png</span>; the estimator's health prints every step as
+      <span class="m">[ccpo] λ_u · n_eff · live · buckets</span>.</p></div></div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">02c — A<sup>CC</sup> in four pictures</div>
+    <h2>Context-conditioned step credit, one figure per mechanism</h2>
+    <p>The four moving parts of the step-level term, drawn on the worked example from the training run: three sibling
+    rollouts of the task <em>"put a clean plate in countertop"</em> all reach the observation
+    <span class="m">"You open the cabinet 3 … you see a plate 1 and a mug 2."</span></p>
+  </div>
+  <style>
+    .accgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:14px}
+    .accfig{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:14px 16px}
+    .accfig .plabel{font-family:"IBM Plex Mono",monospace;font-size:.68rem;letter-spacing:.09em;
+                    text-transform:uppercase;color:var(--accent);margin:0 0 8px}
+    .accfig svg{width:100%;max-width:500px;height:auto;display:block;margin:0 auto}
+    .accfig .cap{font-size:.8rem;color:var(--ink-2);line-height:1.5;margin-top:8px}
+    .accfig .m{font-family:"IBM Plex Mono",monospace;font-size:.85em}
+    .unote{margin-top:10px;border:1px solid var(--accent);border-radius:4px;background:var(--accent-soft)}
+    .unote summary{cursor:pointer;padding:8px 12px;font-size:.82rem;font-weight:600;color:var(--accent);
+                   list-style:none;user-select:none}
+    .unote summary::-webkit-details-marker{display:none}
+    .unote[open] summary{border-bottom:1px solid var(--accent)}
+    .unote-body{padding:10px 14px 12px;font-size:.84rem;line-height:1.55;background:var(--surface);border-radius:0 0 4px 4px}
+    .unote-body ul{margin:6px 0 10px 18px;padding:0}
+    .unote-body li{margin-bottom:6px}
+    .unote-body p{margin:0 0 8px}
+    svg text{font-family:"IBM Plex Sans",sans-serif;fill:var(--ink)}
+    svg .mono{font-family:"IBM Plex Mono",monospace}
+    svg .dim{fill:var(--ink-3)}
+  </style>
+  <div class="accgrid">
+
+    <div class="accfig"><div class="plabel">1 · gate — who shares a bucket</div>
+      <svg viewBox="0 0 560 190">
+        <text x="8" y="16" font-size="11" class="mono dim">8 sibling rollouts of one task (3 shown)</text>
+        <g stroke="var(--rule-2)" stroke-width="2">
+          <line x1="70" y1="38" x2="420" y2="38"/><line x1="70" y1="66" x2="420" y2="66"/><line x1="70" y1="94" x2="420" y2="94"/>
+        </g>
+        <text x="8" y="42" font-size="11">rollout 2</text><text x="8" y="70" font-size="11">rollout 5</text><text x="8" y="98" font-size="11">rollout 7</text>
+        <g fill="var(--ink-3)"><circle cx="100" cy="38" r="4"/><circle cx="170" cy="38" r="4"/><circle cx="240" cy="66" r="4"/><circle cx="120" cy="66" r="4"/><circle cx="110" cy="94" r="4"/><circle cx="180" cy="94" r="4"/><circle cx="250" cy="94" r="4"/><circle cx="320" cy="94" r="4"/></g>
+        <g fill="var(--accent)"><circle cx="140" cy="38" r="6"/><circle cx="140" cy="66" r="6"/><circle cx="388" cy="94" r="6"/></g>
+        <text x="146" y="34" font-size="10" class="mono">t=4</text><text x="128" y="60" font-size="10" class="mono">t=4</text><text x="374" y="86" font-size="10" class="mono">t=19</text>
+        <g stroke="var(--accent)" stroke-width="1.5" fill="none" stroke-dasharray="3,3">
+          <path d="M140,44 C140,110 190,120 205,132"/><path d="M140,72 C150,110 195,122 205,134"/><path d="M388,100 C380,120 260,128 232,136"/>
+        </g>
+        <rect x="72" y="136" width="392" height="40" rx="4" fill="var(--accent-soft)" stroke="var(--accent)"/>
+        <text x="84" y="152" font-size="9.2" class="mono">key = (task-uid, sha("You open the cabinet 3…"))</text>
+        <text x="84" y="168" font-size="9.2" class="dim">same task + identical observation text ⇒ same bucket</text>
+      </svg>
+      <div class="cap">G²PO's node, kept as a <strong>hard gate</strong>: only occurrences with byte-identical observation
+      text within one task's sibling group merge. One changed character (a taken plate) is a different bucket; other
+      tasks never mix.</div></div>
+
+    <div class="accfig"><div class="plabel">2 · context — the φ fingerprint</div>
+      <svg viewBox="0 0 560 190">
+        <rect x="8" y="14" width="180" height="34" rx="3" fill="var(--sunk)" stroke="var(--rule)"/>
+        <text x="16" y="28" font-size="10">obs text → hashed bag(4096)</text>
+        <text x="16" y="42" font-size="10" class="dim">→ frozen random P → 64-d</text>
+        <text x="196" y="36" font-size="13" class="mono dim">‖</text>
+        <text x="206" y="24" font-size="9.5" class="mono">thermometer-coded context scalars</text>
+        <g transform="translate(212,32)">
+          <text x="0" y="24" font-size="10">t=4:</text>
+          <g stroke="var(--rule)"><rect x="34" y="14" width="120" height="13" fill="none"/></g>
+          <rect x="34" y="14" width="20" height="13" fill="var(--accent)"/>
+          <g stroke="var(--rule)" fill="none">
+            <line x1="44" y1="14" x2="44" y2="27"/><line x1="54" y1="14" x2="54" y2="27"/><line x1="64" y1="14" x2="64" y2="27"/><line x1="74" y1="14" x2="74" y2="27"/><line x1="84" y1="14" x2="84" y2="27"/><line x1="94" y1="14" x2="94" y2="27"/><line x1="104" y1="14" x2="104" y2="27"/><line x1="114" y1="14" x2="114" y2="27"/><line x1="124" y1="14" x2="124" y2="27"/><line x1="134" y1="14" x2="134" y2="27"/><line x1="144" y1="14" x2="144" y2="27"/>
+          </g>
+          <text x="158" y="24" font-size="9.5" class="mono">→ 2 cells on</text>
+          <text x="0" y="46" font-size="10">t=19:</text>
+          <rect x="34" y="36" width="80" height="13" fill="var(--warn)"/>
+          <g stroke="var(--rule)" fill="none"><rect x="34" y="36" width="120" height="13"/>
+            <line x1="44" y1="36" x2="44" y2="49"/><line x1="54" y1="36" x2="54" y2="49"/><line x1="64" y1="36" x2="64" y2="49"/><line x1="74" y1="36" x2="74" y2="49"/><line x1="84" y1="36" x2="84" y2="49"/><line x1="94" y1="36" x2="94" y2="49"/><line x1="104" y1="36" x2="104" y2="49"/><line x1="114" y1="36" x2="114" y2="49"/><line x1="124" y1="36" x2="124" y2="49"/><line x1="134" y1="36" x2="134" y2="49"/><line x1="144" y1="36" x2="144" y2="49"/>
+          </g>
+          <text x="158" y="46" font-size="9.5" class="mono">→ 8 cells on</text>
+        </g>
+        <rect x="8" y="128" width="424" height="30" rx="3" fill="var(--accent-soft)" stroke="var(--accent)"/>
+        <text x="16" y="147" font-size="9.5" class="mono">φ = norm([ P·bag(obs) ‖ thermo(t, n_uniq, prog) ‖ revisit ])</text>
+        <text x="8" y="178" font-size="10" class="dim">frozen, seeded, never trained — nothing about the grouping can co-adapt with the policy (R1)</text>
+      </svg>
+      <div class="cap"><strong>Thermometer coding</strong> makes φ-distance monotone in context difference: t=4 vs t=19
+      differ in 6 of 12 cells, t=4 vs t=5 in ≤1 — unlike hashed tags, where step 1 vs 28 looked no farther apart than
+      15 vs 16 (measured corr −0.187 → +0.92 after the fix). Inside a bucket the obs half is constant, so distances
+      come purely from context.</div></div>
+
+    <div class="accfig"><div class="plabel">3 · baseline — weighted leave-one-out</div>
+      <svg viewBox="0 0 560 190">
+        <circle cx="80" cy="90" r="16" fill="var(--accent)"/>
+        <text x="66" y="94" font-size="10" fill="var(--surface)" class="mono">u</text>
+        <text x="34" y="130" font-size="10">rollout 2, t=4</text><text x="34" y="144" font-size="10" class="dim">being judged</text>
+        <circle cx="330" cy="46" r="14" fill="var(--ok)"/><text x="322" y="50" font-size="9" fill="var(--surface)" class="mono">.8</text><text x="352" y="42" font-size="10">rollout 5, t=4 · G=0.8</text>
+        <text x="352" y="56" font-size="10" class="mono">w ≈ 1.00</text>
+        <circle cx="330" cy="120" r="14" fill="var(--warn)"/><text x="322" y="124" font-size="9" fill="var(--surface)" class="mono">.1</text><text x="352" y="116" font-size="10">rollout 7, t=19 · G=0.1</text>
+        <text x="352" y="130" font-size="10" class="mono">w ≈ 0.22</text>
+        <line x1="314" y1="52" x2="100" y2="84" stroke="var(--ok)" stroke-width="5" opacity="0.9"/>
+        <line x1="314" y1="118" x2="100" y2="96" stroke="var(--warn)" stroke-width="1.5" opacity="0.8"/>
+        <g opacity="0.45"><circle cx="200" cy="170" r="11" fill="var(--crit)"/>
+        <line x1="190" y1="160" x2="210" y2="180" stroke="var(--surface)" stroke-width="2"/><line x1="210" y1="160" x2="190" y2="180" stroke="var(--surface)" stroke-width="2"/>
+        <text x="218" y="174" font-size="10" class="dim">u's own trajectory: excluded (leave-one-out)</text></g>
+        <rect x="8" y="8" width="300" height="24" rx="3" fill="var(--sunk)"/>
+        <text x="16" y="24" font-size="10" class="mono">b_LOO = Σ w·G / Σ w,   w = exp(−d(φ)/τ_b)</text>
+        <text x="8" y="52" font-size="10" class="dim">τ_b = bucket median distance (scale-free)</text>
+      </svg>
+      <div class="cap">u's counterfactual "what do trajectories like mine earn from here" is dominated by its context
+      twin and barely dented by the lost wanderer — and u's own outcome never judges its own action (the leakage in
+      released G²PO code).</div>
+      <details class="unote">
+        <summary>⊕ the weighting, worked in full — contexts, distances, weights, baseline</summary>
+        <div class="unote-body">
+          <p><strong>Step 1 — the contexts.</strong> Each occurrence's φ carries the trajectory scalars
+          <span class="m">{t, n_unique, revisit, progress}</span> (thermometer-coded) beside the shared observation half:</p>
+          <ul>
+            <li><span class="m">u</span> (rollout 2, judged): <span class="m">{t: 4, n_unique: 5, revisit: 0, progress: 1.00}</span> — direct route, plate in reach</li>
+            <li>rollout 5 (twin): <span class="m">{t: 4, n_unique: 5, revisit: 0, progress: 1.00}</span></li>
+            <li>rollout 7 (wanderer): <span class="m">{t: 19, n_unique: 9, revisit: 1, progress: 0.47}</span> — 6 of 12 thermometer cells differ on t alone, plus the revisit bit and half the progress</li>
+          </ul>
+          <p><strong>Step 2 — distances → weights.</strong> Within the bucket the observation half of φ is identical, so
+          distance is pure context. With τ_b = the bucket's median pairwise distance (scale-free):</p>
+          <p class="m" style="background:var(--sunk);padding:6px 10px;border-radius:3px">
+          d(u, r5) ≈ 0&nbsp;&nbsp;→ w₅ = e⁻⁰ = 1.00<br>
+          d(u, r7) ≈ 1.5·τ_b → w₇ = e⁻¹·⁵ ≈ 0.22</p>
+          <p><strong>Step 3 — leave-one-out baseline.</strong> u's own trajectory is excluded; the others' returns
+          (G₅ = 0.8, G₇ = 0.1) combine under the weights:</p>
+          <p class="m" style="background:var(--sunk);padding:6px 10px;border-radius:3px">
+          b_LOO(u) = (1.00·0.8 + 0.22·0.1) / (1.00 + 0.22) = 0.822 / 1.22 = <strong>0.67</strong></p>
+          <p><strong>Step 4 — the advantage</strong> (before λ* blending and per-task normalisation):</p>
+          <p class="m" style="background:var(--sunk);padding:6px 10px;border-radius:3px">
+          A<sup>CC</sup>(u) = G_u − b_LOO = 0.9 − 0.67 = <strong>+0.23</strong></p>
+          <p style="color:var(--ink-2)">Contrast at the same moment — G²PO (uniform, self included):
+          (0.9 + 0.8 + 0.1)/3 = 0.60 → +0.30, inflated by the doomed wanderer and by u grading its own work.
+          GRPO: no step baseline at all — every step of rollout 2 inherits the episode-level +0.59.
+          If the three contexts had been indistinguishable, λ* would return the estimate to the (no-self) uniform mean
+          0.45 — the conditioning is only spent where it can be cashed.</p>
+        </div>
+      </details>
+</div>
+
+    <div class="accfig"><div class="plabel">4 · trust — the λ* dial</div>
+      <svg viewBox="0 0 560 190">
+        <line x1="60" y1="70" x2="380" y2="70" stroke="var(--rule-2)" stroke-width="6" stroke-linecap="round"/>
+        <circle cx="290" cy="70" r="11" fill="var(--accent)"/>
+        <text x="278" y="52" font-size="10.5" class="mono">λ* = 0.72</text>
+        <text x="60" y="100" font-size="10.5">uniform bucket mean</text>
+        <text x="60" y="114" font-size="10" class="dim">= G²PO's node value (λ→0)</text>
+        <text x="268" y="100" font-size="10.5">context-weighted LOO</text>
+        <text x="268" y="114" font-size="10" class="dim">full conditioning (λ→1)</text>
+        <rect x="8" y="130" width="424" height="26" rx="3" fill="var(--sunk)"/>
+        <text x="16" y="147" font-size="10.5" class="mono">λ* = (ρB)² / ( (ρB)² + σ²(1/n_eff − 1/J) )</text>
+        <text x="8" y="176" font-size="9" class="dim">B = bias prior (0.30 sd, measured) · ρ = metric confidence · n_eff / J = effective / total neighbors</text>
+        <text x="30" y="16" font-size="9.5" class="dim">contexts indistinguishable, or all-identical returns → λ→0: gracefully G²PO</text>
+        <text x="30" y="30" font-size="9.5" class="dim">clear contrast + enough close neighbors → λ→1: trust the conditioning</text>
+      </svg>
+      <div class="cap">A bias–variance arbiter, not a hyperparameter: conditioning is trusted exactly in proportion to
+      the bias it can remove (ρB) versus the variance it costs (fewer effective neighbors). Empirically λ ≈ 0.9 in the
+      matched-scale run's dense buckets and ≈ 0.05 on sparse small-scale ALFWorld — the same formula, both behaviors.</div>
+      <details class="unote">
+        <summary>⊕ where uncertainty lives in the method — click to expand</summary>
+        <div class="unote-body">
+          <p><strong>Step 4 — the λ* trust dial</strong> is the method's single, load-bearing uncertainty mechanism:
+          before the context-weighted baseline is used, λ* asks <em>"how uncertain is this conditioned estimate relative
+          to the bias it removes?"</em> and blends accordingly:</p>
+          <p class="m" style="background:var(--sunk);padding:6px 10px;border-radius:3px">λ* = (ρB)² / ( (ρB)² + σ²(1/n_eff − 1/J) )</p>
+          <p>Each symbol carries one species of uncertainty:</p>
+          <ul>
+            <li><span class="m">σ²</span> — <strong>outcome uncertainty</strong>: within-bucket variance of the other
+            trajectories' returns. Noisy neighbors → shakier conditioned baseline → λ shrinks.</li>
+            <li><span class="m">n_eff</span> — <strong>effective-sample uncertainty</strong>: weight concentration reduces
+            how many neighbors you're really averaging (<span class="m">n_eff = (Σw)²/Σw²</span>);
+            <span class="m">1/n_eff − 1/J</span> is precisely the <em>extra variance purchased</em> by conditioning versus
+            using the whole bucket.</li>
+            <li><span class="m">ρ</span> — <strong>metric uncertainty</strong>: confidence that φ-distances mean anything.
+            An uninformative metric can't deliver the bias reduction, so ρ→0 collapses λ→0 (back to G²PO) no matter how
+            the numbers look.</li>
+            <li><span class="m">B</span> — <strong>prior belief about the bias</strong>: the measured false-merge magnitude
+            (0.30 sd) — how wrong the unconditioned baseline is expected to be.</li>
+          </ul>
+          <p>So uncertainty isn't modeled as an explicit posterior — it's an <strong>MSE arbitration</strong>: trust
+          conditioning exactly when expected-bias-removed² exceeds variance-added. Two supporting appearances elsewhere:
+          <span class="m">τ_b</span> (bucket-median bandwidth) normalizes distance-scale uncertainty away, and the entropy
+          floor on the probe (§02's <span class="m">H(q) ≥ H_min</span>) guards against distributional collapse of the
+          fingerprint — but those are stabilizers, not the dial.</p>
+          <p style="color:var(--ink-2)">Project history: richer uncertainty machinery — evidential deep learning for the
+          affinity, learned variance heads — was built and considered during the learned-components phase, and dropped
+          when the whole learned stack failed to beat the frozen φ. The conclusion (recorded in idea.md): uncertainty
+          belongs in the <em>estimator arithmetic</em> (λ*), not in a trained module that would itself need calibrating.</p>
+        </div>
+      </details>
+</div>
+
+  </div>
+  <h3 style="margin-top:26px">The same moment, three ways — who judges rollout 2's action at cabinet 3?</h3>
+  <p style="font-size:.9rem;color:var(--ink-2);max-width:70ch">Concrete setting: 8 sibling rollouts of
+  <em>"put a clean plate in countertop"</em>. Rollout 2 (arrived t=4, direct route) opens cabinet 3 and sees the plate;
+  its return-to-go from here is <span class="m">G=0.9</span>. Rollout 5 is its context twin (t=4, direct,
+  <span class="m">G=0.8</span>). Rollout 7 reaches the same screen lost at t=19 (<span class="m">G=0.1</span>,
+  times out). The five other siblings never see this screen (their returns average 0.2).</p>
+  <div class="scroll">
+    <table>
+      <colgroup><col><col><col><col class="ourcol"></colgroup>
+      <thead><tr><th></th><th>GRPO</th><th>G²PO</th><th class="ourhead">ours (A<sup>CC</sup>)</th></tr></thead>
+      <tbody>
+        <tr><td class="dim">Comparison set for this action</td>
+          <td>none at step level — the whole <em>episode</em> is judged against all 8 siblings' returns; every step of rollout 2 inherits one number</td>
+          <td>all visits to the identical screen: rollouts 2, 5, 7 — <strong>including rollout 2's own visit</strong></td>
+          <td>the <em>other</em> visits only: rollouts 5 and 7 (leave-one-out)</td></tr>
+        <tr><td class="dim">Weights</td>
+          <td>—</td>
+          <td>uniform</td>
+          <td><span class="m">w(5)=e⁻⁰·⁰≈1.00</span>, <span class="m">w(7)=e⁻¹·⁵≈0.22</span> — φ-distance (t, revisits, progress) discounts the wanderer</td></tr>
+        <tr><td class="dim">History awareness</td>
+          <td>none — steps aren't distinguished at all</td>
+          <td>one-step <em>sequence</em> only (the edge term knows what came next in your rollout) — but node identity and values stay history-blind: t=4-direct and t=19-lost share V(u), and the same edge credits both identically</td>
+          <td>the whole point: same screen + different journey ⇒ different counterfactual</td></tr>
+        <tr><td class="dim">Baseline value at this step</td>
+          <td class="num">sibling-mean return ≈ 0.31 (episode-level)</td>
+          <td class="num">(0.9 + 0.8 + 0.1)/3 = <strong>0.60</strong></td>
+          <td class="num">(1.00·0.8 + 0.22·0.1)/1.22 = <strong>0.67</strong>, then λ* blends toward 0.45 (the no-self uniform mean) if contexts were indistinguishable</td></tr>
+        <tr><td class="dim">Step advantage for rollout 2</td>
+          <td class="num">≈ +0.59 — same for its blunders and its brilliancies</td>
+          <td class="num">0.9 − 0.60 = <strong>+0.30</strong> — inflated: the doomed wanderer drags the bar down, and rollout 2's own success pads its own baseline (leakage)</td>
+          <td class="num">0.9 − 0.67 = <strong>+0.23</strong> — measured against what trajectories <em>in its situation</em> actually earn</td></tr>
+        <tr><td class="dim">What each method concludes</td>
+          <td>"rollout 2 had a good episode"</td>
+          <td>"opening cabinet 3 here beats the average visitor" — but the average visitor includes a lost cause and itself</td>
+          <td>"given an efficient route with the plate in reach, this action was modestly better than its twin's continuation" — credit proportional to genuine contribution</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="tbl-cap">The 0.60-vs-0.67 gap is the measured <strong>false-merge bias</strong> (0.26–0.36 sd in phase 0) in
+  miniature: G²PO's node mixes incomparable histories and lets a trajectory grade its own work. When contexts genuinely
+  can't be told apart, λ* returns the estimate to G²PO's uniform mean — the method never pays for conditioning it can't
+  cash.</p>
+
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">03 — full comparison</div>
+    <h2>Against the GRPO family</h2>
+  </div>
+  <div class="scroll">
+    <table>
+      <colgroup><col><col><col><col><col><col class="ourcol"></colgroup>
+      <thead><tr>
+        <th>Dimension</th><th>GRPO</th><th>GiGPO</th><th>HGPO</th><th>G²PO</th><th class="ourhead">Ours</th>
+      </tr></thead>
+      <tbody>
+        <tr><td class="dim">Basic unit</td><td>trajectory</td><td>trajectory + step</td><td>decision step</td><td>graph node + edge</td><td><span class="m">occurrence u = (i,t)</span></td></tr>
+        <tr><td class="dim">Grouping key</td><td><span class="m">task x</span></td><td><span class="m">exact s_t</span></td><td><span class="m">exact C_k(s_t)</span></td><td><span class="m">exact o_t</span></td><td>reward-free predictive signature of <span class="m">χ=(x,o,c)</span></td></tr>
+        <tr><td class="dim">Equivalence is…</td><td>prescribed</td><td>prescribed</td><td>prescribed</td><td>prescribed</td><td><b>inferred</b></td></tr>
+        <tr><td class="dim">Uses trajectory context</td><td class="no">✗</td><td class="no">✗</td><td>exact raw suffix only</td><td>only if inside <span class="m">o_t</span></td><td class="yes">✓ history, memory, progress</td></tr>
+        <tr><td class="dim">Summarised memory</td><td class="no">✗</td><td class="no">✗</td><td>awkward — needs divisible suffixes</td><td>only via <span class="m">o_t</span></td><td class="yes">✓ natural</td></tr>
+        <tr><td class="dim">Hard clustering required</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td class="yes">✗ soft neighbourhoods</td></tr>
+        <tr><td class="dim">Same-trajectory references</td><td>n/a</td><td>possible</td><td>possible</td><td>possible</td><td class="yes">forbidden — <span class="m">i_u ≠ i_v</span></td></tr>
+        <tr><td class="dim">Reward used to build groups</td><td>fixed</td><td>fixed</td><td>fixed</td><td>fixed</td><td class="yes">never</td></tr>
+        <tr><td class="dim">Baseline</td><td>group mean of <span class="m">R_i</span></td><td>state-group statistic</td><td>history-group statistic</td><td>graph-node statistic</td><td>weighted <b>leave-one-out</b></td></tr>
+        <tr><td class="dim">Effective sample size</td><td>rollout count</td><td>state frequency</td><td>history-group frequency</td><td>node frequency</td><td><span class="m">n_eff</span> over <b>trajectories</b></td></tr>
+        <tr><td class="dim">Advantage</td><td><span class="m">A^EP</span></td><td><span class="m">A^EP + ω A^S</span></td><td><span class="m">Σ_k w_k A_k^H</span></td><td><span class="m">A^EP + w(A^NC + A^EC)</span></td><td><span class="m">A^EP + λ_CC A^CC</span></td></tr>
+        <tr><td class="dim">Sparse-support behaviour</td><td>—</td><td>rare states weak</td><td>mixes depths</td><td>node aggregation</td><td>explicit shrinkage → G²PO → GRPO</td></tr>
+        <tr><td class="dim">Degenerate limit</td><td>—</td><td>—</td><td>—</td><td>—</td><td><b>G²PO + LOO</b>, i.e. above the baseline</td></tr>
+        <tr><td class="dim">Rollout cost vs GRPO</td><td>1.0×</td><td>≈1.0×</td><td>≈1.0×</td><td>≈1.0×</td><td>7.5× naive · <b>0.37×</b> shared-prefix</td></tr>
+        <tr><td class="dim"><b>End-to-end</b> cost vs GRPO</td><td>1.0×</td><td>≈1.0×</td><td>≈1.0×</td><td>≈1.0×</td><td>1.49× naive · <b>0.95×</b> shared-prefix</td></tr>
+        <tr><td class="dim">Summarised memory in the key</td><td class="no">✗</td><td class="no">✗</td><td>needs step-divisible exact suffixes</td><td>only if inside <span class="m">o_t</span></td><td class="yes">✓ <b>the component that works</b></td></tr>
+        <tr><td class="dim">Held-out ALFWorld (1.7B, within-type)</td><td>—</td><td>—</td><td>—</td><td>—</td><td>0.625 vs GRPO 0.604 · peak 0.917 vs 0.667</td></tr>
+        <tr><td class="dim">Action space</td><td>token sequence</td><td>token sequence</td><td>token sequence</td><td>token sequence</td><td>categorical over admissible set</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="tbl-cap">Cost row measured on this hardware — see §05. The degenerate-limit row is the safety property: as <span class="mono">λ_u → 0</span> the method becomes G²PO with a leave-one-out correction and trajectory-level aggregation, which is a <em>less</em> biased baseline than vanilla G²PO, not an equal one.</p>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">04 — what the experiments changed</div>
+    <h2>Evidence</h2>
+    <p>Phases 0 and 1 were run end to end. Three of the four things that first looked like failures turned out to be measurement defects in the test, not properties of the hypothesis — each is recorded here with the correction it forced.</p>
+  </div>
+  <div class="ev">
+    <div class="card">
+      <div class="tag"><span class="id">E1</span><span class="verdict v-ok">confirmed</span></div>
+      <h3>The probe must not sharpen with the policy</h3>
+      <p>With <span class="mono">q = π</span>, both the sampling law and the centring anchor collapse onto <span class="mono">a*</span>, so <span class="mono">P_u → δ₀</span> for every occurrence. Decoupling holds the spread.</p>
+      <div class="fig">spread(P_u) loss as H(π) falls<br>coupled &nbsp;−17% · −13% · −42%<br>decoupled &nbsp;−3% · −4% · −14%</div>
+    </div>
+    <div class="card">
+      <div class="tag"><span class="id">E2</span><span class="verdict v-warn">spec revised</span></div>
+      <h3>Shared action set, not action-set-free</h3>
+      <p>The hard gate guarantees a shared admissible set, so probing each occurrence's own top-<span class="mono">M</span> injects mismatch noise. A context-blind φ produced the <em>largest</em> spread under the old estimator.</p>
+      <div class="fig">phi_obsonly (null control)<br>own top-M &nbsp;sd 0.048 — wrong<br>shared set &nbsp;sd 0.000000 — correct</div>
+    </div>
+    <div class="card">
+      <div class="tag"><span class="id">E3</span><span class="verdict v-warn">spec revised</span></div>
+      <h3>The affinity was grouping by episode position</h3>
+      <p>Raw distances between advantage profiles are dominated by magnitude, and magnitude is set by how much return remains. Eq. 3 must be scale-free before the exponential.</p>
+      <div class="fig">ρ(D*, |A|) = +0.95<br>ρ(D*, t) &nbsp;= −0.48<br>ρ(d<sup>pred</sup>, t) = +0.74</div>
+    </div>
+    <div class="card">
+      <div class="tag"><span class="id">E5</span><span class="verdict v-warn">untested</span></div>
+      <h3>The central hypothesis has no evidence yet</h3>
+      <p>Its first valid test — after fixing oracle noise, the horizon confound, probe mismatch, and a pinned set that contained no context variation — returned a null. Not a refutation: <span class="mono">n = 15–22</span> pairs.</p>
+      <div class="fig">oracle reliability 0.63 · ceiling 0.79<br>best ρ +0.489 (p = 0.069)<br>does not survive the scale-free form</div>
+    </div>
+    <div class="card">
+      <div class="tag"><span class="id">E6</span><span class="verdict v-ok">supports Eq. 1</span></div>
+      <h3>Intra-trajectory revisits are common</h3>
+      <p>Without the <span class="mono">i_u ≠ i_v</span> exclusion, a large share of reference mass would come from the target's own trajectory — where the return is downstream of the action being evaluated.</p>
+      <div class="fig">WebShop &nbsp;45–47%<br>ALFWorld &nbsp;26–27%<br>ScienceWorld &nbsp;21%</div>
+    </div>
+    <div class="card">
+      <div class="tag"><span class="id">E7</span><span class="verdict v-crit">reframe</span></div>
+      <h3>Lead with bias, not coverage</h3>
+      <p>The original pitch — exact matching doesn't scale — is false in these benchmarks. What is real is that exact matching is <em>biased</em>: same observation, different context, different credit.</p>
+      <div class="fig">coverage (≥3 traj) 46–78%<br>η² excess p = 0.008 / 0.013<br>baseline bias 0.26–0.36 sd</div>
+    </div>
+  </div>
+
+  <div class="callout" style="margin-top:22px">
+    <div class="lbl">A trap worth keeping</div>
+    <p>In any same-observation grouping study, <b>bucket size and bucket informativeness are anti-correlated</b>. The largest bucket for a task is always the episode-start observation — every rollout shares it, and every occurrence in it has identical context because nothing has happened yet. Ranking candidate states by bucket size therefore selects <em>against</em> the effect you are trying to measure. In our first pass, 50% of pinned states sat at <span class="mono">t = 0</span> and 13 of 24 pairs had no context difference at all.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">05 — cost of the full training run</div>
+    <h2>What the expensive experiment would cost</h2>
+    <p>Two terms, both measured here: rollout latency per env step, and training throughput at 9,208 tokens/s/GPU for the 1.7B. Two results matter more than the totals — <b>rollout is the small term</b> (agentic RL backprops over long trajectories, so the gradient pass dominates and is identical for every method), and <b>the scoring path is an implementation choice worth 20×</b>.</p>
+  </div>
+  <div class="scroll">
+    <table>
+      <thead><tr>
+        <th>Per env step, same GPU &amp; model</th><th>ms</th><th>Tokens</th><th>vs GRPO rollout</th><th>Total, 1.7B</th><th>End-to-end</th>
+      </tr></thead>
+      <tbody>
+        <tr><td class="dim">GRPO / GiGPO — generate 1 action</td><td class="num">119.4</td><td class="num">—</td><td class="num">1.00×</td><td class="num">8.0 h</td><td class="num">1.00×</td></tr>
+        <tr><td class="dim">Ours — naive: prompt re-encoded per candidate</td><td class="num">892.2</td><td class="num">17,001</td><td class="num">7.5×</td><td class="num">12.0 h</td><td class="num">1.49×</td></tr>
+        <tr><td class="dim">Ours — shared-prefix scoring, all 45 actions</td><td class="num"><b>43.6</b></td><td class="num">642</td><td class="num"><b>0.37×</b></td><td class="num"><b>7.6 h</b></td><td class="num"><b>0.95×</b></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="tbl-cap">Per-step figures measured in-process (HF, bf16, 372-token prompt, 45 candidates) so all three run in one stack. Totals assume 128 rollouts per iteration (16 tasks × G = 8), 30 steps, 200 iterations, 4 GPUs serving rollouts + 2 training, and the measured 9,208 train-tokens/s/GPU giving a fixed 7.4 h gradient term. The shared-prefix row benchmarks the fix, not a running system — our harness used the naive path.</p>
+
+  <div class="callout" style="margin-top:20px">
+    <div class="lbl">Scoring the whole action set is cheaper than generating one action</div>
+    <p>Autoregressive decode is <b>memory-bandwidth-bound</b>: six sequential steps, each re-reading all 1.7B weights. Scoring is <b>compute-bound</b>: encode the shared prompt once, keep the KV cache, then one batched forward over 45 × 6 candidate tokens — two weight reads total, densely batched. And with exact π over the admissible set there is nothing left to generate; the action is sampled from the categorical directly.</p>
+    <p>The 7.5× penalty is therefore not the method. It is the cost of scoring through an HTTP endpoint that re-encodes the 372-token prompt <b>once per candidate</b> — 17,001 tokens where 642 suffice. Realising the 0.37× needs shared-prefix scoring, which vLLM's OpenAI API does not expose but which is natural inside a verl-style trainer that owns the forward pass.</p>
+    <p><b>The caveat that bounds this:</b> it holds only where the environment supplies a discrete admissible set. For open-ended text actions there is nothing to score, generation returns, and the probe becomes a genuine additive cost.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">05b — the training runs</div>
+    <h2>What actually happened when we trained it</h2>
+    <p>Qwen3-1.7B, 40 iterations, four arms, three benchmarks. Held-out = tasks disjoint from training, actions sampled at T=1.</p>
+  </div>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Benchmark</th><th>GRPO</th><th>frozen φ</th><th class="ourhead">frozen φ + MEMORY</th><th>learned φ+μ+affinity</th></tr></thead>
+      <tbody>
+        <tr><td class="dim">ALFWorld — held-out</td><td>0.604</td><td>0.583</td><td><b>0.625</b></td><td>0.417</td></tr>
+        <tr><td class="dim">ALFWorld — peak held-out</td><td>0.667</td><td>0.708</td><td><b>0.917</b></td><td>0.583</td></tr>
+        <tr><td class="dim">ScienceWorld — mean score</td><td>0.185</td><td><b>0.191</b></td><td>0.187</td><td>0.141</td></tr>
+        <tr><td class="dim">WebShop — mean score</td><td>0.290</td><td>0.333</td><td>0.325</td><td><b>0.354</b></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="tbl-cap">One to three seeds per cell; held-out n = 24–32, so SE ≈ 0.10 and no single gap is significant. ALFWorld figures measure transfer <em>within one task type</em> (see the caveat below) and are not comparable to published ALFWorld numbers.</p>
+
+  <div class="callout" style="margin-top:20px">
+    <div class="lbl">The cheap rung beat the expensive one</div>
+    <p><b>Summarised memory on a frozen φ is the only arm that beats plain GRPO</b>, and it does so on the benchmark where the arms differ most. Every <em>learned</em> component has so far failed to earn its cost: learned φ is the worst arm on two of three benchmarks, and the learned affinity — once given a real objective — scores ρ=0.515 against plain Euclidean's ρ=0.514.</p>
+    <p>That is the plan's ablation ladder returning its intended answer: build the cheap rung first, and only pay for the learned one if it wins. Here it does not.</p>
+  </div>
+
+  <div class="callout" style="margin-top:14px">
+    <div class="lbl">Two caveats that bound every ALFWorld number above</div>
+    <p><b>Single task type.</b> Task listing returned <span class="mono">range(n)</span> over a <em>sorted</em> game list, which clusters by type — the first twelve games are all <span class="mono">examine</span>, the easiest of six. Train and eval were disjoint trials <em>within that one type</em>. Cross-type transfer — precisely where "same observation, different meaning" should matter — remains untested. Fixed with stratified sampling; the runs need redoing.</p>
+    <p><b>Held-out peaks then declines.</b> ALFWorld arms peak near iteration 20–25 and fall by up to −0.29 afterwards, so the final checkpoint is the wrong one to keep and the final-iteration table understates every step-level arm. Checkpointing now saves best-on-held-out.</p>
+  </div>
+</section>
+
+<section>
+    <div class="eyebrow">05c — 2026-08-29 diagnostic: where the term is actually live</div>
+    <h2>The context term is inert on sparse ALFWorld at 1.7B</h2>
+    <p>λ<sub>u</sub> is the MSE-optimal shrinkage toward the observation-only baseline; it is driven to 0 whenever the
+    <em>other</em> trajectories in a bucket have identical returns (s²=0), because then conditioning has no bias to remove.
+    Measured per iteration over the 08-27 runs:</p>
+    <table>
+      <tr><th>run family</th><th>λ<sub>u</sub> mean</th><th>share of |A| from the step term</th><th>reading</th></tr>
+      <tr><td>ALFWorld-50 ours (s0/s1)</td><td>0.05 / 0.03</td><td>7 % / 6 %</td><td>at 5–10 % success nearly every bucket is all-failures → the term collapses to the G²PO-null baseline; the memory key never gets to act</td></tr>
+      <tr><td>ALFWorld-30 ours (s0/s1)</td><td>0.06 / 0.12</td><td>11 % / 14 %</td><td>λ reaches 0.18 only on iterations with ≥25 % success — it switches on after the policy already solves tasks</td></tr>
+      <tr><td>ScienceWorld-50 ours</td><td>0.57 / 0.68</td><td>4 % / 6 %</td><td>dense reward → contrast exists, but un-normalised the term is 5 % of |A<sup>EP</sup>|</td></tr>
+      <tr><td>WebShop ours → with per-task std-normalisation</td><td>0.63 / 0.57</td><td>13 % → 33–38 %</td><td>the scale fix (<code>--cc-norm std</code>, the family convention) restores a meaningful share</td></tr>
+    </table>
+    <p><strong>Consequence.</strong> On ALFWorld our estimator <em>is</em> GRPO plus a few percent of noise until success
+    is high enough to populate buckets with mixed outcomes; it cannot beat GRPO there by construction at the 1.7B success
+    level. The levers that can matter are the dense-reward benchmarks with the corrected scale and the leak-free progress
+    term. <strong>ScienceWorld metric.</strong> The simulator returns −100 and terminates on the fail state (≈40 % of
+    training episodes); no GRPO-family release contains a ScienceWorld wrapper, and the ScienceWorld paper normalises
+    scores to [0,1]. We report mean score with failures floored at 0 as the publication metric (signed score and strict
+    wins alongside) and select checkpoints on the same quantity.</p>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">05d — training configuration vs published methods (2026-08-29)</div>
+    <h2>Two regimes, one estimator</h2>
+    <p>The 08-27 round deliberately traded absolute performance for an <em>exact</em> policy π (scored categorical over
+    the admissible set) so every probe and diagnostic was measurable. The matched-scale run now in flight adopts the
+    G²PO/GiGPO regime wholesale — free generation with the chain-of-thought inside the RL gradient, at their batch and
+    step budget — with only the advantage estimator swapped. Published configs from the G²PO paper/repo and the
+    verl-agent (GiGPO) <code>run_alfworld.sh</code>.</p>
+  </div>
+  <div class="scroll">
+    <table>
+      <colgroup><col><col><col><col class="ourcol"><col class="ourcol"></colgroup>
+      <thead><tr>
+        <th>Dimension</th><th>G²PO (published)</th><th>GiGPO (published)</th>
+        <th class="ourhead">Ours — exact-π study (08-27)</th><th class="ourhead">Ours — matched scale (running)</th>
+      </tr></thead>
+      <tbody>
+        <tr><td class="dim">Backbone</td><td>Qwen2.5-1.5B/7B-Instruct</td><td>Qwen2.5-1.5B/7B-Instruct</td><td>Qwen3-1.7B</td><td>Qwen3-1.7B</td></tr>
+        <tr><td class="dim">Policy class</td><td>free generation, ≤512 tok <span class="m">&lt;think&gt;…&lt;action&gt;</span>, CoT trained by RL</td><td>same</td><td>exact categorical over admissible set (mean-token-logprob, top-8); no generation</td><td>free generation, ≤768 tokens (Qwen3 verbosity; native thinking off, verbatim-copy + ≤80-word-reasoning prompt; think tags optional in the parser)</td></tr>
+        <tr><td class="dim">Episodes / update</td><td>128 (16 tasks × G8)</td><td>128 (16 × 8)</td><td>48 (6 × 8); G12 arms 72</td><td>144 (18 × 8; nearest multiple of 6 GPUs)</td></tr>
+        <tr><td class="dim">PPO minibatch / epochs</td><td>256 / 1</td><td>256 / 1</td><td>8 / 1</td><td>240 / 1 (micro 40 per GPU)</td></tr>
+        <tr><td class="dim">Learning rate</td><td>1e-6</td><td>1e-6</td><td>2e-6 constant</td><td>1e-6</td></tr>
+        <tr><td class="dim">KL regularisation</td><td>KL loss 0.01 (low-var)</td><td>KL loss 0.01 (low-var)</td><td>none (clip 0.2 only)</td><td>KL loss 0.01 (low-var)</td></tr>
+        <tr><td class="dim">γ (step discount)</td><td>0.95</td><td>0.95</td><td>0.95</td><td>0.95</td></tr>
+        <tr><td class="dim">Advantage estimator</td><td>episode norm + graph node/edge term</td><td>episode norm + anchor-state step term (mean_std_norm)</td><td>A<sup>EP</sup> + λ<sub>CC</sub>·A<sup>CC</sup> (memory-weighted LOO, MSE-optimal λ*)</td><td>same estimator via <span class="m">algorithm.adv_estimator=ccpo</span> in verl; step term std-normalised per task (family convention)</td></tr>
+        <tr><td class="dim">Invalid-action handling</td><td>penalty 0.1</td><td>penalty 0.1</td><td>impossible by construction (only admissible actions scored)</td><td>penalty 0.1</td></tr>
+        <tr><td class="dim">Training steps</td><td>150–200</td><td>150</td><td>≤100 iters, early stop (patience 25, min 40)</td><td>150</td></tr>
+        <tr><td class="dim">Episode step limit</td><td>50</td><td>50</td><td>50 (30 in the first round)</td><td>50</td></tr>
+        <tr><td class="dim">Eval protocol</td><td>ALFWorld unseen</td><td>ALFWorld unseen every 5 steps</td><td>official held-out every 2 iters (96 sampled + 12 greedy); clean selection: valid_seen → untouched valid_unseen</td><td>unseen (eval_out_of_distribution), 128 episodes every 5 steps, val-before-train</td></tr>
+        <tr><td class="dim">Checkpoints</td><td>—</td><td>save_freq −1 in the example (none)</td><td>best-on-held-out + final</td><td>every 25 steps</td></tr>
+        <tr><td class="dim">Hardware / stack</td><td>8 × A100, verl + vLLM</td><td>8 × A100, verl + vLLM 0.8</td><td>shared 96 GB GPU slots, 2–3 jobs/GPU, plain PyTorch</td><td>6 × RTX PRO 6000 Blackwell, Docker (torch 2.7 cu128, sdpa), FSDP with HF-generate rollouts — vLLM retired on this stack (position_ids/engine forensics, 2026-08-31)</td></tr>
+        <tr><td class="dim">Total episodes</td><td>≈19–26k</td><td>≈19k</td><td>≈3–5k per run</td><td>≈21.6k</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="tbl-cap">Deviations of the matched-scale run from G²PO's exact numbers: 144 vs 128 episodes/step and 240 vs 256
+  minibatch (divisibility across 6 GPUs), Qwen3-1.7B vs Qwen2.5-1.5B-Instruct (backbone choice), sdpa attention instead of
+  flash-attn (no Blackwell build); response budget 768 vs 512 and Qwen3 model-card sampling constraints (top-p/top-k) — the backbone's verbosity and degeneration profile required both; HF-generate rollouts instead of vLLM (all nine Qwen3/Blackwell adaptation fixes are logged in RESULTS_0827.md); KL log-ratio clamped ±20 pre-exp (numerics only). The GRPO baseline will run the identical configuration with only the estimator swapped,
+  so the ours-vs-GRPO comparison is internally exact; published G²PO rows are regime context, not claimed parity.</p>
+  <h3 style="margin-top:26px">Compute budget for the matched-scale runs (anchored to ≈17–20 min/step measured on the corrected HF-rollout run, 2026-08-31)</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr>
+        <th>backbone</th><th>benchmark</th><th>total GPU-hours on RTX 6000 Pro (est)</th>
+        <th>training time, 6× RTX 6000 Pro</th><th>training time, 8× RTX 6000 Pro</th><th>training time, 8× H200</th>
+      </tr></thead>
+      <tbody>
+        <tr><td class="dim">Qwen3-1.7B</td><td>ALFWorld</td><td class="num">≈ 335 GPU-h</td>
+            <td class="num"><strong>≈ 56 h (2.3 d)</strong> — measured pace</td><td class="num">≈ 44 h (1.8 d)</td><td class="num"><strong>≈ 14–18 h</strong></td></tr>
+        <tr><td class="dim">Qwen3-8B</td><td>ALFWorld</td><td class="num">≈ 1,200 GPU-h</td>
+            <td class="num">≈ 200 h (8–9 d)</td><td class="num">≈ 160 h (6.5–7 d)</td><td class="num"><strong>≈ 36–50 h (1.5–2 d)</strong></td></tr>
+        <tr><td class="dim">1.7B — one post-training eval (128 unseen episodes)</td><td>ALFWorld</td><td class="num">≈ 3 GPU-h</td>
+            <td class="num">≈ 0.5 h incl. engine spin-up</td><td class="num">≈ 0.4 h</td><td class="num">≈ 10–15 min</td></tr>
+        <tr><td class="dim">8B — one post-training eval</td><td>ALFWorld</td><td class="num">≈ 6 GPU-h</td>
+            <td class="num">≈ 1 h</td><td class="num">≈ 0.8 h</td><td class="num">≈ 20–25 min</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="tbl-cap">Per-run setup (container spin-up, data prep, JIT warmup ≈ 1 h) is included; the one-time stack build is not
+  (done on our box; ≈ 1–2 h fresh on H200, where the standard flash-attn/vLLM stack works natively). 8 vs 6 local cards buys only
+  ≈ 1.27× — the 50-turn env loop and driver-side advantage computation do not parallelise. The RTX 6000 Pro figures carry the
+  Blackwell taxes measured here: Max-Q power cap, sdpa attention without padding-removal (no sm_120 flash-attn build). Rule of
+  thumb for planning: the full publication matrix (1.7B and 8B, ours + GRPO baseline, one benchmark) ≈ 110 h on one 8× H200 node
+  vs ≈ 3 weeks locally; the 1.7B pair is feasible locally (≈ 4.5 d sequential), the 8B pair effectively requires H200-class hardware.</p>
+
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">05e — current configuration and what the runs measured (2026-09-04)</div>
+    <h2>Two components added, four things measured</h2>
+    <p>The matched-scale run has been through two full generations. The first (v5, 75 steps) ran the configuration in
+    §05d unchanged and ended in a <em>generation collapse</em>: response length drifted 54 → 478 tokens, 43% of
+    responses truncated before emitting <span class="m">&lt;action&gt;</span>, and <span class="m">valid_action_ratio</span>
+    fell 1.00 → 0.72. Held-out success nonetheless kept climbing to 0.383 — the policy was still learning while its
+    generation broke down. The second (v6, running) adds two decode- and context-side components that make that collapse
+    structurally impossible. Neither touches the estimator, and both default to off, so <span class="m">ACG_FORCE_BUDGET=0</span>
+    / <span class="m">ACG_COMPACT_BUDGET=0</span> reproduce the §05d protocol exactly.</p>
+  </div>
+  <div class="scroll">
+    <table>
+      <colgroup><col><col><col class="ourcol"></colgroup>
+      <thead><tr><th>Dimension</th><th>v5 (75 steps, completed)</th><th class="ourhead">v6 (running)</th></tr></thead>
+      <tbody>
+        <tr><td class="dim">Estimator</td><td>ccpo — A<sup>EP</sup> + A<sup>CC</sup></td><td>identical</td></tr>
+        <tr><td class="dim">Backbone / sampling</td><td>Qwen3-1.7B, thinking off, 1.0 / 0.95 / 20</td><td>identical</td></tr>
+        <tr><td class="dim">Episodes per update</td><td>144 (18 tasks × G8; games drawn from ALFWorld's 3,553-game train pool, not a fixed set)</td><td>identical</td></tr>
+        <tr><td class="dim">KL / γ / lr</td><td>0.01 low-var / 0.95 / 1e-6</td><td>identical</td></tr>
+        <tr><td class="dim">Response budget</td><td>768 max, no cap on the think block</td><td><b>budget forcing</b>: think ≤512, then <span class="m">&lt;/think&gt;&lt;action&gt;</span> is injected and a ≤32-token action generated. Responses ≤544; truncation-without-action impossible</td></tr>
+        <tr><td class="dim">Agent memory</td><td>2 verbatim turns (G²PO protocol)</td><td><b>compaction</b>: 2 verbatim turns + a 512-token digest of the full history — action→outcome pairs, deduplicated, failures collapsed via <span class="m">obs<sub>t+1</sub> == obs<sub>t</sub></span> (no domain regex)</td></tr>
+        <tr><td class="dim">Generation stack</td><td colspan="2">vLLM 0.28 + <span class="m">TRITON_ATTN</span> in sidecar containers (one per training GPU), HTTP; trainer keeps torch 2.7 / transformers 4.51. Measured 6.3× over HF-generate: 1104 s → 175 s per step. Automatic fallback to HF on any sidecar failure.</td></tr>
+        <tr><td class="dim">Steps / eval</td><td>75 (stopped on collapse)</td><td>75, eval every 5 on 128 unseen episodes</td></tr>
+        <tr><td class="dim">Step time</td><td>18.3 min</td><td>18.7 min (+2–4%: ~218 extra prompt tokens/turn of prefill)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="tbl-cap">Both new components were validated offline before launch. Budget forcing: parseable responses
+  5/8 → 8/8 and maximum length 659 → 313 on a live sidecar. Compaction: digest renders correctly and costs +118 / +187 /
+  +218 tokens per turn at 256 / 384 / 512 budgets, against ~1,265 tokens of measured prompt headroom (p99 783 of a 2,048 cap).</p>
+
+  <h3 style="margin-top:26px">What the diagnostics established</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Question</th><th>Measurement</th><th>Reading</th></tr></thead>
+      <tbody>
+        <tr><td>Does A<sup>CC</sup> move credit, or is it G²PO in disguise?</td>
+            <td><span class="m">corr(A<sup>ours</sup>, A<sup>G²PO</sup>)</span> = <b>0.64</b> mean over 27 steps (range 0.45–0.94), computed on the same batch</td>
+            <td>materially distinct; ~⅗ of the variance is unshared. λ*=0 steps sit at ≈0.81, so the leave-one-out baseline alone accounts for ~19% and the context weighting adds the rest</td></tr>
+        <tr><td>Does anchor-state grouping actually conflate distinct states?</td>
+            <td><b>42.8%</b> of distinct observations map to more than one admissible-command set</td>
+            <td>yes — and G²PO/GiGPO inherit it, since their node key is the same raw text. Exact-match gating is not the correctness guarantee it appears to be</td></tr>
+        <tr><td>Does that conflation cost anything?</td>
+            <td>within-bucket sibling pairs: |ΔG| = 0.160 same hidden state vs <b>0.270</b> conflated (n ≈ 300k)</td>
+            <td>yes — conflated pairs differ 69% more in return. The bias prior B = 0.30 is now measured, not assumed</td></tr>
+        <tr><td>Does φ correct it?</td>
+            <td>AUC <b>0.483</b>; affinity weights 0.389 (same state) vs 0.391 (different state), n ≈ 3,900 pairs</td>
+            <td><b>no.</b> Inside a bucket the observation block is constant, leaving four history scalars that cannot see inventory. The premise holds; this φ does not deliver on it</td></tr>
+        <tr><td>Does A<sup>CC</sup> itself reward verbosity?</td>
+            <td><span class="m">acc_len_r</span> = 0.007 per step</td>
+            <td>no — length inflation comes from the shared objective, not from our term</td></tr>
+        <tr><td>Why do long-horizon tasks fail?</td>
+            <td>revisit rate <b>58.7%</b> of turns; failures revisit <b>2.68×</b> as often as successes (10,365 trajectories)</td>
+            <td>search inefficiency — the 2-turn window cannot record where the agent has been. This is what compaction targets</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="margin-top:26px">Eval protocol — a correction</h3>
+  <div class="narrow" style="display:flex; flex-direction:column; gap:12px">
+    <p style="color:var(--ink-2)">verl maps <span class="m">eval_in_distribution</span> → <span class="m">valid_seen</span> and
+    <span class="m">eval_out_of_distribution</span> → <span class="m">valid_unseen</span>, and defaults to the former.
+    G²PO's <span class="m">run_alfworld.sh</span> never overrides it, so their reported numbers are on the <em>seen</em> split;
+    ours are on <em>unseen</em>. We expected that to explain a large part of the gap to published results — the ALFWorld
+    literature typically shows 10–25 points between the splits.</p>
+    <p style="color:var(--ink-2)"><b>It does not.</b> The v5 best checkpoint scores <b>0.312 on valid_seen</b> against
+    <b>0.320 on valid_unseen</b> — no meaningful gap. Our result is split-insensitive, and the distance to published
+    numbers is real rather than a protocol artefact. What remains different: backbone, training length, and the
+    <span class="m">use_remove_padding</span> + flash-attn stack unavailable on sm_120.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">06 — where it stands</div>
+    <h2>Is the expensive run justified?</h2>
+  </div>
+  <div class="narrow" style="display:flex; flex-direction:column; gap:15px">
+    <p><b>Partly — and the answer is narrower than the original idea.</b></p>
+    <p style="color:var(--ink-2)">Two things are established. The target effect is real: within-bucket credit heterogeneity is significant on two of three benchmarks, worth a quarter to a third of a standard deviation of baseline bias — though modest at 3–5% excess explained variance. And the probe-stationarity fix works, replicated three times.</p>
+    <p style="color:var(--ink-2)">The blocker is the central hypothesis itself. Across two environments, four φ variants and four arms, no correlation between the predictive proxy and the credit oracle survives a null-representation control. That is not a refutation — four separate measurement defects had to be fixed before the question could even be asked, and the first clean attempt is underpowered at 15–22 usable pairs.</p>
+    <p style="color:var(--ink-2)">The training runs answer it in one direction: <b>a context key carrying summarised memory beats plain GRPO on held-out ALFWorld</b> (0.625 vs 0.604, peak 0.917 vs 0.667), while every learned component under-performs the frozen version it was meant to improve. So the defensible claim is the narrow one — memory-bearing context helps — not the original one about learned predictive equivalence.</p>
+    <p style="color:var(--ink-2)">The blocking experiment is now the stratified ALFWorld rerun: every number above was measured inside a single task type, and cross-type transfer is exactly the regime the method is designed for. Until that lands, treat the ALFWorld column as within-type transfer and nothing more.</p>
+    <p><strong>Update — 2026-08-29.</strong> The corrected 50-step round with clean-protocol adjudication has since moved
+    the picture: WebShop is a statistical tie on the 488 untouched test goals (greedy 0.301 GRPO / 0.296 ours / 0.290
+    ours+cc-norm, gaps ≤ 1 SE); ALFWorld splits by seed (seed 0: ours 0.27 in-training vs GRPO 0.066 clean; seed 1 leans
+    GRPO); ScienceWorld leans GRPO. The §05c diagnostic explains the pattern — the context term is structurally inert on
+    sparse ALFWorld at this success level — and probes showed think-then-score lifts ALFWorld base success 2.4× while
+    hurting the other envs. On that basis all six GPUs were redirected (user directive) to the §05d matched-scale run:
+    our estimator inside verl-agent with free generation and the chain-of-thought trained by the RL gradient, in Docker
+    on the Blackwell cards, 150 steps; the GRPO baseline follows in the identical configuration. That run — not the
+    stratified rerun — is now the blocking experiment.</p>
+  </div>
+</section>
+
+<div class="foot">
+  Method note accompanying <span class="mono">experiments/08-26</span>. Every figure quoted here comes from a logged run in that directory; raw JSON, tables and plots sit alongside. WebShop uses a BM25 retriever in place of pyserini/Lucene, so its absolute success rates are not comparable to published WebShop numbers and are never reported as such.
+</div>
+
+</div>
+
+</body></html>
