@@ -110,7 +110,12 @@ DEFAULTS = {
     "gamma": 0.95,
     "step_advantage_w": 1.0,
     "adv_mode": "mean_std_norm",        # both advantage terms, same convention
-    "total_epochs": 100,
+    # 50, not the reference's 100. Arms cannot run in parallel here, so the budget
+    # buys either one finished arm or two comparable ones -- and a comparison at a
+    # common step count is fair, while a finished arm against a truncated one is
+    # not. gigpo-repro-20260906 was launched at 100 and is stopped at 50 for the
+    # same reason; its config.json records 100, its NOTES the step it was cut at.
+    "total_epochs": 50,
     "test_freq": 5,
     "save_freq": 5,
 
