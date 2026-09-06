@@ -493,7 +493,14 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
             _bhash = hashlib.sha1(str(_bkey).encode()).hexdigest()[:10]
             F = PHI[idx] if PHI is not None else \
                 np.stack([phi(anchor_obs[i], ctx[i]) for i in idx])
-            D = np.sqrt(np.maximum(((F[:, None, :] - F[None, :, :]) ** 2).sum(-1), 0.0))
+            # Gram identity rather than the (n, n, d) broadcast difference: the
+            # episode-start observation is shared by every trajectory in a task, so
+            # that bucket holds all of them, and with a 1536-d hidden-state phi the
+            # broadcast form allocates n^2 * d floats -- 200 MB at n=128 and 3 GB at
+            # n=500, which the similarity gate makes reachable. Exact, not an
+            # approximation: ||u-v||^2 = ||u||^2 + ||v||^2 - 2 u.v.
+            _sq = (F * F).sum(1)
+            D = np.sqrt(np.maximum(_sq[:, None] + _sq[None, :] - 2.0 * (F @ F.T), 0.0))
             off = D[np.triu_indices(len(idx), 1)]
             tau = float(np.median(off)) if off.size and np.median(off) > 1e-9 else 1.0
             tau *= max(tau_scale, 1e-6)
