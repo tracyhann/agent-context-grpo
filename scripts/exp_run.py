@@ -376,15 +376,20 @@ def main():
     log = os.path.join(exp_dir, "outputs", "train.log")
     full = dict(os.environ, **env)
     with open(log, "ab", buffering=0) as fh:
+        # start_new_session detaches the run from the launching shell's process
+        # group, so a training run that takes hours is not killed by whatever
+        # started it going away.
         p = subprocess.Popen([cfg["venv_python"]] + argv[1:], cwd=os.path.join(ROOT, "verl-agent"),
-                             env=full, stdout=fh, stderr=subprocess.STDOUT)
+                             env=full, stdout=fh, stderr=subprocess.STDOUT,
+                             start_new_session=True)
     with open(os.path.join(exp_dir, "outputs", "train.pid"), "w") as fh:
         fh.write(str(p.pid))
     print(f"[exp] launched pid {p.pid}, log -> {log}")
     if not a.no_plot:
         subprocess.Popen([cfg["venv_python"], os.path.join(ROOT, "scripts", "plot_metrics.py"),
                           "--exp", exp_dir, "--watch"],
-                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                         start_new_session=True)
         print("[exp] plot watcher started")
 
 
