@@ -97,10 +97,10 @@ it triggers on *plateau*, not on being behind schedule, so this is a manual call
 
 **Tracking — `ccpo-long-20260906`, held-out (128 fixed episodes):**
 
-| step | 5 | 10 | 15 | 20 | 25 | 30 | 35 | 40 | 45 | 50 | 55 | 60 |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| success | .0625 | .0781 | .1250 | .1719 | .2422 | .2500 | .3047 | .3438 | .2891 | **.4219** | .4141 | .4141 |
-| partial | .226 | .386 | .454 | .803 | 1.043 | 1.278 | 1.475 | 1.821 | 1.391 | **2.371** | 2.152 | 2.038 |
+| step | 5 | 10 | 15 | 20 | 25 | 30 | 35 | 40 | 45 | 50 | 55 | 60 | 65 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| success | .0625 | .0781 | .1250 | .1719 | .2422 | .2500 | .3047 | .3438 | .2891 | .4219 | .4141 | .4141 | **.5703** |
+| partial | .226 | .386 | .454 | .803 | 1.043 | 1.278 | 1.475 | 1.821 | 1.391 | 2.371 | 2.152 | 2.038 | **3.178** |
 
 (Steps 5–20 are `ccpo-mem`; 25+ are the warm-started continuation. Same config, same
 constant LR, so the series is one curve.)
@@ -147,6 +147,22 @@ would be a decline rather than a plateau, and partial credit falling for a fourt
 consecutive evaluation would corroborate it. In that case kill immediately rather
 than waiting for step 90; early stopping fires on plateau, and a decline is worse
 than a plateau.
+
+> **Resolved at step 65: 0.5703.** The kill criterion was 0.39; actual came in
+> +0.156 above the plateau, ~4 SE. Continuing was correct.
+>
+> **The lesson worth keeping is about this curve's shape, not about this call.**
+> It has now flattened or fallen and resumed *three* times — step 30 (+.008), step
+> 45 (−.055), steps 55–60 (flat for 15 steps). Every one looked like a plateau in
+> the moment and none was. On a 128-episode held-out with SE ≈ 0.04, a 10–15 step
+> flat window is simply not resolvable from noise, so **plateau calls on this setup
+> need ~20+ steps of evidence, not 15.** Early stopping's patience of 8 evaluations
+> (40 steps) is correctly sized; my instinct to look at 15 was not.
+>
+> Also worth recording: partial credit declined across the plateau (2.371 → 2.152 →
+> 2.038) and I weighted that as corroborating evidence because it is the less noisy
+> indicator. It then jumped to 3.178. Being less noisy than a noisy thing does not
+> make it a reliable leading indicator over three points.
 
 **One caution against reading the increments too finely:** at p≈0.3 with n=128 the
 binomial SE is 0.040, so any single step-to-step move under ~0.08 is inside noise.
