@@ -459,6 +459,7 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
 
     adv = np.zeros(n, dtype=np.float64)
     lam_all, neff_all, w_all, _rec = [], [], [], []
+    _rel_all, _rel_slope = [], []
     _eff_all = []
     _dump = os.environ.get("ACG_CCPO_DUMP")
     _rows = [] if _dump else None
@@ -543,6 +544,24 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
             off = D[np.triu_indices(len(idx), 1)]
             tau = float(np.median(off)) if off.size and np.median(off) > 1e-9 else 1.0
             tau *= max(tau_scale, 1e-6)
+
+            # ---- grouping relevance: does phi-distance predict return distance? -
+            # lambda only detects whether phi shifts the MEAN of the baseline, so a
+            # phi that genuinely orders neighbours by similarity but happens not to
+            # move that mean reads as zero signal. This is the direct question, per
+            # bucket, over the pairs that actually feed the estimator: if phi is
+            # informative, pairs that are close in phi should differ less in target.
+            # Reward-free in the sense that matters -- it is a DIAGNOSTIC, never fed
+            # back into the weights, so the leave-one-out argument is untouched.
+            if len(idx) > 3:
+                _iu = np.triu_indices(len(idx), 1)
+                _dp = D[_iu]
+                _gp = np.abs(TGT[np.asarray(idx)][_iu[0]] - TGT[np.asarray(idx)][_iu[1]])
+                if _dp.std() > 1e-9 and _gp.std() > 1e-9:
+                    _rel_all.append(float(np.corrcoef(_dp, _gp)[0, 1]))
+                    # variance of the target explained by phi-distance, within bucket
+                    _sl = np.polyfit(_dp, _gp, 1)[0]
+                    _rel_slope.append(float(_sl))
 
             for a in todo:
                 i = idx[a]
@@ -743,6 +762,13 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
         lam_pooled=(float(lam_pooled) if lam_pooled is not None else float('nan')),
         # what each rule WOULD give on this batch, whichever is in force
         lam_pooled_obs=float(_lam_pooled_obs), tau2=float(_tau2),
+        # grouping relevance: corr(phi distance, |target difference|) within a
+        # bucket, averaged over buckets. >0 means phi-similar pairs really do have
+        # more similar targets -- the method's premise, measured directly and
+        # independently of whether phi moves the baseline's mean.
+        phi_rel_corr=float(np.mean(_rel_all)) if _rel_all else float("nan"),
+        phi_rel_gt0=float(np.mean(np.array(_rel_all) > 0)) if _rel_all else float("nan"),
+        phi_rel_slope=float(np.mean(_rel_slope)) if _rel_slope else float("nan"),
         lam_eb_obs=float(np.mean(_lam_eb_obs)),
         lam_eb_obs_gt0=float(np.mean(_lam_eb_obs > 0)),
         n_eff_mean=float(np.mean(neff_all)) if neff_all else 0.0,

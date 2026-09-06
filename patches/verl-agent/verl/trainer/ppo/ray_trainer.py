@@ -422,6 +422,7 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
                       'lvl1_frac', 'n_buckets', 'effect_mean', 'effect_p90',
                       'effect_rel', 'r_vs_gigpo', 'r_vs_g2po', 'acc_len_corr', 'lam_pooled',
                       'lam_pooled_obs', 'lam_eb_obs', 'lam_eb_obs_gt0',
+                      'phi_rel_corr', 'phi_rel_gt0', 'phi_rel_slope', 'tau2',
                       'rho', 'edge_cov')
         _m = {f'ccpo/{k}': float(diag[k]) for k in _diag_keys
               if k in diag and diag[k] is not None}

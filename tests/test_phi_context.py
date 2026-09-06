@@ -21,6 +21,13 @@ import importlib
 import os
 import sys
 
+import os as _os
+# OpenBLAS sizes its thread pool from nproc; alongside a training run the
+# cgroup pid budget is spent and `import numpy` itself fails in
+# blas_thread_init. Same ceiling that shapes the ray and tokenizer configs.
+_os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+_os.environ.setdefault("OMP_NUM_THREADS", "1")
+
 import numpy as np
 import torch
 

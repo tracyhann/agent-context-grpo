@@ -15,6 +15,8 @@ sys.path.insert(0, os.path.join(ROOT, "docker", "fa_stub"))
 # The Rust tokenizer builds a rayon pool sized from nproc; on a box whose cgroup
 # pid budget is already spent by a training run that fails outright.
 os.environ.setdefault("RAYON_NUM_THREADS", "1")
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+os.environ.setdefault("OMP_NUM_THREADS", "1")
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 from agent_system.memory.compact import (DIGEST_FOOTER, DIGEST_HEADER,  # noqa: E402
                                          build_digest)
