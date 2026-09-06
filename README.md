@@ -68,6 +68,16 @@ uses, and the one under which verl's GRPO arm is also unit-variance.
   carries every downstream accident of one trajectory, so conditioning the
   *baseline* on context cannot remove noise that lives in the *target*. This is
   the largest available change and it is **unmeasured**.
+- `ACG_CCPO_PHI=hidden+ctx` — φ conditioned on **both** observation and
+  trajectory context, which is what E4 asks for and what plain `hidden` does not
+  deliver. Inside a bucket the observation is constant by construction, and the
+  prompt carries only `step_count` plus the most recent `history_length` (2) turns,
+  so the reference policy's hidden state can separate "step 5 from step 15" but not
+  "has this agent already searched here twice". `n_unique`, `revisit` and
+  `progress` summarise the whole episode and appear nowhere in the prompt unless
+  compaction is on — which is the likeliest reason "frozen φ + memory" was the only
+  arm that ever beat GRPO. `tests/test_phi_context.py` measures the difference on a
+  fixture where returns depend on context: `effect_rel` 0.0007 → 0.0169.
 - `ACG_CCPO_SHRINK=eb_hier` — hierarchical empirical Bayes. The shipped `eb`
   rule tests each occurrence's disagreement against *its own* sampling noise, a
   test with about two degrees of freedom that measured **λ = 0.000 on every
@@ -258,7 +268,8 @@ Key environment variables (all with defaults in the launcher):
 | `ACG_KL_COEF` | 0.01 | KL loss coefficient |
 | `ACG_EPOCHS` | 75 | training steps |
 | `ACG_CCPO_DUMP` | — | path for per-sample diagnostics CSV |
-| `ACG_CCPO_PHI` | `hidden` | affinity metric: reference-policy hidden state, or `bow` |
+| `ACG_CCPO_PHI` | `hidden` | affinity metric: `hidden`, `hidden+ctx` (hidden state ‖ thermometer-coded trajectory context), or `bow` |
+| `ACG_CCPO_CTX_W` | 1.0 | weight on the context block in `hidden+ctx` |
 | `ACG_CCPO_WHITEN` | 3 | principal directions removed before distances |
 | `ACG_CCPO_RHO` | 0.59 | confidence in the metric, `2(AUC−0.5)`; 0 ⇒ exact uniform-baseline fallback |
 | `ACG_CCPO_SHRINK` | `eb` | shrinkage rule: `eb_hier` (hierarchical EB, preferred), `eb_pooled`, `eb` (measured inert), `mse` (superseded) |

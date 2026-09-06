@@ -59,7 +59,19 @@ _SHRINK = os.environ.get("ACG_CCPO_SHRINK", "eb").lower()
 # Leakage control: with all action strings stripped from the context the same
 # encoder still scores 0.655-0.688, so this is state inference, not the previous
 # step's admissible set leaking through action names.
+# "hidden+ctx" concatenates the whitened hidden state with the thermometer-coded
+# trajectory context. This is what E4 actually asks for -- phi must be a function
+# of BOTH observation and context -- and the plain "hidden" mode does not satisfy
+# it. Inside a bucket the observation is constant by construction, and the prompt
+# carries only step_count plus the most recent `history_length` (2) turns, so a
+# hidden state can separate "step 5 vs step 15" but not "has this agent already
+# searched here twice". n_unique, revisit and progress summarise the WHOLE episode
+# and appear nowhere in the prompt unless compaction is on.
 _PHI_MODE = os.environ.get("ACG_CCPO_PHI", "hidden").lower()
+
+# Weight on the context block when it is concatenated onto the hidden state. Both
+# blocks are L2-normalised first, so this is a genuine mixing ratio.
+_CTX_W = float(os.environ.get("ACG_CCPO_CTX_W", "1.0"))
 
 # Number of principal directions removed before distances are taken. Decoder-LM
 # embeddings are anisotropic: the leading directions encode register ("this is
@@ -455,11 +467,28 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
     # corpus-level register, and estimating them inside a 4-member bucket would
     # delete the very variation the gate is meant to see.
     PHI = None
-    if _PHI_MODE == "hidden" and phi_feats is not None:
+    if _PHI_MODE.startswith("hidden") and phi_feats is not None:
         _pf = phi_feats.detach().float().cpu().numpy() if hasattr(phi_feats, "detach") \
             else np.asarray(phi_feats, dtype=float)
         if _pf.ndim == 2 and _pf.shape[0] == n:
             PHI = whiten_feats(_pf)
+            if _PHI_MODE == "hidden+ctx" and _CTX_W > 0:
+                # The trajectory context the prompt cannot carry: how many distinct
+                # states this rollout has seen, whether it is standing somewhere it
+                # has already been, and how much of its turn budget bought progress.
+                # Thermometer-coded so phi-distance is monotone in context distance;
+                # hashing "t1"/"t15"/"t28" would send them to unrelated buckets.
+                _p = FrozenPhi()
+                _c = np.stack([np.concatenate([
+                    _p._thermo(ctx[i]["t"], 0, 30),
+                    _p._thermo(ctx[i]["n_unique"], 0, 25),
+                    _p._thermo(ctx[i]["progress"], 0.0, 1.0),
+                    np.array([float(ctx[i]["revisit"] > 0)]),
+                ]) for i in range(n)])
+                _cn = np.maximum(np.linalg.norm(_c, axis=1, keepdims=True), 1e-9)
+                PHI = np.concatenate([PHI, _CTX_W * (_c / _cn)], axis=1)
+                _pn = np.maximum(np.linalg.norm(PHI, axis=1, keepdims=True), 1e-9)
+                PHI = PHI / _pn
 
     # ---- reference estimators on the SAME batch, for the diagnostics --------
     # GiGPO: uniform, self-inclusive mean over the EXACT anchor bucket, on the
@@ -721,7 +750,7 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
         live_frac=float(_live.mean()), live_mask=_live,
         n_buckets=len(_exact),
         lvl1_frac=float((level_of == 1).mean()),
-        phi_mode=("hidden" if PHI is not None else "bow"), rho=rho,
+        phi_mode=(_PHI_MODE if PHI is not None else "bow"), rho=rho,
         target=target, sim=sim, sim_backoff=sim_backoff,
         edge_w=edge_w, edge_cov=edge_cov,
         acc_len_corr=_corr_len,
