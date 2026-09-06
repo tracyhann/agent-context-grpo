@@ -40,6 +40,38 @@ before the action exists.
 
 ## Open — ranked by expected value
 
+### [ ] H-F. The harness plateaus far below published, and we do not know why
+
+**The elephant.** Every arm run here sits at 5-10% training success and 0.06-0.21
+held-out, while published GiGPO reports **90.16** on this exact model and protocol.
+
+`ccpo-mem-20260906` solved, per step of 128: 4, 10, 9, 5, 9, 5, 3 — flat-to-noisy,
+not climbing. `ccpo-ctx` was the same shape (7, 9, 15, 9, 7). Held-out 0.0625 at
+step 5 here; 0.070 there; the earlier hardened-prompt GiGPO arm managed 0.195 at
+step 5 and 0.211 at step 10, then flattened.
+
+**I have been assuming this is a budget artifact** — published runs train 100-150
+steps and ours reach 5-20. That may be right; ALFWorld curves can be slow to lift.
+But it is an assumption, not a measurement, and it undercuts everything else:
+a harness stuck near the floor may simply not exercise the credit-assignment
+differences these arms exist to test. An estimator cannot show its worth on a
+policy that solves nothing.
+
+**Candidate causes, none tested:**
+* genuinely needs 100-150 steps (the benign reading)
+* something in the config still differs from the reference in a way that matters —
+  the deltas we know about are hardware-forced (sdpa vs flash-attn is now closed,
+  4 GPUs vs 8, tp=1 vs 2), but "known deltas are benign" has not been verified
+* the reference prompt underperforms on this model — the hardened prompt reached
+  0.195 at step 5 against 0.062-0.070 here, though that comparison is confounded
+  with the estimator
+* evaluation protocol mismatch we have not spotted
+
+**Cheapest discriminating test:** one arm to step 30-40 and look at the shape. If
+it lifts, budget. If it stays flat, the harness. Nothing else here is worth
+trusting until this is settled — including the refutation, which was measured on
+a policy that never got off the floor.
+
 ### [ ] H-C. The learned successor-feature φ — now the only surviving route, and a long shot
 
 **Reprioritised down, not up.** Five φ variants — the policy's hidden state,
