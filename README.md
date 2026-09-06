@@ -297,10 +297,16 @@ Both run on CPU except where noted; they guard behaviour that is easy to break
 silently.
 
 ```bash
-python tests/test_phi_hidden.py     # needs 1 GPU for the second half
-python tests/test_digest_trim.py
-python tests/test_g2po_port.py      # test 1 needs baselines/G2PO checked out
+python tests/test_g2po_port.py      # CPU; test 1 needs baselines/G2PO checked out
+python tests/test_digest_trim.py    # CPU
+python tests/test_phi_hidden.py     # 1 GPU for the second half
+python tests/test_phi_packed.py     # 1 GPU; packed vs padded phi capture
 ```
+
+All four run alongside a live training job. They pin `RAYON_NUM_THREADS=1`
+because the Rust tokenizer otherwise sizes its pool from `nproc` (256 here) and
+dies with `ThreadPoolBuildError` once a run has spent the cgroup's pid budget.
+Model paths resolve from `HF_HOME`, or `ACG_TEST_CKPT` to override.
 
 `test_phi_hidden.py` checks that whitening recovers a state direction hidden
 beneath higher-variance nuisance directions, that a discriminating φ removes the
@@ -314,6 +320,12 @@ sample without any visible error.
 `test_digest_trim.py` checks the prompt-overflow path: that the digest
 delimiters hold and that trimming never touches the task description, the
 current observation or the admissible-action list.
+
+`test_phi_packed.py` checks that the affinity features extracted from a packed
+batch (`use_remove_padding=True`) are the same vectors the padded path gives.
+The last prompt token has no fixed offset once sequences are packed, so it is
+located through the `indices` from `unpad_input`; an off-by-one there would hand
+every sample another sample's features with no visible error.
 
 ## Operational note
 

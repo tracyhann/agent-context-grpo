@@ -12,6 +12,11 @@ that would silently misattribute every affinity vector if it were off by one.
 import os
 import sys
 
+# The Rust tokenizer builds a rayon pool sized from nproc; on a box whose
+# cgroup pid budget is already spent by a training run that fails outright.
+os.environ.setdefault("RAYON_NUM_THREADS", "1")
+os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+
 import numpy as np
 import torch
 

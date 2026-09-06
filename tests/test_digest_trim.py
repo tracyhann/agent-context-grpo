@@ -6,14 +6,32 @@ needs a full trainer config; this reproduces its string surgery verbatim on a
 real digest with a real tokenizer, which is the part that can silently corrupt
 the prompt. Run on CPU inside acg_persist.
 """
+import os
 import sys
 
-sys.path.insert(0, "/DATA/tracy/agentic-context-grpo/verl-agent")
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(ROOT, "verl-agent"))
+sys.path.insert(0, os.path.join(ROOT, "docker", "fa_stub"))
+# The Rust tokenizer builds a rayon pool sized from nproc; on a box whose cgroup
+# pid budget is already spent by a training run that fails outright.
+os.environ.setdefault("RAYON_NUM_THREADS", "1")
+os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 from agent_system.memory.compact import (DIGEST_FOOTER, DIGEST_HEADER,  # noqa: E402
                                          build_digest)
 
-MODEL = ("/DATA/tracy/hf/hub/models--Qwen--Qwen3-1.7B/snapshots/"
-         "70d244cc86ccca08cf5af4e1e306ecf908b1ad5e")
+def _model_path():
+    """The base model this repo trains, or ACG_TEST_CKPT to point elsewhere."""
+    env = os.environ.get("ACG_TEST_CKPT")
+    if env:
+        return env
+    snap = os.path.join(os.environ.get("HF_HOME", os.path.join(ROOT, "hf")), "hub",
+                        "models--Qwen--Qwen2.5-1.5B-Instruct", "snapshots")
+    if os.path.isdir(snap):
+        return os.path.join(snap, sorted(os.listdir(snap))[0])
+    return "Qwen/Qwen2.5-1.5B-Instruct"
+
+
+MODEL = _model_path()
 
 
 def main():

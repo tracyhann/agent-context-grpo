@@ -14,6 +14,11 @@ Needs one GPU and flash-attn; skips otherwise.
 import os, sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path[:0]=[ROOT, os.path.join(ROOT,"verl-agent")]
+# The Rust tokenizer builds a rayon pool sized from nproc; on a box whose
+# cgroup pid budget is already spent by a training run that fails outright.
+os.environ.setdefault("RAYON_NUM_THREADS", "1")
+os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+
 import torch
 
 try:
