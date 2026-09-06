@@ -59,7 +59,7 @@ before the action exists.
 
 ## Open — ranked by expected value
 
-### [ ] H-I. Will 100 steps actually close the gap? — prediction on record, 2026-09-06
+### [~] H-I. Will 100 steps actually close the gap? — prediction on record, 2026-09-06
 
 Stated **before** `ccpo-long-20260906` reports, so it cannot be rewritten after.
 
@@ -92,6 +92,39 @@ turn by turn.
 0.45–0.70 landing is live. If step 60 is still under 0.25, kill the run rather than
 spend the remaining 4 h — early stopping is armed at step 60 with patience 8, but
 it triggers on *plateau*, not on being behind schedule, so this is a manual call.
+
+---
+
+**Tracking — `ccpo-long-20260906`, held-out (128 fixed episodes):**
+
+| step | 5 | 10 | 15 | 20 | 25 | 30 | 35 | 40 |
+|---|---|---|---|---|---|---|---|---|
+| success | .0625 | .0781 | .1250 | .1719 | .2422 | .2500 | .3047 | **.3438** |
+| partial | .226 | .386 | .454 | .803 | 1.043 | 1.278 | 1.475 | **1.821** |
+
+(Steps 5–20 are `ccpo-mem`; 25+ are the warm-started continuation. Same config, same
+constant LR, so the series is one curve.)
+
+**Step-40 checkpoint: comfortably ahead of schedule.** The marker was ~0.25 by step
+40; actual is **0.3438**, and the step-60 marker of ~0.35 is nearly met twenty steps
+early. Eight consecutive evaluations, every one higher than the last.
+
+The `< 0.25` branch — the one that would have refuted "under-trained" and made every
+φ result in this file provisional — is now **dead**. That was the branch worth
+worrying about, and it did not happen.
+
+**My 0.45–0.70 band now looks conservative,** and I want that on record before the
+answer arrives rather than after. Naive linear continuation of the last four
+evaluations (~+0.045 per 5 steps) reaches ~0.85 by step 100, which I do not believe —
+success curves saturate, and the remaining tasks are the compositional ones that
+convert last. But the honest statement is that the band's *upper* half is the live
+region, not its middle. I am not revising the prediction; a band you move once it
+starts resolving is not a prediction.
+
+**One caution against reading the increments too finely:** at p≈0.3 with n=128 the
+binomial SE is 0.040, so any single step-to-step move under ~0.08 is inside noise.
+The step-30 flat point (+0.008) was noise and resolved as such at step 35. What
+carries weight here is the monotone run of eight, not any one increment.
 
 
 > **Scheduling decision, 2026-09-06, following H-H below.** The remaining budget
