@@ -142,6 +142,23 @@ At 128 + 128 actors the run reached 8165/8192 threads and died. At 128 + 64 it f
 **Consequence: arms cannot run in parallel on this box** — two arms would need
 ~384 actors. Runs are sequential, each on all available GPUs.
 
+**Memory must be budgeted in tokens, not sequences.** With `use_remove_padding`
+a micro-batch counted in sequences has unbounded token count: as responses lengthen
+during training the same 32 sequences carry more tokens, and the peak grows with
+them. Sampling `nvidia-smi` during the update measured **86.5 GB of 95.6 GiB (88%)**
+five steps in, with responses still at their initial ~54 tokens — an OOM waiting to
+happen twenty steps later. `use_dynamic_bsz=True` with `ppo_max_token_len_per_gpu`
+caps the peak whatever the responses do, and is on by default.
+
+Do not judge this from verl's `perf/max_memory_reserved_gb`: it is an aggregate
+across pools and read 103.8 against a 102.6 GB card, which is both above capacity
+and not actionable. Sample the device instead:
+
+```bash
+while true; do nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits \
+  | sort -rn | head -1; sleep 15; done
+```
+
 **A cold start looks exactly like a hang.** The first `generate()` call compiles the
 model and captures CUDA graphs for every vLLM engine. With four engines that pins
 the GPUs at 100% for several minutes and writes nothing to the log — and it cost one

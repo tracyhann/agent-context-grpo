@@ -51,18 +51,18 @@ DEFAULTS = {
     # tokens, so the same 32 OOMs in the BACKWARD pass while being fine for the
     # forward-only log-prob passes. Measured: 32 OOMs in update_actor
     # ("Tried to allocate 9.27 GiB"), 32 is fine for old_log_prob and ref.
-    # Available but OFF by default, and the default matters: every arm must use the
-    # same setting or the comparison is not fair.
+    # ON, and every arm must keep it on or the comparison is not fair.
     #
-    # With packing, a micro-batch counted in SEQUENCES has unbounded token count --
-    # as responses lengthen the same 32 sequences carry more tokens. verl's
-    # perf/max_memory_reserved_gb read 103.8 against a 102.6 GB card at step 3,
-    # which looks like the ceiling; it is not, it is an aggregate across pools.
-    # Sampling nvidia-smi directly during the update showed the true per-GPU peak
-    # well under that. Turn this on (with the token caps below) if the peak watch
-    # in experiments/README.md actually approaches the card, and then rerun every
-    # arm with it.
-    "dynamic_bsz": False,
+    # With packing, a micro-batch counted in SEQUENCES has unbounded token count:
+    # as responses lengthen during training the same 32 sequences carry more
+    # tokens, and memory grows with them. Sampling nvidia-smi directly during the
+    # update measured a per-GPU peak of 86.5 GB of 95.6 GiB -- 88% -- five steps in,
+    # with responses still at their initial ~54 tokens. Budgeting TOKENS instead
+    # bounds the peak whatever the responses do, which is what use_dynamic_bsz is
+    # for. (verl's own perf/max_memory_reserved_gb is an aggregate across pools and
+    # read 103.8 against a 102.6 GB card, so it cannot be used for this judgement;
+    # the nvidia-smi peak watch in experiments/README.md can.)
+    "dynamic_bsz": True,
     "ppo_max_token_len_per_gpu": 12288,        # update: forward + backward
     "log_prob_max_token_len_per_gpu": 24576,   # forward only
     # These ARE the values gigpo-repro-20260906 ran with. Defaults, not flags, so a
@@ -103,7 +103,7 @@ DEFAULTS = {
     # vLLM reserves this fraction of the card up front and holds it for the whole
     # run. It only needs KV cache for ~32 concurrent generations of <=512 tokens;
     # everything else is better left to the trainer's backward pass.
-    "gpu_mem_util": 0.35,
+    "gpu_mem_util": 0.25,
     "lr": 1e-6,
     "kl_loss_coef": 0.01,
     "kl_loss_type": "low_var_kl",
