@@ -40,6 +40,68 @@ before the action exists.
 
 ## Open — ranked by expected value
 
+### [x] H-H. **The variance budget — how much is on the table for *any* φ**
+
+Before spending another GPU arm on a better encoder, measure the ceiling. All of
+H-C/H-D/H-E/H-G are attempts to make φ predict target-similarity better; none of
+them can beat the amount of target variance that is *conditionable in principle*.
+
+**Experiment** `analysis/variance-budget` (offline, CPU, on the
+`ccpo-mem-20260906` dump: 90,728 rows, steps 1–16, 4,855 buckets with J≥3).
+
+Decompose the target's variance against the bucket gate:
+
+| component | var | share of total |
+|---|---|---|
+| between-bucket (bucket means) | 0.2856 | 0.557 |
+| within-bucket | 0.2274 | **0.443** |
+
+The uniform bucket baseline `b_obs` already removes the between-bucket 55.7%.
+The 44.3% within-bucket is everything CCPO's context conditioning is competing for.
+
+Now split the within-bucket part by trajectory. ICC(trajectory), against a null
+that permutes trajectory labels *within* each bucket at matched group sizes:
+
+```
+buckets with >=2 distinct trajectories : 1204
+ICC real  mean +0.0221   median +0.0250
+ICC null  mean -0.1005   median -0.0200     (small-k bias, matched by construction)
+bias-corrected ICC = real - null = +0.1226   (real 95% CI +/- 0.0387)
+```
+
+**Confound checked, and it does not explain the result.** Two occurrences in the
+same trajectory share their future, so targets would cluster by trajectory
+mechanically. But same-trajectory *revisits* of the same bucket still carry
+var 0.1579, against between-trajectory var 0.2759 (one occurrence sampled per
+trajectory, so no two points share a trajectory). The ICC is neither degenerate
+nor purely shared-future — 56% of occurrences per (bucket, trajectory) are
+repeats, mean 4.17.
+
+**Conclusion — the ceiling, and it is low.**
+
+```
+conditionable share of total target variance  ~=  0.1226 x 0.443  =  0.054
+what the current phi actually captures        ~=  phi_rel_corr^2 =  0.0009
+```
+
+So there is real structure — the signal is **~60x larger than what φ currently
+extracts**, which says the estimator is *encoder-limited, not signal-limited*, and
+that is the strongest argument H-C has ever had.
+
+But the oracle is **5.4% of target variance**. Even a perfect trajectory-level φ
+buys a ~5% variance reduction on the step term, which is itself one of two
+advantage components. That is not a SOTA-sized lever, and it retroactively
+explains λ = 0.000 across every variant tried: **the shrinkage is correct.** There
+is almost nothing to shrink toward, and the estimator has been reporting that
+faithfully for 15 steps while I looked for a bug in it.
+
+**This bounds every remaining φ hypothesis.** H-C, H-D and H-G are all competing
+for the same 5.4%. They should be ranked below anything that changes the *other*
+advantage term or the harness, and H-C is worth at most one arm — as a
+measurement of how much of the 5.4% a learned encoder recovers, not as a
+SOTA attempt.
+
+
 ### [ ] H-G. The relevance signal is heavy-tailed across buckets, not uniformly absent
 
 **Observation, seven steps of `ccpo-mem-20260906`.** The mean `phi_rel_corr` is
