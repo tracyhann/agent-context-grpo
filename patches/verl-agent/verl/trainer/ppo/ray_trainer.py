@@ -385,6 +385,8 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
               f"acc_len_r={diag.get('acc_len_corr', float('nan')):.3f} "
               f"effect={diag.get('effect_mean', float('nan')):.4f} "
               f"effect_rel={diag.get('effect_rel', float('nan')):.3f} "
+              f"phi_rel={diag.get('phi_rel_corr', float('nan')):+.4f} "
+              f"tau2={diag.get('tau2', float('nan')):.6f} "
               f"r_vs_gigpo={diag.get('r_vs_gigpo', float('nan')):.4f} "
               f"r_vs_g2po={diag.get('r_vs_g2po', float('nan')):.4f}", flush=True)
         # Step-term scaling. 'mode' (default) follows the episode term:
