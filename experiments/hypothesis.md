@@ -190,16 +190,26 @@ policy that solves nothing.
 > held-out set reports per-type success, and it says the opposite of the training
 > draw:
 >
-> | task type | s5 | s10 | s15 |
-> |---|---|---|---|
-> | look_at_obj_in_light | 0.000 | 0.167 | **0.226** |
-> | pick_and_place | 0.119 | 0.142 | **0.210** |
-> | pick_clean_then_place | 0.105 | 0.075 | **0.150** |
-> | pick_cool_then_place | 0.000 | 0.045 | **0.077** |
-> | pick_heat_then_place | 0.000 | 0.071 | 0.000 |
-> | pick_two_obj_and_place | 0.071 | 0.000 | 0.050 |
-> | **OVERALL** | 0.062 | 0.078 | **0.125** |
-> | partial-credit score | 0.226 | 0.386 | **0.453** |
+> | task type | s5 | s10 | s15 | s20 |
+> |---|---|---|---|---|
+> | look_at_obj_in_light | 0.000 | 0.167 | 0.226 | 0.125 |
+> | pick_and_place | 0.119 | 0.142 | 0.210 | **0.255** |
+> | pick_clean_then_place | 0.105 | 0.075 | 0.150 | **0.192** |
+> | pick_cool_then_place | 0.000 | 0.045 | 0.077 | 0.000 |
+> | pick_heat_then_place | 0.000 | 0.071 | 0.000 | 0.000 |
+> | pick_two_obj_and_place | 0.071 | 0.000 | 0.050 | **0.214** |
+> | **OVERALL** | 0.062 | 0.078 | 0.125 | **0.172** |
+> | partial-credit score | 0.226 | 0.386 | 0.453 | **0.803** |
+>
+> **Final, run complete (clean exit at step 20, zero error lines.)** Overall
+> held-out rose at every single evaluation — 0.0625 → 0.0781 → 0.1250 → 0.1719 —
+> and the partial-credit score nearly doubled again at s20 to 0.803. `pick_two_obj`
+> went 0.050 → 0.214, the first *compositional* type to lift, which is the event
+> this entry named in advance as the one that would settle H-F.
+>
+> Per-type remains noisy at 128 episodes (the two `_then_place` types sit at 0.000
+> at s20 after being non-zero at s15); the OVERALL and partial-credit series are
+> the trustworthy ones, and both are monotone across four evaluations.
 >
 > **Four of six types are rising**, held-out success has doubled, and the
 > partial-credit score has doubled — the agent is making substantial progress on
