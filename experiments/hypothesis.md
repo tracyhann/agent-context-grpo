@@ -40,6 +40,42 @@ before the action exists.
 
 ## Open — ranked by expected value
 
+### [ ] H-G. The relevance signal is heavy-tailed across buckets, not uniformly absent
+
+**Observation, seven steps of `ccpo-mem-20260906`.** The mean `phi_rel_corr` is
+**+0.024**, yet the fraction of buckets with positive correlation averages **42%**
+— consistently *below* the 50% chance rate, at every step but one.
+
+Those two facts are only consistent if the distribution is **heavy-tailed**: a
+minority of buckets where φ predicts target-distance strongly, pulling the mean up,
+against a majority that are flat or slightly negative. The signal is not uniformly
+absent — it is concentrated.
+
+| step | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
+|---|---|---|---|---|---|---|---|
+| `phi_rel_corr` | −0.010 | +0.002 | +0.060 | +0.038 | +0.009 | −0.006 | +0.074 |
+| buckets > 0 | 42% | 41% | 51% | 46% | 40% | 36% | 41% |
+
+**Why this matters for H-A.** Every shrinkage rule tried so far asks a
+*batch-level* question — `eb_pooled` and `eb_hier` estimate `tau^2` over the whole
+batch, and `eb` asks a per-occurrence question but through the underpowered
+mean-shift test. None asks "is φ relevant *in this bucket*". If relevance is
+concentrated, a batch-level estimate averages it away, and a per-occurrence
+mean-shift test cannot detect it in the few trajectories a bucket holds.
+
+**Proposed:** `λ_bucket` driven by that bucket's own `phi_rel_corr` — a direct
+estimate of grouping relevance rather than an indirect one via the baseline's mean.
+This is the sharpest form of the original H-A idea.
+
+**Honest caveat before anyone builds it.** A bucket of ~9 members gives ~36 pairs,
+so the per-bucket correlation is itself noisy, and selecting the buckets that look
+relevant *by the same statistic that then sets their weight* is a garden-of-forking-
+paths risk — the selection would capitalise on noise. It needs a held-out split
+within the bucket, or a permutation test per bucket, before it can be trusted.
+**Do not ship it on the strength of this observation alone.**
+
+Also blocked by H-F: measured on a policy stuck near the floor.
+
 ### [ ] H-F. The harness plateaus far below published, and we do not know why
 
 **The elephant.** Every arm run here sits at 5-10% training success and 0.06-0.21
