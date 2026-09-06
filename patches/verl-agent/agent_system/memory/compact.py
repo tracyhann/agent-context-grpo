@@ -89,7 +89,11 @@ def build_digest(records: Sequence[Dict[str, Any]],
             slot["order"] = order  # most recent occurrence decides recency
 
     entries = list(merged.values())
-    # informative first, then most recent first
+    # EVICTION priority: informative before no-effect, recent before old. This
+    # decides what survives the budget, NOT the order it is shown in -- the two are
+    # different concerns and conflating them meant the agent read its own history
+    # backwards, most recent action first, which inverts the causality of a
+    # sequential plan.
     entries.sort(key=lambda e: (e["null"], -e["order"]))
 
     def render(e: Dict[str, Any]) -> str:
@@ -104,17 +108,20 @@ def build_digest(records: Sequence[Dict[str, Any]],
         return len(tokenizer(text).input_ids)
 
     header = DIGEST_HEADER
-    kept: List[str] = []
+    kept: List[tuple] = []
     used = n_tokens(header)
     for e in entries:
         line = render(e)
         cost = n_tokens(line) + 1
         if used + cost > budget_tokens:
             continue  # skip this one, a later cheaper line may still fit
-        kept.append(line)
+        kept.append((e["order"], line))
         used += cost
     if not kept:
         return ""
+    # Render CHRONOLOGICALLY. What survived the budget was chosen by priority
+    # above; the agent still has to read it as a narrative of what it did.
+    kept = [ln for _, ln in sorted(kept, key=lambda t: t[0])]
     return header + "\n".join(kept) + "\n" + DIGEST_FOOTER
 
 

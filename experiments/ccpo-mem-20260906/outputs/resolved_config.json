@@ -140,7 +140,7 @@
     }
   },
   "algorithm": {
-    "adv_estimator": "gigpo",
+    "adv_estimator": "ccpo",
     "filter_groups": {
       "enable": false,
       "max_num_gen_batches": 10
@@ -331,10 +331,10 @@
     "balance_batch": true,
     "critic_warmup": 0,
     "default_hdfs_dir": null,
-    "default_local_dir": "/workspace/experiments/gigpo-ref-20260906/outputs/checkpoints",
+    "default_local_dir": "/workspace/experiments/ccpo-mem-20260906/outputs/checkpoints",
     "del_local_ckpt_after_load": false,
     "device": "cuda",
-    "experiment_name": "gigpo-ref-20260906",
+    "experiment_name": "ccpo-mem-20260906",
     "log_val_generations": 0,
     "logger": [
       "console",

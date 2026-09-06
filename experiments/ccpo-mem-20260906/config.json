@@ -60,7 +60,7 @@
     "val_top_p": 1.0,
     "venv_python": "/workspace/.venv/bin/python3"
   },
-  "created": "2026-09-06T14:27:23",
+  "created": "2026-09-06T14:59:00",
   "env": {
     "ACG_ADV_ESTIMATOR": "ccpo",
     "ACG_CCPO_BACKOFF_RHO": "0.5",
@@ -107,7 +107,7 @@
   "experiment": "ccpo-mem-20260906",
   "git": {
     "branch": "main",
-    "commit": "43fb9db96741f72c441d395f8637c74a192f4671",
+    "commit": "4ea2a23934a2033a2e3c7062620db597fe6012b3",
     "dirty": true
   },
   "hydra_overrides": [
