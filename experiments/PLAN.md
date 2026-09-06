@@ -40,6 +40,28 @@ Chosen after Phase 1, one variable at a time, each against `ccpo-base`:
 Repeat the winning arm on 2 further seeds. Held-out evaluation here is stochastic
 by design (T=0.4, 128 episodes, ~±0.048 measured), so a single run is not a result.
 
+## Measured budget
+
+From `gigpo-repro-20260906`: ~3.2 s per rollout turn over 128 environments, so a
+50-turn rollout is ~2.7 min; warm start ~1 min. With
+`ppo_micro_batch_size_per_gpu` at the reference 32 a step lands around 5–6 min,
+plus a validation pass every 5 steps. **100 steps is therefore roughly 8–10 h per
+arm.**
+
+Arms cannot run in parallel here — each needs ~192 ALFWorld ray actors and two
+sets would exceed the container's 8192-pid ceiling (see `README.md`). So the
+schedule is sequential, and Phase 1's three arms would be ~30 h. If the budget is
+tighter than that, the order to cut is:
+
+1. `gigpo-repro` — never cut. Without it no number here means anything.
+2. `ccpo-*` — the method. One arm, the best-justified configuration.
+3. `grpo-base` — the published GRPO figure (72.8 / 70.1) is on exactly this model
+   and config, so this arm is the most substitutable by the literature. Run it
+   only if the first two leave room.
+
+Comparing arms at a **common step count** is fair even if that count is below 100;
+comparing a 100-step arm against a 40-step one is not.
+
 ## Stopping rules
 
 `early_stop_patience=6` evaluations without a new best, never before step 30
