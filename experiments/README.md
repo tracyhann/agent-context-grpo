@@ -38,6 +38,24 @@ scripts/exp_run.py --name <name> --arm ccpo --dry-run       # write config only
 scripts/plot_metrics.py --compare experiments/a experiments/b -o experiments/compare.png
 ```
 
+### Warm-starting a longer arm
+
+`--set resume_from=<...>/checkpoints/global_step_N` continues from an existing
+checkpoint. `total_epochs` is an **absolute** target, not an increment, so
+
+```bash
+scripts/exp_run.py --name ccpo-long --arm ccpo --set total_epochs=100 \
+  --set resume_from=experiments/<prev>/outputs/checkpoints/global_step_20
+```
+
+runs steps 21-100. Two things make this safe here and would not generalise:
+`warmup_style=constant` with zero warmup, so changing `total_training_steps` does
+not move the LR under the resumed optimiser; and `del_local_ckpt_after_load=False`,
+so the source checkpoint survives. Every other key must match the run that produced
+the checkpoint, or the warm start is not a continuation of anything. Without
+`resume_from` the run passes `resume_mode=disable`, so a rerun of a named arm never
+silently continues from a checkpoint left in its own directory.
+
 `--set` accepts any key in `DEFAULTS` (`scripts/exp_run.py`). Arms must differ ONLY in
 the keys named on the command line, so comparing two runs is a diff of two `config.json`
 files:
@@ -55,7 +73,7 @@ matched settings and the remaining deltas are recorded in every `config.json` un
 
 | | reference | here | why |
 |---|---|---|---|
-| attention | flash-attn | sdpa + `use_remove_padding=False` | flash-attn has no sm_120 build |
+| attention | flash-attn | flash-attn 2.8.3 + `use_remove_padding=True` | **matched** — 2.8.3 does build for sm_120; the packed path is ~2.6x faster per step. Falls back to sdpa only if the import fails |
 | rollout attention | XFORMERS | `TRITON_ATTN` | Blackwell; Triton JIT-compiles per arch |
 | GPUs | 8, `tp=2` | 6, `tp=1` | what this box has |
 
@@ -102,6 +120,7 @@ it is supposed to improve on, which no success-rate curve would ever reveal.
 | `ccpo/adv_ep_absmean`, `adv_cc_absmean`, `adv_ep_over_cc` | the two advantage terms' magnitudes and their ratio — the quantity the `mean_std_norm` fix exists to keep near 1 |
 | `ccpo/phi_is_hidden` | 1 if φ is the reference-policy hidden state, 0 if it silently fell back to bag-of-words (AUC 0.795 vs 0.568) |
 | `ccpo/acc_len_corr` | corr(A_CC, response length) — rules out the step credit itself rewarding verbosity |
+| `ccpo/phi_rel_corr`, `phi_rel_gt0` | corr(φ-distance, target-distance) within a bucket — measures grouping relevance **directly**, not through the baseline's mean shift the way λ does. λ can be 0 while relevance is non-zero, so this is the metric that decides whether φ is working |
 | `ccpo/rho`, `edge_cov` | metric confidence in force, and whether the edge term fired |
 
 Per-sample rows go to `outputs/ccpo_samples.csv`; `scripts/analyse_dump.py` turns
