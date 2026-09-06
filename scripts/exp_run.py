@@ -36,7 +36,10 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULTS = {
     "arm": "ccpo",                      # ccpo | grpo | gigpo
     "model": "Qwen/Qwen2.5-1.5B-Instruct",
-    "gpus": "0,1,2,3,4,5",
+    # Four, not six: verl asserts train_batch_size * rollout.n % n_gpus == 0 and the
+    # reference batch of 128 does not divide by 6. Two GPUs idle is the price of
+    # keeping the batch the published numbers were produced with.
+    "gpus": "0,1,2,3",
     "seed": 0,
 
     # batch geometry -- G2PO uses 16 tasks x 8 rollouts = 128 episodes/step
