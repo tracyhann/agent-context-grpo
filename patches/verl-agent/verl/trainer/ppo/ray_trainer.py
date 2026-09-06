@@ -425,6 +425,12 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
                       'rho', 'edge_cov')
         _m = {f'ccpo/{k}': float(diag[k]) for k in _diag_keys
               if k in diag and diag[k] is not None}
+        # phi_mode is a string, so it would not survive into the numeric metrics.
+        # If the hidden-state features ever fail to arrive -- the packed-path capture
+        # regressing, the reference forward not running -- the estimator falls back
+        # to bag-of-words silently and quietly becomes a much weaker method. This
+        # makes that visible as a curve rather than a line in the log.
+        _m['ccpo/phi_is_hidden'] = 1.0 if diag.get('phi_mode') == 'hidden' else 0.0
         _m['ccpo/adv_ep_absmean'] = float(episode_adv[data.batch['response_mask'].bool()].abs().mean())
         _sa_live = step_adv[torch.as_tensor(diag['live_mask'])] if diag.get('live_mask') is not None else step_adv
         _m['ccpo/adv_cc_absmean'] = float(_sa_live.abs().mean()) if _sa_live.numel() else 0.0

@@ -147,6 +147,7 @@ CCPO = [
     ("bucket size", ["ccpo/bucket_size_mean", "ccpo/bucket_size_p90"], {}),
     ("singleton bucket fraction", ["ccpo/bucket_singleton_frac"], {}),
     ("live fraction / backoff level 1", ["ccpo/live_frac", "ccpo/lvl1_frac"], {}),
+    ("phi is the hidden state (1) or bag-of-words (0)", ["ccpo/phi_is_hidden"], {"hline": 1.0}),
     ("mean affinity weight E[w]", ["ccpo/E_w"], {}),
     ("effect size vs uniform baseline", ["ccpo/effect_mean", "ccpo/effect_p90"], {}),
     ("effect relative to |A|", ["ccpo/effect_rel"], {}),
