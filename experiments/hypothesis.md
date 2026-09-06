@@ -143,7 +143,7 @@ Note `V(g)` carries trajectory-length information through `γ^(T−t)`, so watch
 
 ## Settled — refuted
 
-### [!] H-A. Uncertainty should measure *grouping relevance*, not penalise within-bucket variance
+### [~] H-A. Uncertainty should measure *grouping relevance*, not penalise within-bucket variance
 
 > **SETTLED 2026-09-06 by `ccpo-mem-20260906` — the second branch.**
 > φ-distance does **not** predict target-distance inside a bucket — measured
@@ -158,7 +158,23 @@ Note `V(g)` carries trajectory-length information through `γ^(T−t)`, so watch
 > | 4 | **+0.0377** | 46% | 0.00000 | 0.000 |
 > | 5 | **+0.0090** | 40% | 0.00000 | 0.000 |
 >
-> **RE-CLOSED at step 5 on the pre-registered criterion "falls back toward 0".**
+> **STATUS AT STEP 9: the trend test says drifting upward, p ~ 0.07.** Regressing
+> `phi_rel_corr` on step over nine points: slope **+0.0073/step**, r = **+0.560**,
+> p ~ 0.073 (normal approximation on n=9, indicative only). Positive-bucket
+> fraction: slope +0.0124/step, r = +0.448. First three steps average **+0.017**,
+> last three **+0.062**; step 9 is +0.086 with **60%** of buckets positive, the
+> first clearly above-chance reading.
+>
+> Extrapolated, that reaches ~0.15 by step 20 — the pre-registered "keeps climbing"
+> threshold, which calls for rerunning the variant table at matched steps.
+>
+> **Not calling it yet.** n=9, p above 0.05, and I have already whipsawed twice on
+> this series by reacting to pairs of points. The pre-registered re-read is at step
+> 10 and the arm runs to 20; the trend test is the instrument, not the latest value.
+>
+> ---
+>
+> *(superseded) RE-CLOSED at step 5 on the pre-registered criterion "falls back toward 0".*
 > The series is non-monotonic — mean **+0.020**, and the positive-bucket fraction
 > averages **44%**, below the 50% chance rate at every step except one. Steps 3-4
 > were an excursion, not a trend.
