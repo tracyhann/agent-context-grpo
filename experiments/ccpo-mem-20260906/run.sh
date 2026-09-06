@@ -7,12 +7,12 @@ export \
   ACG_CCPO_BACKOFF_RHO=0.5 \
   ACG_CCPO_DUMP=/workspace/experiments/ccpo-mem-20260906/outputs/ccpo_samples.csv \
   ACG_CCPO_EDGE_W=0.0 \
-  ACG_CCPO_PHI=hidden \
+  ACG_CCPO_PHI=hidden+ctx \
   ACG_CCPO_RHO=0.59 \
   ACG_CCPO_SHRINK=eb_hier \
   ACG_CCPO_SIM=0.0 \
   ACG_CCPO_SIM_BACKOFF=0.0 \
-  ACG_CCPO_TARGET=return \
+  ACG_CCPO_TARGET=nextnode \
   ACG_CCPO_WHITEN=3 \
   ACG_COMPACT_BUDGET=512 \
   ACG_EARLY_STOP_MIN_STEPS=30 \
