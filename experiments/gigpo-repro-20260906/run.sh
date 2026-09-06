@@ -47,7 +47,7 @@ exec /workspace/.venv/bin/python3 -m \
   data.train_files=/workspace/envdata/verl_data/text/train.parquet \
   data.val_files=/workspace/envdata/verl_data/text/test.parquet \
   data.train_batch_size=16 \
-  data.val_batch_size=128 \
+  data.val_batch_size=64 \
   data.max_prompt_length=2048 \
   data.max_response_length=512 \
   data.filter_overlong_prompts=True \

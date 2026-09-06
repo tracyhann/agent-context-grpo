@@ -125,7 +125,8 @@ STANDARD = [
 ]
 
 CCPO = [
-    ("lambda* (trust in conditioning)", ["ccpo/lam_u_mean", "ccpo/lam_u_gt50"], {}),
+    ("lambda* (trust in conditioning)", ["ccpo/lam_u_mean", "ccpo/lam_u_gt50",
+                                        "ccpo/lam_pooled"], {}),
     ("effective neighbourhood n_eff", ["ccpo/n_eff_mean"], {}),
     ("bucket size", ["ccpo/bucket_size_mean", "ccpo/bucket_size_p90"], {}),
     ("singleton bucket fraction", ["ccpo/bucket_singleton_frac"], {}),

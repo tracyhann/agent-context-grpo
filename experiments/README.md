@@ -74,6 +74,33 @@ in-distribution / out-of-distribution success):
 for HGPO, the depth of its group hierarchy. Our default is 2, so the K=2 rows are the
 comparable ones.
 
+## Environment constraints on this box
+
+Two things bind, and both are recorded here because they cost hours to find:
+
+**The pid ceiling.** The cgroup allows 8192 pids while `nproc` reports 256, and
+Ray sizes its gRPC/asio pools from `nproc`. verl-agent also gives **every ALFWorld
+environment its own Ray actor**, so a reference batch is 128 train + 128 validation
+actors. Untuned that is ~115 threads per actor, ~29k threads, and every worker
+aborts with `thread: Resource temporarily unavailable`. Two fixes, both in
+`scripts/exp_run.py`:
+
+- `RAY_num_server_call_thread`, `RAY_num_grpc_internal_threads` and
+  `RAY_object_manager_rpc_threads_num` set to 1 take an actor from ~115 to ~24
+  threads (measured);
+- `val_batch_size=64` keeps the full 128-episode evaluation but halves the
+  persistent validation pool. verl iterates the whole val dataloader, so the
+  protocol is unchanged — only the actor count is.
+
+At 128 + 128 actors the run reached 8165/8192 threads and died. At 128 + 64 it fits.
+**Consequence: arms cannot run in parallel on this box** — two arms would need
+~384 actors. Runs are sequential, each on all available GPUs.
+
+**Batch/GPU divisibility.** verl asserts `train_batch_size * rollout.n % n_gpus == 0`.
+The reference `train_batch_size=16` with `group_size=8` gives 128, so 4 GPUs
+divides cleanly and 6 does not. Arms run on 4 GPUs to keep the reference batch
+exactly, rather than perturbing the batch to use two more GPUs.
+
 ## Index
 
 | experiment | arm | purpose | status |

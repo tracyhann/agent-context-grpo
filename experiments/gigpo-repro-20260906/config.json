@@ -46,13 +46,14 @@
     "train_temperature": 1.0,
     "train_top_k": -1,
     "train_top_p": 1.0,
+    "val_batch_size": 64,
     "val_data_size": 128,
     "val_temperature": 0.4,
     "val_top_k": -1,
     "val_top_p": 1.0,
     "venv_python": "/workspace/.venv/bin/python3"
   },
-  "created": "2026-09-06T10:42:15",
+  "created": "2026-09-06T10:43:44",
   "env": {
     "ACG_CCPO_BACKOFF_RHO": "0.5",
     "ACG_CCPO_DUMP": "/workspace/experiments/gigpo-repro-20260906/outputs/ccpo_samples.csv",
@@ -96,7 +97,7 @@
   "experiment": "gigpo-repro-20260906",
   "git": {
     "branch": "main",
-    "commit": "0cc7b53141c9f4a86bbca6003247584c2f5abf62",
+    "commit": "a28718133ab3733a13937c52349d47272c2adfc2",
     "dirty": true
   },
   "hydra_overrides": [
@@ -104,7 +105,7 @@
     "data.train_files=/workspace/envdata/verl_data/text/train.parquet",
     "data.val_files=/workspace/envdata/verl_data/text/test.parquet",
     "data.train_batch_size=16",
-    "data.val_batch_size=128",
+    "data.val_batch_size=64",
     "data.max_prompt_length=2048",
     "data.max_response_length=512",
     "data.filter_overlong_prompts=True",
@@ -173,7 +174,7 @@
     ],
     "matched": [
       "val temperature 0.4 + do_sample",
-      "val_batch_size 128",
+      "val set 128 episodes (in chunks of val_batch_size)",
       "eval split eval_in_distribution (valid_seen)",
       "group size 8",
       "train_batch_size 16",

@@ -140,6 +140,17 @@ that CCPO tracks GiGPO.
 
 ## What has been measured
 
+All of the following were measured on **Qwen3-1.7B**, 144 episodes/step (18 tasks
+× 8 rollouts). Training has since moved to **Qwen2.5-1.5B-Instruct** — the base
+model GiGPO, HGPO and G²PO all publish on — so that a result here has a published
+number to be compared against; see [`experiments/PLAN.md`](experiments/PLAN.md).
+The φ diagnostics below (conflation AUC, the bias prior, and ρ calibrated from it)
+are model-specific and are being re-measured on the new base model. Two Qwen3
+workarounds fall away with the switch: `enable_thinking=False` had to be forced in
+code, and the parser had to accept a missing opening `<think>` tag because Qwen3
+carries it in the prompt as an empty prefill (measured 0/32 response-side tags).
+Qwen2.5-1.5B-Instruct emits `<think>…</think><action>…</action>` natively.
+
 On ALFWorld with Qwen3-1.7B, 144 episodes/step (18 tasks × 8 rollouts):
 
 | question | measurement | reading |

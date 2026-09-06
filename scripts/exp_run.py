@@ -45,6 +45,12 @@ DEFAULTS = {
     "ppo_mini_batch_size": 256,
     "ppo_micro_batch_size_per_gpu": 8,
     "val_data_size": 128,
+    # Evaluation still covers all 128 reference episodes; verl iterates the whole
+    # val dataloader. Splitting it into chunks matters because verl-agent creates
+    # ONE ray actor per environment and keeps the train and validation pools alive
+    # together: 128 + 128 actors put ~8165 threads against the 8192-pid cgroup
+    # ceiling and every worker aborted. 128 train + 64 validation fits.
+    "val_batch_size": 64,
 
     # lengths and sampling
     "max_prompt_length": 2048,
@@ -165,7 +171,7 @@ def build_command(cfg, exp_dir):
         f"data.train_files={cfg['data_dir']}/text/train.parquet",
         f"data.val_files={cfg['data_dir']}/text/test.parquet",
         f"data.train_batch_size={cfg['train_batch_size']}",
-        f"data.val_batch_size={cfg['val_data_size']}",
+        f"data.val_batch_size={cfg['val_batch_size']}",
         f"data.max_prompt_length={cfg['max_prompt_length']}",
         f"data.max_response_length={cfg['max_response_length']}",
         "data.filter_overlong_prompts=True",
@@ -317,7 +323,7 @@ def main():
         "git": git_state(), "versions": versions(cfg["venv_python"]),
         "reference_protocol": {
             "source": "baselines/G2PO/examples/g2po_trainer/run_alfworld.sh",
-            "matched": ["val temperature 0.4 + do_sample", "val_batch_size 128",
+            "matched": ["val temperature 0.4 + do_sample", "val set 128 episodes (in chunks of val_batch_size)",
                         "eval split eval_in_distribution (valid_seen)",
                         "group size 8", "train_batch_size 16", "max_prompt_length 2048",
                         "max_response_length 512", "lr 1e-6", "kl 0.01 low_var_kl",
