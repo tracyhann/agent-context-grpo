@@ -87,11 +87,13 @@ Note `V(g)` carries trajectory-length information through `γ^(T−t)`, so watch
 > | 1 | −0.0096 | 42% | 0.00000 | 0.000 |
 > | 2 | **+0.0016** | 41% | 0.00000 | 0.000 |
 > | 3 | **+0.0600** | **51%** | 0.00000 | 0.000 |
+> | 4 | **+0.0377** | 46% | 0.00000 | 0.000 |
 >
-> **REOPENED at step 3 — this closure was premature.** Steps 1-2 straddle zero with
-> the positive-bucket fraction *below* the 50% chance rate, which is what I closed
-> on. Step 3 is six times larger and sits *at* chance. One step is not a trend, but
-> it moves toward H-A's **first** branch, not the second:
+> **REOPENED — the closure was premature, and steps 3-4 confirm it was.** First two
+> steps average **−0.004** with the positive-bucket fraction *below* the 50% chance
+> rate; last two average **+0.049** at or above it. φ is beginning to order
+> neighbours within a bucket as the policy differentiates. This is H-A's **first**
+> branch, not the second:
 >
 > * `phi_rel_corr > 0` while `λ = 0` ⇒ φ carries signal the shrinkage rule is
 >   discarding, and the fix is in the rule. **Act on it.**
@@ -105,6 +107,18 @@ Note `V(g)` carries trajectory-length information through `γ^(T−t)`, so watch
 > **Do not re-close until step 10.** If the trend holds, the whole refutation needs
 > revisiting, including the six-variant table below, all of which was read at
 > equally early steps.
+>
+> **But do not overclaim either.** +0.05 is a weak correlation. An R²-driven λ — the
+> replacement proposed below — would give λ ≈ corr² ≈ 0.0025, still effectively
+> zero. So at *this* magnitude λ = 0 remains the right verdict and the rule is not
+> discarding anything usable; what has changed is that the quantity is no longer
+> flat at zero, and it is rising. The decision point is whether it keeps rising:
+>
+> | `phi_rel_corr` by step ~10 | reading |
+> |---|---|
+> | plateaus near 0.05 | the signal is real but too weak to exploit; refutation stands in substance |
+> | keeps climbing (≳0.15) | the early nulls were an artefact of the untrained policy; **rerun the variant table at matched steps** |
+> | falls back toward 0 | steps 3-4 were noise; original closure stands |
 >
 > This was the escape hatch for the four earlier nulls: λ only detects a *mean*
 > shift, so a φ that ordered neighbours correctly without moving that mean would
