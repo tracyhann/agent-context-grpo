@@ -78,9 +78,18 @@ Note `V(g)` carries trajectory-length information through `γ^(T−t)`, so watch
 ### [!] H-A. Uncertainty should measure *grouping relevance*, not penalise within-bucket variance
 
 > **SETTLED 2026-09-06 by `ccpo-mem-20260906` — the second branch.**
-> `phi_rel_corr = −0.0096`, positive in only **42%** of buckets (chance = 50%),
-> `tau2 = 0.00000`. φ-distance does **not** predict target-distance inside a
-> bucket — measured directly, independent of whether φ shifts the baseline's mean.
+> φ-distance does **not** predict target-distance inside a bucket — measured
+> directly, independent of whether φ shifts the baseline's mean. Two consecutive
+> non-degenerate batches:
+>
+> | step | `phi_rel_corr` | buckets with corr > 0 | `tau2` | λ |
+> |---|---|---|---|---|
+> | 1 | −0.0096 | 42% | 0.00000 | 0.000 |
+> | 2 | **+0.0016** | 41% | 0.00000 | 0.000 |
+>
+> It straddles zero, and the fraction of buckets with positive correlation sits
+> just *below* the 50% chance rate both times. Not an underpowered null: each step
+> aggregates ~700 buckets.
 >
 > This was the escape hatch for the four earlier nulls: λ only detects a *mean*
 > shift, so a φ that ordered neighbours correctly without moving that mean would
@@ -141,6 +150,9 @@ Status: measured for the first time by `ccpo-mem-20260906`.
 > (`prompt_length/mean` 549 → **775**, ~226 tokens of digest) and λ is **still
 > 0.000**, `phi_rel_corr` −0.0096, on a non-degenerate batch. Whole-episode history
 > in the prompt does not make φ carry within-bucket signal.
+>
+> Training is healthy — 4 → 10 of 128 solved over the first two steps, prompt
+> 775 → 802 tokens, `episode/length/mean` 49.6 → 48.0.
 >
 > Two sub-results worth keeping:
 > * **The digest-order bug was the real damage.** 0/128 episodes solved with the
