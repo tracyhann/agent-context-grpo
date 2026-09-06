@@ -75,7 +75,7 @@ Note `V(g)` carries trajectory-length information through `γ^(T−t)`, so watch
 
 ## Settled — refuted
 
-### [!] H-A. Uncertainty should measure *grouping relevance*, not penalise within-bucket variance
+### [~] H-A. Uncertainty should measure *grouping relevance*, not penalise within-bucket variance
 
 > **SETTLED 2026-09-06 by `ccpo-mem-20260906` — the second branch.**
 > φ-distance does **not** predict target-distance inside a bucket — measured
@@ -86,10 +86,25 @@ Note `V(g)` carries trajectory-length information through `γ^(T−t)`, so watch
 > |---|---|---|---|---|
 > | 1 | −0.0096 | 42% | 0.00000 | 0.000 |
 > | 2 | **+0.0016** | 41% | 0.00000 | 0.000 |
+> | 3 | **+0.0600** | **51%** | 0.00000 | 0.000 |
 >
-> It straddles zero, and the fraction of buckets with positive correlation sits
-> just *below* the 50% chance rate both times. Not an underpowered null: each step
-> aggregates ~700 buckets.
+> **REOPENED at step 3 — this closure was premature.** Steps 1-2 straddle zero with
+> the positive-bucket fraction *below* the 50% chance rate, which is what I closed
+> on. Step 3 is six times larger and sits *at* chance. One step is not a trend, but
+> it moves toward H-A's **first** branch, not the second:
+>
+> * `phi_rel_corr > 0` while `λ = 0` ⇒ φ carries signal the shrinkage rule is
+>   discarding, and the fix is in the rule. **Act on it.**
+>
+> A plausible mechanism for a rising trend: at step 1 the policy is near-uniform, so
+> sibling trajectories inside a bucket barely differ and there is no context
+> structure to find. As training differentiates them, context starts to matter.
+> If so, the early nulls measured a property of the *untrained policy*, not of the
+> benchmark — and every arm here has been read at steps 1-3.
+>
+> **Do not re-close until step 10.** If the trend holds, the whole refutation needs
+> revisiting, including the six-variant table below, all of which was read at
+> equally early steps.
 >
 > This was the escape hatch for the four earlier nulls: λ only detects a *mean*
 > shift, so a φ that ordered neighbours correctly without moving that mean would
