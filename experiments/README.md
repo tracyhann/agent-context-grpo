@@ -1,0 +1,81 @@
+# Experiments
+
+One directory per run, named `<arm>-<what-it-tests>-<YYYYMMDD>`. Every directory is
+self-contained: the configuration that produced the numbers sits beside them, so a
+result can always be traced back to the exact command that made it.
+
+```
+<exp-id>/
+  config.json     FULL resolved configuration -- hydra overrides, ACG_* env vars,
+                  git commit + dirty flag, torch/vllm/transformers versions, and
+                  which parts of the G2PO reference protocol are matched vs not
+  run.sh          the exact command, regenerated from config.json
+  NOTES.md        what this arm tests, what to look at, what happened
+  outputs/
+    train.log             stdout/stderr
+    metrics.jsonl         one JSON object per training step -- every metric
+    resolved_config.json  verl's own view of the config
+    ccpo_samples.csv      per-sample estimator diagnostics (CCPO arms)
+    ccpo_samples.csv.len.csv   (response length, A_CC) pairs
+    checkpoints/
+      stepN-best/   hardlinked copy of the best held-out checkpoint
+      stepN-last/   symlink to the most recent
+      best.json     which step is best, and its score
+  plots/
+    progress.png    success rate, reward, KL, entropy, length, grad norm, clip
+    ccpo.png        lambda, n_eff, bucket occupancy, effect size, r_vs_*, term scales
+```
+
+Checkpoints are deliberately **not** kept for every step: `trainer.save_freq` writes a
+rolling `global_step_N`, of which only the two newest survive, and the run keeps exactly
+one `stepN-best` (hardlinked, so it costs no extra disk) and one `stepN-last`.
+
+## Running
+
+```bash
+scripts/exp_run.py --name <name> --arm <ccpo|grpo|gigpo> [--set key=value ...]
+scripts/exp_run.py --name <name> --arm ccpo --dry-run       # write config only
+scripts/plot_metrics.py --compare experiments/a experiments/b -o experiments/compare.png
+```
+
+`--set` accepts any key in `DEFAULTS` (`scripts/exp_run.py`). Arms must differ ONLY in
+the keys named on the command line, so comparing two runs is a diff of two `config.json`
+files:
+
+```bash
+diff <(jq -S .config experiments/A/config.json) <(jq -S .config experiments/B/config.json)
+```
+
+## Comparability with the published baselines
+
+Defaults mirror `baselines/G2PO/examples/g2po_trainer/run_alfworld.sh`, which is where
+the published G2PO ALFWorld numbers come from, and which GiGPO/HGPO also follow. The
+matched settings and the remaining deltas are recorded in every `config.json` under
+`reference_protocol`. The deltas are hardware-forced, not choices:
+
+| | reference | here | why |
+|---|---|---|---|
+| attention | flash-attn | sdpa + `use_remove_padding=False` | flash-attn has no sm_120 build |
+| rollout attention | XFORMERS | `TRITON_ATTN` | Blackwell; Triton JIT-compiles per arch |
+| GPUs | 8, `tp=2` | 6, `tp=1` | what this box has |
+
+Published reference points on ALFWorld / Qwen2.5-1.5B-Instruct (HGPO Table 1,
+in-distribution / out-of-distribution success):
+
+| method | In-Success | Out-Success |
+|---|---|---|
+| GRPO | 72.8 | 70.1 |
+| GiGPO (K=2) | 90.16 | 84.76 |
+| HGPO (K=2) | 92.77 | 90.16 |
+| GiGPO (K=4) | 93.29 | 91.53 |
+| HGPO (K=4) | 94.85 | 92.12 |
+
+`K` is `env.history_length`: it sets both how many past turns the prompt carries and,
+for HGPO, the depth of its group hierarchy. Our default is 2, so the K=2 rows are the
+comparable ones.
+
+## Index
+
+| experiment | arm | purpose | status |
+|---|---|---|---|
+| _(populated as runs land)_ | | | |

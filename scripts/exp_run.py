@@ -1,0 +1,373 @@
+#!/usr/bin/env python3
+"""Launch one experiment, with its configuration recorded beside its results.
+
+Every run materialises   experiments/<name>-<YYYYMMDD>/
+    config.json     the FULL resolved configuration: hydra overrides, ACG_* env,
+                    git commit, package versions. Enough to rerun the experiment
+                    without this script.
+    run.sh          the exact command, regenerated from config.json
+    outputs/        train.log, metrics.jsonl, resolved_config.json, ccpo_samples.csv,
+                    checkpoints/  (stepN-best and stepN-last only)
+    plots/          refreshed while the run is in flight
+    NOTES.md        what this arm is for and what to look at
+
+Arms differ ONLY in the fields named on the command line, so a comparison is a
+diff of two config.json files.
+
+Usage:
+    scripts/exp_run.py --name ccpo-alfworld --arm ccpo [--set k=v ...] [--dry-run]
+"""
+import argparse
+import datetime
+import json
+import os
+import shlex
+import subprocess
+import sys
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# ---------------------------------------------------------------------------
+# Defaults. These mirror the G2PO reference script
+# (baselines/G2PO/examples/g2po_trainer/run_alfworld.sh) wherever the two can
+# agree, so every arm is comparable to the published baselines by construction.
+# Anything that differs from that reference is flagged in `_REFERENCE_DELTA`.
+# ---------------------------------------------------------------------------
+DEFAULTS = {
+    "arm": "ccpo",                      # ccpo | grpo | gigpo
+    "model": "Qwen/Qwen2.5-1.5B-Instruct",
+    "gpus": "0,1,2,3,4,5",
+    "seed": 0,
+
+    # batch geometry -- G2PO uses 16 tasks x 8 rollouts = 128 episodes/step
+    "train_batch_size": 16,
+    "group_size": 8,
+    "ppo_mini_batch_size": 256,
+    "ppo_micro_batch_size_per_gpu": 8,
+    "val_data_size": 128,
+
+    # lengths and sampling
+    "max_prompt_length": 2048,
+    "max_response_length": 512,         # G2PO reference
+    "train_temperature": 1.0,
+    "train_top_p": 1.0,                 # G2PO leaves these at the vllm defaults
+    "train_top_k": -1,
+    "val_temperature": 0.4,             # G2PO reference eval protocol
+    "val_top_p": 1.0,
+    "val_top_k": -1,
+
+    # optimisation
+    "lr": 1e-6,
+    "kl_loss_coef": 0.01,
+    "kl_loss_type": "low_var_kl",
+    "gamma": 0.95,
+    "step_advantage_w": 1.0,
+    "adv_mode": "mean_std_norm",        # both advantage terms, same convention
+    "total_epochs": 100,
+    "test_freq": 5,
+    "save_freq": 5,
+
+    # environment
+    # Ray must not size itself from nproc. This box reports 256 CPUs but the
+    # cgroup allows only 8192 pids, and Ray prestarts one python worker per CPU;
+    # at 256 workers thread creation fails with EAGAIN and every worker aborts
+    # ("Unhandled exception: ... thread: Resource temporarily unavailable").
+    # This is a SCHEDULING quantity only -- per-actor thread counts are controlled
+    # by the RAY_* knobs in build_env, not by this. 64 leaves headroom for the 128
+    # train and 128 validation env actors at 0.1 CPU each plus the GPU workers.
+    "ray_num_cpus": 64,
+    "env_name": "alfworld/AlfredTWEnv",
+    "max_steps": 50,
+    "history_length": 2,
+    "eval_split": "eval_in_distribution",   # = valid_seen, the reference default
+
+    # early stopping -- evaluations without a new best, never before min_steps
+    "early_stop_patience": 6,
+    "early_stop_min_steps": 30,
+
+    # CCPO estimator knobs (see ccpo/core_ccpo.py)
+    "ccpo_phi": "hidden",
+    "ccpo_rho": 0.59,
+    "ccpo_shrink": "eb",
+    "ccpo_whiten": 3,
+    "ccpo_target": "return",
+    "ccpo_sim": 0.0,
+    "ccpo_sim_backoff": 0.0,
+    "ccpo_backoff_rho": 0.5,
+    "ccpo_edge_w": 0.0,
+
+    # supporting components, both off = stock protocol
+    "compact_budget": 0,
+    "force_budget": 0,
+    "force_tail": 32,
+}
+
+_REFERENCE_DELTA = [
+    "base model: Qwen2.5-1.5B-Instruct matches the G2PO/GiGPO/HGPO reference",
+    "attention: sdpa (flash-attn has no sm_120 build) => use_remove_padding=False",
+    "rollout: vllm with VLLM_ATTENTION_BACKEND=TRITON_ATTN (Blackwell)",
+    "tensor_model_parallel_size=1 on 6 GPUs vs their 8 with tp=2",
+]
+
+ENV_KEYS = {
+    "ccpo_phi": "ACG_CCPO_PHI", "ccpo_rho": "ACG_CCPO_RHO",
+    "ccpo_shrink": "ACG_CCPO_SHRINK", "ccpo_whiten": "ACG_CCPO_WHITEN",
+    "ccpo_target": "ACG_CCPO_TARGET", "ccpo_sim": "ACG_CCPO_SIM",
+    "ccpo_sim_backoff": "ACG_CCPO_SIM_BACKOFF",
+    "ccpo_backoff_rho": "ACG_CCPO_BACKOFF_RHO", "ccpo_edge_w": "ACG_CCPO_EDGE_W",
+    "compact_budget": "ACG_COMPACT_BUDGET", "force_budget": "ACG_FORCE_BUDGET",
+    "force_tail": "ACG_FORCE_TAIL",
+    "early_stop_patience": "ACG_EARLY_STOP_PATIENCE",
+    "early_stop_min_steps": "ACG_EARLY_STOP_MIN_STEPS",
+}
+
+
+def _coerce(v):
+    for cast in (int, float):
+        try:
+            return cast(v)
+        except (TypeError, ValueError):
+            pass
+    if isinstance(v, str) and v.lower() in ("true", "false"):
+        return v.lower() == "true"
+    return v
+
+
+def git_state():
+    def _run(*a):
+        try:
+            return subprocess.run(a, cwd=ROOT, capture_output=True, text=True).stdout.strip()
+        except OSError:
+            return ""
+    return {"commit": _run("git", "rev-parse", "HEAD"),
+            "branch": _run("git", "rev-parse", "--abbrev-ref", "HEAD"),
+            "dirty": bool(_run("git", "status", "--porcelain"))}
+
+
+def versions(python):
+    code = ("import json,torch,transformers,vllm,ray;"
+            "print(json.dumps({'torch':torch.__version__,'cuda':torch.version.cuda,"
+            "'transformers':transformers.__version__,'vllm':vllm.__version__,'ray':ray.__version__}))")
+    try:
+        out = subprocess.run([python, "-c", code], capture_output=True, text=True, timeout=180)
+        return json.loads(out.stdout.strip().splitlines()[-1])
+    except Exception as e:                                   # noqa: BLE001
+        return {"error": str(e)}
+
+
+def build_command(cfg, exp_dir):
+    ngpu = len(cfg["gpus"].split(","))
+    est = {"ccpo": "ccpo", "grpo": "grpo", "gigpo": "gigpo"}[cfg["arm"]]
+    ckpt = os.path.join(exp_dir, "outputs", "checkpoints")
+    args = [
+        "python3", "-m", "verl.trainer.main_ppo",
+        f"algorithm.adv_estimator={est}",
+        f"data.train_files={cfg['data_dir']}/text/train.parquet",
+        f"data.val_files={cfg['data_dir']}/text/test.parquet",
+        f"data.train_batch_size={cfg['train_batch_size']}",
+        f"data.val_batch_size={cfg['val_data_size']}",
+        f"data.max_prompt_length={cfg['max_prompt_length']}",
+        f"data.max_response_length={cfg['max_response_length']}",
+        "data.filter_overlong_prompts=True",
+        "data.truncation=error",
+        "data.return_raw_chat=True",
+        f"actor_rollout_ref.model.path={cfg['model_path']}",
+        f"actor_rollout_ref.actor.optim.lr={cfg['lr']}",
+        "actor_rollout_ref.model.use_remove_padding=False",
+        f"actor_rollout_ref.actor.ppo_mini_batch_size={cfg['ppo_mini_batch_size']}",
+        f"actor_rollout_ref.actor.ppo_micro_batch_size_per_gpu={cfg['ppo_micro_batch_size_per_gpu']}",
+        "actor_rollout_ref.actor.use_kl_loss=True",
+        f"actor_rollout_ref.actor.kl_loss_coef={cfg['kl_loss_coef']}",
+        f"actor_rollout_ref.actor.kl_loss_type={cfg['kl_loss_type']}",
+        "actor_rollout_ref.model.enable_gradient_checkpointing=True",
+        "actor_rollout_ref.actor.fsdp_config.param_offload=False",
+        "actor_rollout_ref.actor.fsdp_config.optimizer_offload=False",
+        f"actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu={cfg['ppo_micro_batch_size_per_gpu']}",
+        "actor_rollout_ref.rollout.tensor_model_parallel_size=1",
+        "actor_rollout_ref.rollout.name=vllm",
+        "actor_rollout_ref.rollout.gpu_memory_utilization=0.5",
+        "actor_rollout_ref.rollout.enable_chunked_prefill=False",
+        "actor_rollout_ref.rollout.enforce_eager=False",
+        "actor_rollout_ref.rollout.free_cache_engine=False",
+        f"actor_rollout_ref.rollout.temperature={cfg['train_temperature']}",
+        f"actor_rollout_ref.rollout.top_p={cfg['train_top_p']}",
+        f"actor_rollout_ref.rollout.top_k={cfg['train_top_k']}",
+        f"actor_rollout_ref.rollout.val_kwargs.temperature={cfg['val_temperature']}",
+        f"actor_rollout_ref.rollout.val_kwargs.top_p={cfg['val_top_p']}",
+        f"actor_rollout_ref.rollout.val_kwargs.top_k={cfg['val_top_k']}",
+        "actor_rollout_ref.rollout.val_kwargs.do_sample=True",
+        f"actor_rollout_ref.ref.log_prob_micro_batch_size_per_gpu={cfg['ppo_micro_batch_size_per_gpu']}",
+        "actor_rollout_ref.ref.fsdp_config.param_offload=True",
+        "actor_rollout_ref.actor.use_invalid_action_penalty=True",
+        "actor_rollout_ref.actor.invalid_action_penalty_coef=0.1",
+        "algorithm.use_kl_in_reward=False",
+        f"algorithm.gamma={cfg['gamma']}",
+        f"algorithm.gigpo.step_advantage_w={cfg['step_advantage_w']}",
+        f"algorithm.gigpo.mode={cfg['adv_mode']}",
+        f"env.env_name={cfg['env_name']}",
+        f"env.seed={cfg['seed']}",
+        f"env.max_steps={cfg['max_steps']}",
+        f"env.history_length={cfg['history_length']}",
+        f"env.rollout.n={cfg['group_size']}",
+        f"env.alfworld.eval_dataset={cfg['eval_split']}",
+        "env.resources_per_worker.num_cpus=0.1",
+        f"ray_init.num_cpus={cfg['ray_num_cpus']}",
+        "trainer.critic_warmup=0",
+        "trainer.logger=[console,jsonl]",
+        "trainer.project_name=ccpo_alfworld",
+        f"trainer.experiment_name={cfg['exp_id']}",
+        f"trainer.n_gpus_per_node={ngpu}",
+        "trainer.nnodes=1",
+        f"trainer.save_freq={cfg['save_freq']}",
+        "actor_rollout_ref.actor.checkpoint.contents=[model,optimizer,extra,hf_model]",
+        f"trainer.default_local_dir={ckpt}",
+        f"trainer.test_freq={cfg['test_freq']}",
+        f"trainer.total_epochs={cfg['total_epochs']}",
+        "trainer.val_before_train=False",
+    ]
+    return args
+
+
+def build_env(cfg, exp_dir):
+    env = {
+        "CUDA_VISIBLE_DEVICES": cfg["gpus"],
+        "ALFWORLD_DATA": cfg["alfworld_data"],
+        "HF_HOME": cfg["hf_home"],
+        "PYTHONPATH": f"{ROOT}/verl-agent:{ROOT}:{ROOT}/docker/fa_stub",
+        # Blackwell (sm_120): flash-attn has no build, so the trainer runs sdpa and
+        # vllm runs its Triton attention kernels, which JIT per-arch.
+        "VERL_ATTN_IMPL": "sdpa",
+        "VLLM_ATTENTION_BACKEND": "TRITON_ATTN",
+        "TRITON_PTXAS_PATH": "/usr/local/cuda/bin/ptxas",
+        "VLLM_USE_FLASHINFER_SAMPLER": "0",
+        # NOT expandable_segments: vLLM's memory pool (sleep/wake between rollout
+        # and training) asserts against it -- "Expandable segments are not
+        # compatible with memory pool", pytorch#147851. That setting came from the
+        # old HF-rollout path, where it countered long-run fragmentation.
+        "RAY_TMPDIR": "/tmp/ray_acg",
+        "TOKENIZERS_PARALLELISM": "false",
+        # belt and braces against the pid ceiling described at ray_num_cpus
+        "RAY_num_prestart_python_workers": "4",
+        # verl-agent gives every ALFWorld environment its own ray actor, so a
+        # reference-protocol batch is 128 train + 128 validation actors. Untuned,
+        # each carries ~115 threads of gRPC and asio pools sized from nproc (256
+        # here) -- about 29k threads against a cgroup ceiling of 8192, which shows
+        # up as every worker aborting with "thread: Resource temporarily
+        # unavailable". These three knobs take an actor to ~24 threads (measured);
+        # the rest of the vars stop numpy/BLAS/tokenizers opening their own pools.
+        "RAY_num_server_call_thread": "1",
+        "RAY_num_grpc_internal_threads": "1",
+        "RAY_object_manager_rpc_threads_num": "1",
+        "RAY_event_stats": "0",
+        "RAY_start_python_gc_manager_thread": "0",
+        "OMP_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1",
+        "RAYON_NUM_THREADS": "1",
+        "ACG_EXP_DIR": exp_dir,
+        "ACG_METRICS_JSONL": os.path.join(exp_dir, "outputs", "metrics.jsonl"),
+        "ACG_CCPO_DUMP": os.path.join(exp_dir, "outputs", "ccpo_samples.csv"),
+    }
+    for k, e in ENV_KEYS.items():
+        env[e] = str(cfg[k])
+    return env
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--name", required=True)
+    ap.add_argument("--arm", default=None, choices=["ccpo", "grpo", "gigpo"])
+    ap.add_argument("--set", action="append", default=[], metavar="KEY=VALUE")
+    ap.add_argument("--date", default=datetime.date.today().strftime("%Y%m%d"))
+    ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--no-plot", action="store_true")
+    a = ap.parse_args()
+
+    cfg = dict(DEFAULTS)
+    if a.arm:
+        cfg["arm"] = a.arm
+    for kv in a.set:
+        k, _, v = kv.partition("=")
+        if k not in cfg:
+            sys.exit(f"unknown config key: {k}\nknown: {', '.join(sorted(cfg))}")
+        cfg[k] = _coerce(v)
+
+    cfg["exp_id"] = f"{a.name}-{a.date}"
+    exp_dir = os.path.join(ROOT, "experiments", cfg["exp_id"])
+    cfg.update({
+        "data_dir": os.environ.get("ACG_DATA_DIR", "/workspace/envdata/verl_data"),
+        "alfworld_data": os.environ.get("ALFWORLD_DATA", "/workspace/alfworld_data"),
+        "hf_home": os.environ.get("HF_HOME", "/workspace/hf"),
+        "venv_python": os.path.join(ROOT, ".venv", "bin", "python3"),
+    })
+    snap = os.path.join(cfg["hf_home"], "hub",
+                        "models--" + cfg["model"].replace("/", "--"), "snapshots")
+    cfg["model_path"] = (os.path.join(snap, sorted(os.listdir(snap))[0])
+                         if os.path.isdir(snap) else cfg["model"])
+
+    for sub in ("outputs", "plots"):
+        os.makedirs(os.path.join(exp_dir, sub), exist_ok=True)
+
+    argv = build_command(cfg, exp_dir)
+    env = build_env(cfg, exp_dir)
+    record = {
+        "experiment": cfg["exp_id"], "created": datetime.datetime.now().isoformat(timespec="seconds"),
+        "config": cfg, "hydra_overrides": argv[3:], "env": env,
+        "git": git_state(), "versions": versions(cfg["venv_python"]),
+        "reference_protocol": {
+            "source": "baselines/G2PO/examples/g2po_trainer/run_alfworld.sh",
+            "matched": ["val temperature 0.4 + do_sample", "val_batch_size 128",
+                        "eval split eval_in_distribution (valid_seen)",
+                        "group size 8", "train_batch_size 16", "max_prompt_length 2048",
+                        "max_response_length 512", "lr 1e-6", "kl 0.01 low_var_kl",
+                        "gamma 0.95", "step_advantage_w 1.0", "mode mean_std_norm",
+                        "invalid-action penalty 0.1", "env.max_steps 50", "env.seed 0",
+                        "history_length 2"],
+            "deltas": _REFERENCE_DELTA,
+        },
+    }
+    with open(os.path.join(exp_dir, "config.json"), "w") as fh:
+        json.dump(record, fh, indent=2, sort_keys=True)
+
+    envline = " \\\n  ".join(f"{k}={shlex.quote(str(v))}" for k, v in sorted(env.items()))
+    runsh = ("#!/bin/bash\n# Regenerated from config.json by scripts/exp_run.py -- do not hand-edit.\n"
+             "set -x\ncd %s\nexport \\\n  %s\nexec %s %s\n"
+             % (shlex.quote(os.path.join(ROOT, "verl-agent")), envline,
+                shlex.quote(cfg["venv_python"]), " \\\n  ".join(shlex.quote(x) for x in argv[1:])))
+    run_path = os.path.join(exp_dir, "run.sh")
+    with open(run_path, "w") as fh:
+        fh.write(runsh)
+    os.chmod(run_path, 0o755)
+
+    notes = os.path.join(exp_dir, "NOTES.md")
+    if not os.path.exists(notes):
+        tmpl = os.path.join(ROOT, "experiments", "_template", "NOTES.md")
+        body = open(tmpl).read() if os.path.exists(tmpl) else "# <exp-id>\n"
+        with open(notes, "w") as fh:
+            fh.write(body.replace("<exp-id>", cfg["exp_id"], 1))
+
+    print(f"[exp] {cfg['exp_id']}  arm={cfg['arm']}  gpus={cfg['gpus']}")
+    print(f"[exp] dir     {exp_dir}")
+    print(f"[exp] config  {exp_dir}/config.json")
+    if a.dry_run:
+        print("[exp] dry run; not launching")
+        return
+
+    log = os.path.join(exp_dir, "outputs", "train.log")
+    full = dict(os.environ, **env)
+    with open(log, "ab", buffering=0) as fh:
+        p = subprocess.Popen([cfg["venv_python"]] + argv[1:], cwd=os.path.join(ROOT, "verl-agent"),
+                             env=full, stdout=fh, stderr=subprocess.STDOUT)
+    with open(os.path.join(exp_dir, "outputs", "train.pid"), "w") as fh:
+        fh.write(str(p.pid))
+    print(f"[exp] launched pid {p.pid}, log -> {log}")
+    if not a.no_plot:
+        subprocess.Popen([cfg["venv_python"], os.path.join(ROOT, "scripts", "plot_metrics.py"),
+                          "--exp", exp_dir, "--watch"],
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        print("[exp] plot watcher started")
+
+
+if __name__ == "__main__":
+    main()

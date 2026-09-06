@@ -15,9 +15,25 @@ import sys
 import numpy as np
 import torch
 
-ACG = "/DATA/tracy/agentic-context-grpo"
-sys.path.insert(0, f"{ACG}/verl-agent")
-CKPT = f"{ACG}/experiments/08-27/archive/verl_ccpo_v6_step51/global_step_51/actor/huggingface"
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, ROOT)
+sys.path.insert(0, os.path.join(ROOT, "verl-agent"))
+sys.path.insert(0, os.path.join(ROOT, "docker", "fa_stub"))   # flash-attn has no sm_120 build
+
+
+def _default_ckpt():
+    """The base model this repo trains, or ACG_TEST_CKPT to point elsewhere."""
+    env = os.environ.get("ACG_TEST_CKPT")
+    if env:
+        return env
+    snap = os.path.join(os.environ.get("HF_HOME", os.path.join(ROOT, "hf")), "hub",
+                        "models--Qwen--Qwen2.5-1.5B-Instruct", "snapshots")
+    if os.path.isdir(snap):
+        return os.path.join(snap, sorted(os.listdir(snap))[0])
+    return "Qwen/Qwen2.5-1.5B-Instruct"
+
+
+CKPT = _default_ckpt()
 
 
 def test_estimator():
@@ -67,7 +83,7 @@ def test_estimator():
     for tag, dg in (("bow", dg_bow), ("hidden", dg_hid)):
         print(f"  {tag:<6} phi={dg['phi_mode']:<6} rho={dg['rho']:.2f} "
               f"lam={dg['lam_u_mean']:.3f} E[w]={dg['E_w']:.3f} "
-              f"effect={dg['effect_mean']:.4f} r_vs_g2po={dg['r_vs_g2po']:.3f}")
+              f"effect={dg['effect_mean']:.4f} r_vs_gigpo={dg['r_vs_gigpo']:.3f}")
     assert dg_hid["phi_mode"] == "hidden", "phi_feats ignored"
     assert dg_bow["phi_mode"] == "bow"
 
@@ -85,7 +101,7 @@ def test_estimator():
 
     _, dg0 = ccpo_step_advantage(**common, phi_feats=torch.tensor(feats), rho=0.0)
     print(f"  rho=0 -> lam {dg0['lam_u_mean']:.4f}  "
-          f"{'OK (exact fallback to G2PO)' if dg0['lam_u_mean'] < 1e-6 else 'FAIL'}")
+          f"{'OK (exact fallback to the uniform bucket baseline)' if dg0['lam_u_mean'] < 1e-6 else 'FAIL'}")
     return r_wht > r_raw and g_hid < g_bow and dg0["lam_u_mean"] < 1e-6
 
 

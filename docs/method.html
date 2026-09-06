@@ -168,10 +168,28 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
       diagnostics on this page. <span style="font-family:ui-monospace,Menlo,monospace">b_obs</span> and
       <span style="font-family:ui-monospace,Menlo,monospace">s²</span> were read off unrelated rows of the batch, correlating
       <b>+0.051</b> with the leave-one-out mean they were meant to be. The headline consequence:
-      <span style="font-family:ui-monospace,Menlo,monospace">corr(A<sup>ours</sup>, A<sup>G²PO</sup>)</span> is
+      <span style="font-family:ui-monospace,Menlo,monospace">corr(A<sup>ours</sup>, A<sup>ref</sup>)</span> is
       <b>0.956</b>, not the 0.64 reported below — the “materially distinct estimator” claim <em>was</em> the defect.
       Corrected rows are marked in the diagnostics table. Full before/after, the change ledger and the current
       estimator comparison are in <a href="method-changes.html" style="color:#1f6f6b">method-changes.html</a>.</p>
+      <p style="margin:10px 0 0;font-size:13.5px;line-height:1.6"><b>Second correction, 2026-09-06 — that
+      reference estimator was mislabelled.</b> The quantity written <span style="font-family:ui-monospace,Menlo,monospace">A<sup>G²PO</sup></span> throughout
+      this page was <span style="font-family:ui-monospace,Menlo,monospace">G[i] &minus; mean(G[bucket])</span>: the self-inclusive uniform mean of
+      <em>returns</em> over the anchor bucket. That is <b>GiGPO's</b> step advantage in
+      <span style="font-family:ui-monospace,Menlo,monospace">mean_norm</span> mode (<span style="font-family:ui-monospace,Menlo,monospace">gigpo/core_gigpo.py:334</span>), not G²PO's. G²PO does not
+      compare returns at all — it credits the group-pooled value of the node the action moved <em>into</em>, plus a
+      value-gain edge term. So the 0.956 says CCPO tracks <b>GiGPO</b>; against G²PO's actual estimator CCPO has
+      never been compared. Both references are now computed separately and reported as
+      <span style="font-family:ui-monospace,Menlo,monospace">r_vs_gigpo</span> and <span style="font-family:ui-monospace,Menlo,monospace">r_vs_g2po</span>, and the G²PO port is checked against the
+      published implementation in <span style="font-family:ui-monospace,Menlo,monospace">tests/test_g2po_port.py</span>.</p>
+      <p style="margin:10px 0 0;font-size:13.5px;line-height:1.6"><b>Third correction — the two advantage terms
+      were on different scales.</b> The episode term ran mean-centred in reward units
+      (<span style="font-family:ui-monospace,Menlo,monospace">|A| &asymp; 2.5&ndash;7.5</span> on ALFWorld) while the step term was always standardised
+      (<span style="font-family:ui-monospace,Menlo,monospace">|A| &asymp; 1</span>), so <span style="font-family:ui-monospace,Menlo,monospace">step_advantage_w = 1</span> was in effect a ~5&times;
+      down-weight of the context term. That is a candidate explanation for &sect;05c's &ldquo;the context term is
+      inert&rdquo; which does not require the estimator to be wrong. Both terms now follow one
+      <span style="font-family:ui-monospace,Menlo,monospace">mode</span>, defaulting to <span style="font-family:ui-monospace,Menlo,monospace">mean_std_norm</span> — what the G²PO reference script
+      sets, and the setting under which the GRPO arm is also unit-variance.</p>
     </div>
     <p class="thesis">Existing group-based RL methods <b>prescribe</b> state equivalence — from task, observation, or exact history identity. Ours <b>learns</b> which experiences are equivalent for credit assignment, from their trajectory context, without ever letting reward touch the grouping.</p>
     <div class="status">
@@ -519,7 +537,7 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
           <p class="m" style="background:var(--sunk);padding:6px 10px;border-radius:3px">
           A<sup>CC</sup>(u) = G_u − b_LOO = 0.9 − 0.67 = <strong>+0.23</strong></p>
           <p style="color:var(--ink-2)">Contrast at the same moment — G²PO (uniform, self included):
-          (0.9 + 0.8 + 0.1)/3 = 0.60 → +0.30, inflated by the doomed wanderer and by u grading its own work.
+          (0.9 + 0.8 + 0.1)/3 = 0.60 → +0.30, inflated by the doomed wanderer and by u grading its own work. (This is GiGPO's step advantage, not G²PO's — G²PO would instead compare the <em>node each rollout moved into</em>.)
           GRPO: no step baseline at all — every step of rollout 2 inherits the episode-level +0.59.
           If the three contexts had been indistinguishable, λ* would return the estimate to the (no-self) uniform mean
           0.45 — the conditioning is only spent where it can be cashed.</p>
@@ -589,7 +607,7 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
   <div class="scroll">
     <table>
       <colgroup><col><col><col><col class="ourcol"></colgroup>
-      <thead><tr><th></th><th>GRPO</th><th>G²PO</th><th class="ourhead">ours (A<sup>CC</sup>)</th></tr></thead>
+      <thead><tr><th></th><th>GRPO</th><th>GiGPO<span style="font-weight:400"> (was labelled G²PO)</span></th><th class="ourhead">ours (A<sup>CC</sup>)</th></tr></thead>
       <tbody>
         <tr><td class="dim">Comparison set for this action</td>
           <td>none at step level — the whole <em>episode</em> is judged against all 8 siblings' returns; every step of rollout 2 inherits one number</td>
@@ -601,7 +619,7 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
           <td><span class="m">w(5)=e⁻⁰·⁰≈1.00</span>, <span class="m">w(7)=e⁻¹·⁵≈0.22</span> — φ-distance (t, revisits, progress) discounts the wanderer</td></tr>
         <tr><td class="dim">History awareness</td>
           <td>none — steps aren't distinguished at all</td>
-          <td>one-step <em>sequence</em> only (the edge term knows what came next in your rollout) — but node identity and values stay history-blind: t=4-direct and t=19-lost share V(u), and the same edge credits both identically</td>
+          <td>none — a bucket is one observation and nothing else; t=4-direct and t=19-lost are pooled uniformly. (The edge term this cell used to describe belongs to G²PO, not GiGPO.)</td>
           <td>the whole point: same screen + different journey ⇒ different counterfactual</td></tr>
         <tr><td class="dim">Baseline value at this step</td>
           <td class="num">sibling-mean return ≈ 0.31 (episode-level)</td>
@@ -627,6 +645,71 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
 
 <section>
   <div class="sec-head">
+    <div class="eyebrow">02d — the shipped estimator, 2026-09-06</div>
+    <h2>What actually runs, and what is only an option</h2>
+  </div>
+  <p style="margin:0 0 14px">&sect;02's five equations describe the <em>successor-feature</em> MVP:
+  a frozen &mu;&#771;<sub>&psi;</sub> probed under an entropy floor (Eq. 2) and a distributional distance over a
+  shared action set (Eq. 3). <b>None of that is in the shipped estimator.</b> It lives in
+  <span style="font-family:ui-monospace,Menlo,monospace">ccpo/learned.py</span>, which nothing imports. What
+  <span style="font-family:ui-monospace,Menlo,monospace">ccpo/core_ccpo.py</span> runs is the frozen rung: &phi; is either the reference policy's
+  whitened last-prompt-token hidden state or a hashed bag-of-words, and the affinity is
+  <span style="font-family:ui-monospace,Menlo,monospace">exp(&minus;d/&tau;<sub>b</sub>)</span> on that. Eq. 1, 4 and 5 are faithful; Eq. 2 and 3
+  are the plan, not the code, and the &sect;05 cost model built on probe scoring prices a method that was
+  never the one evaluated.</p>
+  <p style="margin:0 0 14px">Eq. 5 and the &lambda;* dial in &sect;02c still show the MSE shrinkage rule. The
+  shipped default is the positive-part empirical-Bayes rule
+  <span style="font-family:ui-monospace,Menlo,monospace">&lambda;* = max(0, 1 &minus; Var(d)/(&rho;d)&sup2;)</span> on the realised disagreement; the MSE
+  form is kept behind <span style="font-family:ui-monospace,Menlo,monospace">ACG_CCPO_SHRINK=mse</span> and is superseded because, with the bias prior
+  written in sd units, &sigma;&sup2; cancels and it reduces to the n<sub>eff</sub> rule it was written to replace
+  (corr(&lambda;, |d|) = &minus;0.239). See <a href="method-changes.html" style="color:#1f6f6b">method-changes.html</a>.</p>
+  <p style="margin:0 0 14px">Four changes landed on 2026-09-06. One is a fix that is on by default; three are
+  options that default off, so each is a single-flag ablation and none of them silently altered a run.</p>
+  <div class="scroll">
+    <table>
+      <colgroup><col><col><col><col></colgroup>
+      <thead><tr><th>Change</th><th>Flag</th><th>Default</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td class="dim">Both advantage terms share one normalisation</td>
+          <td><span class="m">ACG_ADV_MODE</span></td>
+          <td><b>mean_std_norm</b> (on)</td>
+          <td>The episode term was mean-centred in reward units and the step term always standardised, so
+          <span class="m">step_advantage_w = 1</span> down-weighted the context term by roughly 5&times;.
+          Nothing chose that; it was two defaults meeting. <span class="m">mean_std_norm</span> is what the G²PO
+          reference script sets and leaves the GRPO arm on the same scale.</td></tr>
+        <tr><td class="dim">Credit the successor node value, not the return-to-go</td>
+          <td><span class="m">ACG_CCPO_TARGET=nextnode</span></td>
+          <td>off</td>
+          <td>A discounted return-to-go carries every downstream accident of one trajectory, so conditioning the
+          <em>baseline</em> on context cannot remove noise living in the <em>target</em>. G²PO instead credits
+          <span class="m">V(next(u))</span>, pooled over every sibling that visited that successor. The port is
+          verified against the published implementation; the &phi;-weighted leave-one-out baseline and &lambda;*
+          apply on top unchanged. <b>Unmeasured.</b></td></tr>
+        <tr><td class="dim">Similarity gate instead of byte-exact match</td>
+          <td><span class="m">ACG_CCPO_SIM</span></td>
+          <td>0.0 (exact)</td>
+          <td>GiGPO already ships this (<span class="m">are_similar</span>, SequenceMatcher &ge; 0.95). One
+          changed character currently makes a different bucket, which feeds the singleton rate directly.</td></tr>
+        <tr><td class="dim">Coarse backoff for singleton buckets</td>
+          <td><span class="m">ACG_CCPO_SIM_BACKOFF</span></td>
+          <td>0.0 (off)</td>
+          <td>Around 44 per cent of buckets hold one trajectory and take <span class="m">A<sup>CC</sup> = 0</span>
+          — no step signal at all. HGPO never wastes a sample: it keeps nested groups at several context depths
+          and renormalises its weights over whichever levels have support. Here the second level is a looser
+          similarity cluster whose reference pool is the whole coarse bucket, with &rho; discounted because a
+          looser gate is a less trustworthy metric. Deliberately <em>not</em> a task-level fallback: there
+          <span class="m">b_obs</span> collapses to the task mean and A<sup>CC</sup> would restate A<sup>EP</sup>.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="margin:14px 0 0;font-size:13px;color:#5c5c57">Also: G²PO's edge term
+  <span style="font-family:ui-monospace,Menlo,monospace">V(next) &minus; V(current)</span> is available at
+  <span style="font-family:ui-monospace,Menlo,monospace">ACG_CCPO_EDGE_W&gt;0</span>. It replaces a <span style="font-family:ui-monospace,Menlo,monospace">progress_w</span> block that was
+  unreachable — the trainer never passed it, so this half of G²PO has never run here.</p>
+</section>
+
+<section>
+  <div class="sec-head">
     <div class="eyebrow">03 — full comparison</div>
     <h2>Against the GRPO family</h2>
   </div>
@@ -638,7 +721,7 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
       </tr></thead>
       <tbody>
         <tr><td class="dim">Basic unit</td><td>trajectory</td><td>trajectory + step</td><td>decision step</td><td>graph node + edge</td><td><span class="m">occurrence u = (i,t)</span></td></tr>
-        <tr><td class="dim">Grouping key</td><td><span class="m">task x</span></td><td><span class="m">exact s_t</span></td><td><span class="m">exact C_k(s_t)</span></td><td><span class="m">exact o_t</span></td><td>reward-free predictive signature of <span class="m">χ=(x,o,c)</span></td></tr>
+        <tr><td class="dim">Grouping key</td><td><span class="m">task x</span></td><td><span class="m">exact s_t</span></td><td><span class="m">exact C_k(s_t)</span></td><td><span class="m">exact o_t</span></td><td><span class="m">exact o_t</span> gate, refined by a frozen &phi; neighbourhood over <span class="m">(o,c)</span> <span style="color:#8a8a84">(the predictive signature of &sect;02 is the unshipped learned arm)</span></td></tr>
         <tr><td class="dim">Equivalence is…</td><td>prescribed</td><td>prescribed</td><td>prescribed</td><td>prescribed</td><td><b>inferred</b></td></tr>
         <tr><td class="dim">Uses trajectory context</td><td class="no">✗</td><td class="no">✗</td><td>exact raw suffix only</td><td>only if inside <span class="m">o_t</span></td><td class="yes">✓ history, memory, progress</td></tr>
         <tr><td class="dim">Summarised memory</td><td class="no">✗</td><td class="no">✗</td><td>awkward — needs divisible suffixes</td><td>only via <span class="m">o_t</span></td><td class="yes">✓ natural</td></tr>
@@ -646,10 +729,12 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
         <tr><td class="dim">Same-trajectory references</td><td>n/a</td><td>possible</td><td>possible</td><td>possible</td><td class="yes">forbidden — <span class="m">i_u ≠ i_v</span></td></tr>
         <tr><td class="dim">Reward used to build groups</td><td>fixed</td><td>fixed</td><td>fixed</td><td>fixed</td><td class="yes">never</td></tr>
         <tr><td class="dim">Baseline</td><td>group mean of <span class="m">R_i</span></td><td>state-group statistic</td><td>history-group statistic</td><td>graph-node statistic</td><td>weighted <b>leave-one-out</b></td></tr>
+        <tr><td class="dim">Step credit is computed on</td><td>—</td><td>the step's own discounted return-to-go</td><td>the step's own discounted return-to-go</td><td><b>V(next node)</b>, pooled over every sibling visit</td><td>return-to-go by default; <span class="m">ACG_CCPO_TARGET=nextnode</span> switches to G²PO's</td></tr>
+        <tr><td class="dim">How the trust weight is chosen</td><td>—</td><td>fixed <span class="m">&omega;</span></td><td>fixed power law <span class="m">w_k &prop; (k+1)<sup>&alpha;</sup></span>, &alpha; swept as a hyperparameter <span style="color:#8a8a84">(their Table 4 picks &alpha;=0, i.e. uniform, at K=2)</span></td><td>fixed <span class="m">w</span></td><td><b>&lambda;* per occurrence</b> from the realised <span class="m">Var(d)</span>, <span class="m">n_eff</span> and metric confidence &rho;</td></tr>
         <tr><td class="dim">Effective sample size</td><td>rollout count</td><td>state frequency</td><td>history-group frequency</td><td>node frequency</td><td><span class="m">n_eff</span> over <b>trajectories</b></td></tr>
         <tr><td class="dim">Advantage</td><td><span class="m">A^EP</span></td><td><span class="m">A^EP + ω A^S</span></td><td><span class="m">Σ_k w_k A_k^H</span></td><td><span class="m">A^EP + w(A^NC + A^EC)</span></td><td><span class="m">A^EP + λ_CC A^CC</span></td></tr>
         <tr><td class="dim">Sparse-support behaviour</td><td>—</td><td>rare states weak</td><td>mixes depths</td><td>node aggregation</td><td>explicit shrinkage → G²PO → GRPO</td></tr>
-        <tr><td class="dim">Degenerate limit</td><td>—</td><td>—</td><td>—</td><td>—</td><td><b>G²PO + LOO</b>, i.e. above the baseline</td></tr>
+        <tr><td class="dim">Degenerate limit</td><td>—</td><td>—</td><td>—</td><td>—</td><td><b>GiGPO + LOO</b>, i.e. above that baseline, not above G²PO</td></tr>
         <tr><td class="dim">Rollout cost vs GRPO</td><td>1.0×</td><td>≈1.0×</td><td>≈1.0×</td><td>≈1.0×</td><td>7.5× naive · <b>0.37×</b> shared-prefix</td></tr>
         <tr><td class="dim"><b>End-to-end</b> cost vs GRPO</td><td>1.0×</td><td>≈1.0×</td><td>≈1.0×</td><td>≈1.0×</td><td>1.49× naive · <b>0.95×</b> shared-prefix</td></tr>
         <tr><td class="dim">Summarised memory in the key</td><td class="no">✗</td><td class="no">✗</td><td>needs step-divisible exact suffixes</td><td>only if inside <span class="m">o_t</span></td><td class="yes">✓ <b>the component that works</b></td></tr>
@@ -901,7 +986,7 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
       <thead><tr><th>Question</th><th>Measurement</th><th>Reading</th></tr></thead>
       <tbody>
         <tr style="background:rgba(200,60,50,.07)"><td>Does A<sup>CC</sup> move credit, or is it G²PO in disguise?</td>
-            <td><span class="m">corr(A<sup>ours</sup>, A<sup>G²PO</sup>)</span> = <b>0.956</b>, sign disagreement <b>0.3%</b>, recomputed on all 304,858 dumped samples<br>
+            <td><span class="m">corr(A<sup>ours</sup>, A<sup>GiGPO</sup>)</span> = <b>0.956</b>, sign disagreement <b>0.3%</b>, recomputed on all 304,858 dumped samples<br>
             <span style="opacity:.75">superseded: 0.64 mean over 27 steps (range 0.45–0.94)</span></td>
             <td><b>G²PO in disguise.</b> The 0.64 was produced by an indexing defect — <span class="m">b_obs</span> and
             <span class="m">s²</span> were read off unrelated rows of the batch (correlation <b>+0.051</b> with the

@@ -49,6 +49,36 @@ task. `A_CC` is ours:
 
 Implementation: [`ccpo/core_ccpo.py`](ccpo/core_ccpo.py).
 
+### What the 2026-09-06 revision changed
+
+**A scale bug in how the two terms were combined.** The episode term ran with
+`remove_std=True` (mean-centred, reward units, `|A| ≈ 2.5–7.5` on ALFWorld) while
+the step term was *always* standardised (`|A| ≈ 1`). Nothing chose that: it was
+one hardcoded default meeting another. `step_advantage_w=1` was therefore roughly
+a 5× down-weight of the entire contribution this method exists to make, which is
+a candidate explanation for the "context term is inert" finding in the write-up
+that does not require the estimator to be wrong. Both terms now follow a single
+`mode`, defaulting to `mean_std_norm` — the setting the G²PO reference script
+uses, and the one under which verl's GRPO arm is also unit-variance.
+
+**Three options, all default-off**, so each is a one-flag ablation:
+
+- `ACG_CCPO_TARGET=nextnode` — credit `V(next(u))`, G²PO's group-pooled successor
+  value, instead of the step's own discounted return-to-go. A return-to-go
+  carries every downstream accident of one trajectory, so conditioning the
+  *baseline* on context cannot remove noise that lives in the *target*. This is
+  the largest available change and it is **unmeasured**.
+- `ACG_CCPO_SIM=0.95` — GiGPO's SequenceMatcher observation gate in place of
+  byte-exact matching, so one changed character stops being a new bucket.
+- `ACG_CCPO_SIM_BACKOFF=0.8` — occurrences whose bucket is a singleton (~44% of
+  buckets) currently take `A_CC = 0`; this gives them a second pass in a looser
+  cluster, with ρ discounted because a looser gate is a less trustworthy metric.
+  Deliberately not a task-level fallback: at task level `b_obs` collapses to the
+  task mean and `A_CC` would restate `A_EP`.
+
+`ACG_CCPO_EDGE_W>0` adds G²PO's edge term `V(next) − V(current)`. The dead
+`progress_w` block it replaces was never reachable — the trainer never passed it.
+
 ## Two supporting components
 
 Both default to **off**, so setting `ACG_COMPACT_BUDGET=0 ACG_FORCE_BUDGET=0`
@@ -84,17 +114,29 @@ it:
 
 | quantity | reported before | recomputed correctly |
 |---|---|---|
-| `corr(A_CC, A_G²PO)` | 0.64–0.68 | **0.956** |
-| sign disagreement with G²PO | 23.7% | **0.3%** |
+| `corr(A_CC, A_GiGPO)` | 0.64–0.68 | **0.956** |
+| sign disagreement with GiGPO | 23.7% | **0.3%** |
 | mean \|effect\| | 0.229 | **0.027** |
 | mean signed effect | +0.62 | **+0.0004** |
 | mean `A_CC` (must be ~0) | +0.386 | **−0.026** |
 
 The retraction that matters: **the "materially distinct estimator" claim was the
-bug.** Correctly implemented, and with the bag-of-words φ, CCPO agrees with the
-G²PO step credit on 99.7% of sign decisions — it is the baseline in disguise.
+bug.** Correctly implemented, and with the bag-of-words φ, CCPO agrees with that
+step credit on 99.7% of sign decisions — it is the baseline in disguise.
 Fixed in `core_ccpo.py`; the mean-zero property a group-relative advantage must
 have is restored.
+
+**A second correction, 2026-09-06: that reference estimator was mislabelled.**
+The quantity compared against was `G[i] − mean(G[bucket])` — the self-inclusive
+uniform mean of returns over the anchor bucket. That is **GiGPO's** step
+advantage in `mean_norm` mode ([`core_gigpo.py:334`](https://github.com/langfengQ/verl-agent/blob/master/gigpo/core_gigpo.py)),
+not G²PO's. G²PO does not compare returns at all: it credits the group-pooled
+value of the node the action moved *into*, plus a value-gain edge term
+(`compute_step_level_advantage`). Both references are now computed separately
+and reported as `r_vs_gigpo` and `r_vs_g2po`; the G²PO port is checked against
+the published implementation in `tests/test_g2po_port.py`. **CCPO has never been
+compared against G²PO's actual estimator** — the correlation above says only
+that CCPO tracks GiGPO.
 
 ## What has been measured
 
@@ -148,12 +190,20 @@ the measurement log — including the negative results.
 
 ```
 ccpo/                     the estimator (core_ccpo.py) and a learned-φ variant
-patches/verl-agent/       files that replace their verl-agent counterparts
-scripts/                  training, eval, generation-sidecar and supervisor scripts
+patches/verl-agent/       our edits; the SOURCE OF TRUTH for every modified file
+verl-agent/               runnable overlay = upstream + patches (gitignored)
+scripts/                  setup_env.sh, exp_run.py, plot_metrics.py, sync_patches.sh
+scripts/legacy/           the sm_120 HF-rollout + vLLM-sidecar era, kept for its notes
+experiments/              one self-contained directory per run (see its README)
 tests/                    guards on shipped behaviour (see below)
 docs/                     method write-up + the revision record
 docker/                   container build + flash-attn import stub (sm_120)
+related-works/            PDFs of the four ancestors (GRPO, GiGPO, HGPO, G²PO)
+baselines/                reference checkouts of their code (gitignored)
 ```
+
+Edit modified upstream files under `patches/`, then `scripts/sync_patches.sh`.
+Never edit `verl-agent/` directly — it is regenerated from `patches/`.
 
 `patches/` mirrors verl-agent's tree: copy each file over the corresponding path
 in a verl-agent checkout. The modified files carry inline comments explaining
@@ -162,19 +212,21 @@ each change and why it was needed.
 ## Running
 
 ```bash
-# CCPO
-scripts/run_verl_ccpo.sh 0,1,2,3,4,5 ccpo verl_ccpo_alfworld
-
-# GRPO baseline — identical config, one flag
-scripts/run_verl_ccpo.sh 0,1,2,3,4,5 grpo verl_grpo_alfworld
-
-# from INSIDE the trainer container (no docker CLI needed)
-scripts/run_local_ccpo.sh ccpo
-scripts/sidecar_status.sh
-
-# evaluate a checkpoint's HF export on either split
-scripts/run_eval_split.sh <hf_dir> eval_out_of_distribution my_tag
+scripts/setup_env.sh                     # venv, vLLM 0.11 + torch cu128, verl-agent,
+                                         # ALFWorld + data, Qwen2.5-1.5B-Instruct
+scripts/exp_run.py --name ccpo-base --arm ccpo
+scripts/exp_run.py --name grpo-base --arm grpo --set gpus=2,3
+scripts/plot_metrics.py --compare experiments/a experiments/b -o experiments/compare.png
 ```
+
+Each run writes `experiments/<name>-<date>/` holding the full resolved config, the
+exact command, per-step metrics as JSONL, live plots, and exactly two checkpoints
+(`stepN-best`, `stepN-last`). See [`experiments/README.md`](experiments/README.md)
+for the layout and [`experiments/PLAN.md`](experiments/PLAN.md) for the schedule.
+
+Defaults mirror the G²PO reference ALFWorld script, so every arm is comparable to
+the published baselines by construction; each `config.json` records which settings
+are matched and which differ (only hardware-forced ones do).
 
 Key environment variables (all with defaults in the launcher):
 
@@ -188,8 +240,16 @@ Key environment variables (all with defaults in the launcher):
 | `ACG_CCPO_DUMP` | — | path for per-sample diagnostics CSV |
 | `ACG_CCPO_PHI` | `hidden` | affinity metric: reference-policy hidden state, or `bow` |
 | `ACG_CCPO_WHITEN` | 3 | principal directions removed before distances |
-| `ACG_CCPO_RHO` | 0.59 | confidence in the metric, `2(AUC−0.5)`; 0 ⇒ exact G²PO fallback |
+| `ACG_CCPO_RHO` | 0.59 | confidence in the metric, `2(AUC−0.5)`; 0 ⇒ exact uniform-baseline fallback |
 | `ACG_CCPO_SHRINK` | `eb` | shrinkage rule; `mse` reproduces the superseded form |
+| `ACG_CCPO_TARGET` | `return` | what the step credit is computed on; `nextnode` uses G²PO's successor node value |
+| `ACG_CCPO_SIM` | 0.0 | observation gate; >0 uses GiGPO's SequenceMatcher clustering (theirs: 0.95) |
+| `ACG_CCPO_SIM_BACKOFF` | 0.0 | looser second gate for occurrences a singleton bucket leaves at `A_CC=0` |
+| `ACG_CCPO_BACKOFF_RHO` | 0.5 | ρ discount at that coarse level |
+| `ACG_CCPO_EDGE_W` | 0.0 | weight on G²PO's edge term `V(next) − V(current)` |
+| `ACG_ADV_MODE` | `mean_std_norm` | normalisation applied to **both** advantage terms |
+| `ACG_G2PO_COMPAT` | 0 | 1 sets response length 512, unrestricted train sampling, 100 epochs |
+| `ACG_MAX_RESP` | 768 | max response length (G²PO reference: 512) |
 | `ACG_EVAL_SPLIT` | `eval_in_distribution` | `valid_seen` (reference default) or `eval_out_of_distribution` |
 | `ACG_VAL_TEMP` | 0.4 | validation temperature, matching the reference script |
 
@@ -219,6 +279,7 @@ silently.
 ```bash
 python tests/test_phi_hidden.py     # needs 1 GPU for the second half
 python tests/test_digest_trim.py
+python tests/test_g2po_port.py      # test 1 needs baselines/G2PO checked out
 ```
 
 `test_phi_hidden.py` checks that whitening recovers a state direction hidden

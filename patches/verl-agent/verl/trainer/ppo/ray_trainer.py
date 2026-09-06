@@ -345,10 +345,19 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
         data.batch["returns"] = returns
     elif adv_estimator == AdvantageEstimator.CCPO:
         from ccpo import core_ccpo
+        # Normalisation convention, shared by BOTH terms. core_gigpo/core_g2po
+        # spell it `mode`, where remove_std=True means "subtract the mean only".
+        # This used to be hardcoded to True for the episode term while the step
+        # term below was always standardised -- so on ALFWorld the episode term
+        # ran at |A| ~ 2.5-7.5 (reward units) against a step term at |A| ~ 1, and
+        # step_advantage_w=1 was roughly a 5x down-weight of the whole
+        # contribution this method exists to make. The two now follow one mode.
+        _mode = kwargs.get('ccpo_mode', gigpo_mode)
+        _remove_std = (_mode != 'mean_std_norm')
         episode_adv = core_gigpo.episode_norm_reward(
             data.batch['token_level_rewards'], data.batch['response_mask'],
             data.non_tensor_batch['uid'], data.non_tensor_batch['traj_uid'],
-            1e-6, kwargs.get('ccpo_remove_std', True))
+            1e-6, _remove_std)
         phi = core_ccpo.FrozenPhi(context_weight=kwargs.get('ccpo_context_weight', 1.0))
         step_adv, diag = core_ccpo.ccpo_step_advantage(
             step_rewards=data.batch['step_rewards'],
@@ -360,23 +369,43 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
             aff_labels=data.non_tensor_batch.get('anchor_aff'),
             step_tag=kwargs.get('ccpo_step_tag', ''),
             phi_feats=data.batch.get('ccpo_phi_feats'),
+            # G2PO's node values need the episode return and the validity flag.
+            # Supplied unconditionally: they cost one pass over the batch and
+            # they are what makes r_vs_g2po a real measurement rather than nan.
+            episode_rewards=data.non_tensor_batch.get('episode_rewards'),
+            is_action_valid=data.non_tensor_batch.get('is_action_valid'),
+            gamma=gamma,
             return_diag=True)
-        print(f"[ccpo] phi={diag.get('phi_mode','?')} rho={diag.get('rho', float('nan')):.2f} "
+        print(f"[ccpo] phi={diag.get('phi_mode','?')} target={diag.get('target','?')} "
+              f"mode={_mode} rho={diag.get('rho', float('nan')):.2f} "
               f"lam_u={diag['lam_u_mean']:.3f} lam>.5={diag['lam_u_gt50']:.2f} "
               f"n_eff={diag['n_eff_mean']:.2f} E[w]={diag['E_w']:.3f} "
-              f"live={diag['live_frac']:.2f} buckets={diag['n_buckets']} "
+              f"live={diag['live_frac']:.2f} lvl1={diag.get('lvl1_frac', 0.0):.2f} "
+              f"buckets={diag['n_buckets']} "
               f"acc_len_r={diag.get('acc_len_corr', float('nan')):.3f} "
               f"effect={diag.get('effect_mean', float('nan')):.4f} "
               f"effect_rel={diag.get('effect_rel', float('nan')):.3f} "
+              f"r_vs_gigpo={diag.get('r_vs_gigpo', float('nan')):.4f} "
               f"r_vs_g2po={diag.get('r_vs_g2po', float('nan')):.4f}", flush=True)
-        if kwargs.get('ccpo_step_norm', 'std') == 'std':
-            # standardise the step advantage per task over its live entries so
-            # step_advantage_w=1 means equal weight with the (already std-normalised)
-            # episode term -- the GiGPO/G2PO mean_std_norm convention.
+        # Step-term scaling. 'mode' (default) follows the episode term:
+        #   mean_std_norm -> standardise per task, both terms unit-variance
+        #   mean_norm     -> leave A^CC in reward units, as GiGPO leaves its own
+        #                    step term, so the two are already commensurate
+        # 'std' reproduces the previous always-standardise behaviour and 'none'
+        # disables scaling entirely; both are kept for ablation.
+        _sn = kwargs.get('ccpo_step_norm', 'mode')
+        _do_std = (_sn == 'std') or (_sn == 'mode' and not _remove_std)
+        if _do_std:
+            # Live rows come from the estimator's own mask. Testing
+            # abs(A^CC) > 0 instead -- as this did -- silently excluded any
+            # occurrence whose credit landed exactly on zero and made the
+            # divisor depend on how many buckets happened to be live.
             _uid = data.non_tensor_batch['uid']
+            _live = diag.get('live_mask')
             _sa = step_adv.clone()
             for _t_ in set(str(u) for u in _uid):
-                _ids = [k for k in range(len(_sa)) if str(_uid[k]) == _t_ and abs(float(_sa[k])) > 0]
+                _ids = [k for k in range(len(_sa)) if str(_uid[k]) == _t_
+                        and (bool(_live[k]) if _live is not None else abs(float(_sa[k])) > 0)]
                 if len(_ids) > 1:
                     _ix = torch.tensor(_ids)
                     _v = _sa[_ix]
@@ -385,6 +414,31 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
         scores = episode_adv + step_advantage_w * step_adv.unsqueeze(-1) * data.batch['response_mask']
         data.batch['advantages'] = scores
         data.batch['returns'] = scores
+        # Surface every estimator term for downstream analysis. Printing them to
+        # the console only, as this used to, means the one quantity that says
+        # whether the method is doing anything (effect_rel, r_vs_*) is not in any
+        # machine-readable record of the run.
+        _diag_keys = ('lam_u_mean', 'lam_u_gt50', 'n_eff_mean', 'E_w', 'live_frac',
+                      'lvl1_frac', 'n_buckets', 'effect_mean', 'effect_p90',
+                      'effect_rel', 'r_vs_gigpo', 'r_vs_g2po', 'acc_len_corr',
+                      'rho', 'edge_cov')
+        _m = {f'ccpo/{k}': float(diag[k]) for k in _diag_keys
+              if k in diag and diag[k] is not None}
+        _m['ccpo/adv_ep_absmean'] = float(episode_adv[data.batch['response_mask'].bool()].abs().mean())
+        _sa_live = step_adv[torch.as_tensor(diag['live_mask'])] if diag.get('live_mask') is not None else step_adv
+        _m['ccpo/adv_cc_absmean'] = float(_sa_live.abs().mean()) if _sa_live.numel() else 0.0
+        # the ratio the mean_std_norm fix exists to keep near 1
+        _m['ccpo/adv_ep_over_cc'] = (_m['ccpo/adv_ep_absmean'] / _m['ccpo/adv_cc_absmean']
+                                     if _m['ccpo/adv_cc_absmean'] > 1e-9 else float('nan'))
+        _bk = defaultdict(int)
+        for _o, _u in zip(data.non_tensor_batch['anchor_obs'], data.non_tensor_batch['uid']):
+            _bk[(str(_u), str(_o))] += 1
+        _sz = np.array(sorted(_bk.values()), dtype=float) if _bk else np.zeros(1)
+        _m['ccpo/bucket_size_mean'] = float(_sz.mean())
+        _m['ccpo/bucket_size_p90'] = float(np.percentile(_sz, 90))
+        _m['ccpo/bucket_singleton_frac'] = float((_sz <= 1).mean())
+        data.meta_info = dict(data.meta_info or {})
+        data.meta_info['ccpo_diag'] = _m
     elif adv_estimator == AdvantageEstimator.GiGPO:
         advantages, returns = core_gigpo.compute_gigpo_outcome_advantage(
             token_level_rewards=data.batch['token_level_rewards'], # for episode group reward computing
@@ -1336,8 +1390,28 @@ class RayPPOTrainer:
                         if _score is not None and _score > self._acg_best:
                             self._acg_best = _score
                             self._acg_pending_best = (self.global_steps, float(_score))
+                            self._acg_stale_evals = 0
+                        elif _score is not None:
+                            self._acg_stale_evals = getattr(self, "_acg_stale_evals", 0) + 1
+                        # ACG early stopping. Evaluation here is stochastic by design
+                        # (T=0.4, +/-0.048 on 128 episodes), so patience counts
+                        # EVALUATIONS WITHOUT A NEW BEST, not a single bad point, and
+                        # nothing can stop before min_steps -- a run that has not yet
+                        # had a fair chance is not a run worth stopping.
+                        _es_pat = int(os.environ.get("ACG_EARLY_STOP_PATIENCE", "0"))
+                        _es_min = int(os.environ.get("ACG_EARLY_STOP_MIN_STEPS", "30"))
+                        if (_es_pat > 0 and self.global_steps >= _es_min
+                                and getattr(self, "_acg_stale_evals", 0) >= _es_pat):
+                            print(f"[early-stop] no new best in {self._acg_stale_evals} evaluations "
+                                  f"(best {self._acg_best:.4f}); stopping at step {self.global_steps}",
+                                  flush=True)
+                            self._acg_stop = True
+                            is_last_step = True
+                            last_val_metrics = val_metrics
+                        metrics['train/early_stop_stale_evals'] = float(getattr(self, "_acg_stale_evals", 0))
+                        metrics['val/best_success_rate'] = float(self._acg_best)
 
-                    if self.config.trainer.save_freq > 0 and (is_last_step or self.global_steps % self.config.trainer.save_freq == 0):
+                    if self.config.trainer.save_freq > 0 and (is_last_step or getattr(self, "_acg_stop", False) or self.global_steps % self.config.trainer.save_freq == 0):
                         with _timer("save_checkpoint", timing_raw):
                             self._save_checkpoint()
                         # acg: last-stepN symlink + hardlinked best-stepN copy (instant, shares blocks)
@@ -1345,16 +1419,16 @@ class RayPPOTrainer:
                         _root = self.config.trainer.default_local_dir
                         _cur = _os.path.join(_root, f"global_step_{self.global_steps}")
                         if _os.path.isdir(_cur):
-                            for _l in _glob.glob(_os.path.join(_root, "last-step*")):
+                            for _l in _glob.glob(_os.path.join(_root, "step*-last")):
                                 if _os.path.islink(_l): _os.unlink(_l)
-                            _os.symlink(_cur, _os.path.join(_root, f"last-step{self.global_steps}"))
+                            _os.symlink(_cur, _os.path.join(_root, f"step{self.global_steps}-last"))
                             _pb = getattr(self, "_acg_pending_best", None)
                             if _pb is not None and _pb[0] == self.global_steps:
                                 # copy first, delete the previous best only once the new one exists
-                                _new = _os.path.join(_root, f"best-step{self.global_steps}")
+                                _new = _os.path.join(_root, f"step{self.global_steps}-best")
                                 _sp.run(["cp", "-al", _cur, _new], check=False)
                                 if _os.path.isdir(_new):
-                                    for _b in _glob.glob(_os.path.join(_root, "best-step*")):
+                                    for _b in _glob.glob(_os.path.join(_root, "step*-best")):
                                         if _b != _new:
                                             _sp.run(["rm", "-rf", _b], check=False)
                                 _json.dump({"step": _pb[0], "val_success_rate": _pb[1]},
@@ -1366,6 +1440,10 @@ class RayPPOTrainer:
                                          key=lambda d: int(d.rsplit("_", 1)[1]))
                             for _old in _gs[:-2]:
                                 _sp.run(["rm", "-rf", _old], check=False)
+
+                _cd = (batch.meta_info or {}).get('ccpo_diag')
+                if _cd:
+                    metrics.update(_cd)
 
                 # training metrics
                 metrics.update(

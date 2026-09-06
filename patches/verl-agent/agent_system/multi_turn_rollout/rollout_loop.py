@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import torch
 import numpy as np
 from verl import DataProto
@@ -142,8 +143,9 @@ class TrajectoryCollector:
             print(f"[tmpl-debug] kwargs={apply_chat_template_kwargs} tail={prompt_with_chat_template[-60:]!r}", flush=True)
         if item in (0, 6, 7) and getattr(TrajectoryCollector, "_p_logged", 0) < 6:
             TrajectoryCollector._p_logged = getattr(TrajectoryCollector, "_p_logged", 0) + 1
-            print(f"[prompt-debug] item={item} len_chars={len(prompt_with_chat_template)} head={prompt_with_chat_template[:150]!r}", flush=True)
-            print(f"[prompt-debug] item={item} tail={prompt_with_chat_template[-120:]!r}", flush=True)
+            if os.environ.get("ACG_DEBUG_SAMPLES"):
+                print(f"[prompt-debug] item={item} len_chars={len(prompt_with_chat_template)} head={prompt_with_chat_template[:150]!r}", flush=True)
+                print(f"[prompt-debug] item={item} tail={prompt_with_chat_template[-120:]!r}", flush=True)
         
         # Initialize return dict
         row_dict = {}
@@ -422,8 +424,9 @@ class TrajectoryCollector:
                         print(f"[pair-debug] i={_i} failed: {_e}", flush=True)
             TrajectoryCollector._resp_calls = getattr(TrajectoryCollector, "_resp_calls", 0) + 1
             if TrajectoryCollector._resp_calls in (1, 3, 4):
-                print(f"[resp-debug] len={len(text_actions[0])} chars | head={text_actions[0][:300]!r}", flush=True)
-                print(f"[resp-debug] tail={text_actions[0][-200:]!r}", flush=True)
+                if os.environ.get("ACG_DEBUG_SAMPLES"):
+                    print(f"[resp-debug] len={len(text_actions[0])} chars | head={text_actions[0][:300]!r}", flush=True)
+                    print(f"[resp-debug] tail={text_actions[0][-200:]!r}", flush=True)
             
             next_obs, rewards, dones, infos = envs.step(text_actions)
 

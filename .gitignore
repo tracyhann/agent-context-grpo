@@ -1,6 +1,25 @@
 __pycache__/
 *.pyc
 *.log
-*.csv
 results/
 checkpoints/
+
+# reference checkouts of published baselines (see baselines/README.md)
+baselines/*/
+
+# runnable overlay: upstream verl-agent + patches/. Rebuild with
+# scripts/sync_patches.sh; patches/ is the source of truth for our edits.
+/verl-agent/
+
+# environment and data, rebuilt by scripts/setup_env.sh
+/.venv/
+/hf/
+/alfworld_data/
+/envdata/
+
+# per-run artefacts: config.json, NOTES.md, metrics.jsonl and plots/ are tracked;
+# weights, raw logs and per-sample dumps are not
+experiments/*/outputs/checkpoints/
+experiments/*/outputs/train.log
+experiments/*/outputs/train.pid
+experiments/*/outputs/*.csv

@@ -57,9 +57,26 @@ export ACG_SIDECAR_PORTS=8101,8101,8102,8103,8104,8105   # rank0 shares GPU-1's 
 export ACG_SIDECAR_MODEL=acg
 export ACG_SIDECAR_STATE=$ACG_ROOT/experiments/08-27/results/$TAG/sidecar_state.json
 export ACG_SIDECAR_ITER=$ACG_ROOT/experiments/08-27/results/$TAG/latest_checkpointed_iteration.txt
-# Comprehensive CCPO diagnostics: per-sample rows (lam, b_loo, b_obs, effect,
-# adv vs G2PO-equivalent, affordance label) for the effect-size and conflation analyses.
+# Comprehensive CCPO diagnostics: per-sample rows (level, lam, b_loo, b_obs,
+# effect, our advantage against BOTH reference estimators, affordance label).
+# Response-length pairs go to $ACG_CCPO_DUMP.len.csv -- they used to be appended
+# to this same file under a different schema, which made it unparseable.
 export ACG_CCPO_DUMP=$ACG_ROOT/experiments/08-27/results/$TAG/ccpo_samples.csv
+# ---- CCPO estimator knobs (all default to the pre-2026-09-06 behaviour) -----
+# target=nextnode swaps the step credit's TARGET from the step's own discounted
+# return-to-go to G2PO's successor node value V(next(u)) -- the quantity G2PO
+# actually credits. This is the largest single change available here and it is
+# UNMEASURED; leave it at `return` unless you are running the comparison.
+export ACG_CCPO_TARGET=${ACG_CCPO_TARGET:-return}
+# sim>0 replaces the byte-exact observation gate with GiGPO's SequenceMatcher
+# clustering (their default is 0.95). sim_backoff>0 gives occurrences whose
+# level-0 bucket is a singleton a second chance in a looser cluster.
+export ACG_CCPO_SIM=${ACG_CCPO_SIM:-0.0}
+export ACG_CCPO_SIM_BACKOFF=${ACG_CCPO_SIM_BACKOFF:-0.0}
+export ACG_CCPO_BACKOFF_RHO=${ACG_CCPO_BACKOFF_RHO:-0.5}
+# weight on G2PO's edge term V(next)-V(current), standardised per task
+export ACG_CCPO_EDGE_W=${ACG_CCPO_EDGE_W:-0.0}
+export ACG_CCPO_INVALID_PEN=${ACG_CCPO_INVALID_PEN:-0.1}
 # Budget forcing (decode-time): cap the think block, then force </think><action>
 # on any response that lacks one. Truncation-without-action becomes impossible.
 # Validated offline: parseable 5/8 -> 8/8, max length 659 -> 313.
@@ -70,6 +87,33 @@ export ACG_FORCE_TAIL=${ACG_FORCE_TAIL:-32}
 # observation; failures revisit 2.68x as often as successes.
 export ACG_COMPACT_BUDGET=${ACG_COMPACT_BUDGET:-512}
 mkdir -p $ACG_ROOT/experiments/08-27/results/$TAG
+# ---- comparability with the G2PO reference -------------------------------
+# g2po_official/examples/g2po_trainer/run_alfworld.sh, which is where their
+# published ALFWorld numbers come from. Already identical here: val_batch_size
+# 128, group 8, max_prompt_length 2048, lr 1e-6, kl 0.01 low_var_kl, gamma 0.95,
+# step_advantage_w 1.0, invalid-action penalty 0.1, env.max_steps 50, env.seed 0,
+# eval split eval_in_distribution (valid_seen), val temp 0.4 / do_sample.
+#
+# ACG_G2PO_COMPAT=1 aligns the three that still differ by choice. What it CANNOT
+# align is hardware-forced: base model (Qwen3-1.7B vs their Qwen2.5-1.5B-Instruct),
+# rollout engine (hf + vLLM sidecar vs in-process vllm), use_remove_padding
+# (no flash-attn on sm_120), and the batch/GPU geometry. Those stay differences,
+# so published G2PO numbers remain regime context, not a parity claim.
+if [ "${ACG_G2PO_COMPAT:-0}" = 1 ]; then
+  ACG_MAX_RESP=${ACG_MAX_RESP:-512}       # theirs: 512 (ours had 768)
+  ACG_TRAIN_TOPP=${ACG_TRAIN_TOPP:-1.0}   # theirs: unset -> 1.0 (ours 0.95, Qwen3 card)
+  ACG_TRAIN_TOPK=${ACG_TRAIN_TOPK:-0}     # theirs: unset -> unrestricted (ours 20)
+  ACG_EPOCHS=${ACG_EPOCHS:-100}           # theirs: 100 (ours 75)
+fi
+MAX_RESP=${ACG_MAX_RESP:-768}
+TRAIN_TOPP=${ACG_TRAIN_TOPP:-0.95}
+TRAIN_TOPK=${ACG_TRAIN_TOPK:-20}
+# Normalisation convention, applied to the episode AND step terms alike. The
+# G2PO reference script sets mean_std_norm, and verl's GRPO arm standardises by
+# default (norm_adv_by_std_in_grpo=True) -- so this is the only setting under
+# which all three arms carry advantages of the same scale and step_advantage_w=1
+# means what it says. verl-agent's own default is mean_norm.
+ADV_MODE=${ACG_ADV_MODE:-mean_std_norm}
 MODEL=/DATA/tracy/hf/hub/models--Qwen--Qwen3-1.7B/snapshots/70d244cc86ccca08cf5af4e1e306ecf908b1ad5e
 DATA=$ACG_ROOT/envdata/verl_data
 cd "$ACG_ROOT/verl-agent"
@@ -86,7 +130,7 @@ RP=False; "$VENV/python" -c "import flash_attn_2_cuda" 2>/dev/null && RP=True
     data.train_batch_size=$TB \
     data.val_batch_size=128 \
     data.max_prompt_length=2048 \
-    data.max_response_length=768 \
+    data.max_response_length=$MAX_RESP \
     data.filter_overlong_prompts=True \
     data.truncation='error' \
     data.return_raw_chat=True \
@@ -110,8 +154,8 @@ RP=False; "$VENV/python" -c "import flash_attn_2_cuda" 2>/dev/null && RP=True
     actor_rollout_ref.rollout.enable_chunked_prefill=False \
     actor_rollout_ref.rollout.enforce_eager=True \
     actor_rollout_ref.rollout.free_cache_engine=False \
-    actor_rollout_ref.rollout.top_p=0.95 \
-    actor_rollout_ref.rollout.top_k=20 \
+    actor_rollout_ref.rollout.top_p=$TRAIN_TOPP \
+    actor_rollout_ref.rollout.top_k=$TRAIN_TOPK \
     actor_rollout_ref.rollout.val_kwargs.temperature=${ACG_VAL_TEMP:-0.4} \
     actor_rollout_ref.rollout.val_kwargs.top_p=1.0 \
     actor_rollout_ref.rollout.val_kwargs.top_k=0 \
@@ -123,6 +167,7 @@ RP=False; "$VENV/python" -c "import flash_attn_2_cuda" 2>/dev/null && RP=True
     algorithm.use_kl_in_reward=False \
     algorithm.gamma=0.95 \
     algorithm.gigpo.step_advantage_w=1.0 \
+    algorithm.gigpo.mode=$ADV_MODE \
     env.env_name=alfworld/AlfredTWEnv \
     env.seed=0 \
     env.max_steps=50 \
