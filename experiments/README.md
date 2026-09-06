@@ -199,7 +199,7 @@ Regenerate the live view with `scripts/exp_status.py --md`.
 
 | experiment | arm | purpose | status |
 |---|---|---|---|
-| `gigpo-repro-20260906` | gigpo | reproduce published GiGPO (90.16 / 84.76) to validate the harness | running |
+| `gigpo-repro-20260906` | gigpo | reproduce published GiGPO (90.16 / 84.76) to validate the harness | running — step 5 held-out **0.195** (untrained baseline 0.041) |
 
 Analysis helpers:
 
