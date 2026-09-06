@@ -3,6 +3,7 @@
 set -x
 cd /workspace/verl-agent
 export \
+  ACG_ADV_ESTIMATOR=gigpo \
   ACG_CCPO_BACKOFF_RHO=0.5 \
   ACG_CCPO_DUMP=/workspace/experiments/gigpo-repro-20260906/outputs/ccpo_samples.csv \
   ACG_CCPO_EDGE_W=0.0 \
@@ -59,14 +60,14 @@ exec /workspace/.venv/bin/python3 -m \
   actor_rollout_ref.actor.optim.lr=1e-06 \
   actor_rollout_ref.model.use_remove_padding=False \
   actor_rollout_ref.actor.ppo_mini_batch_size=256 \
-  actor_rollout_ref.actor.ppo_micro_batch_size_per_gpu=8 \
+  actor_rollout_ref.actor.ppo_micro_batch_size_per_gpu=32 \
   actor_rollout_ref.actor.use_kl_loss=True \
   actor_rollout_ref.actor.kl_loss_coef=0.01 \
   actor_rollout_ref.actor.kl_loss_type=low_var_kl \
   actor_rollout_ref.model.enable_gradient_checkpointing=True \
   actor_rollout_ref.actor.fsdp_config.param_offload=False \
   actor_rollout_ref.actor.fsdp_config.optimizer_offload=False \
-  actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu=8 \
+  actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu=32 \
   actor_rollout_ref.rollout.tensor_model_parallel_size=1 \
   actor_rollout_ref.rollout.name=vllm \
   actor_rollout_ref.rollout.gpu_memory_utilization=0.5 \
@@ -80,7 +81,7 @@ exec /workspace/.venv/bin/python3 -m \
   actor_rollout_ref.rollout.val_kwargs.top_p=1.0 \
   actor_rollout_ref.rollout.val_kwargs.top_k=-1 \
   actor_rollout_ref.rollout.val_kwargs.do_sample=True \
-  actor_rollout_ref.ref.log_prob_micro_batch_size_per_gpu=8 \
+  actor_rollout_ref.ref.log_prob_micro_batch_size_per_gpu=32 \
   actor_rollout_ref.ref.fsdp_config.param_offload=True \
   actor_rollout_ref.actor.use_invalid_action_penalty=True \
   actor_rollout_ref.actor.invalid_action_penalty_coef=0.1 \
