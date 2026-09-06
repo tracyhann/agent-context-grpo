@@ -176,7 +176,7 @@ Note `V(g)` carries trajectory-length information through `γ^(T−t)`, so watch
 
 ## Settled — refuted
 
-### [~] H-A. Uncertainty should measure *grouping relevance*, not penalise within-bucket variance
+### [!] H-A. Uncertainty should measure *grouping relevance*, not penalise within-bucket variance
 
 > **SETTLED 2026-09-06 by `ccpo-mem-20260906` — the second branch.**
 > φ-distance does **not** predict target-distance inside a bucket — measured
@@ -199,7 +199,36 @@ Note `V(g)` carries trajectory-length information through `γ^(T−t)`, so watch
 > | `phi_rel_corr` | +0.0057 | +0.512 | 0.092 | +0.020 -> +0.043 |
 > | frac buckets > 0 | +0.0151 | +0.576 | **0.046** | 0.440 -> 0.490 |
 >
-> **Caveat added at step 11 — that significance was fragile.** One more point moved
+> **FINAL, n=14 — the premise is true and negligible.** Enough points to stop
+> re-litigating:
+>
+> ```
+> phi_rel_corr    mean +0.0306  sd 0.0318  95% CI [+0.0140, +0.0473]   excludes zero
+> frac buckets>0  mean 0.464                                           below 0.50 chance
+> trend p-value   s10 0.046 -> s11 0.112 -> s12 0.312 -> s13 0.095 -> s14 0.324
+> implied R^2     0.00094   ->  an R^2-driven lambda of ~0.0009
+> ```
+>
+> **Three conclusions, all needed together:**
+>
+> 1. **φ-similarity does predict return-similarity.** The mean is +0.031 with a 95%
+>    CI that excludes zero. The categorical claim "φ carries no signal" — which this
+>    file asserted twice — is **false**.
+> 2. **There is no trend.** The apparent climb through step 10 was a small-sample
+>    artefact; the p-value wandered 0.046 -> 0.32 -> 0.095 -> 0.32 as points
+>    arrived. The relevance is roughly constant, not growing with training.
+> 3. **It is negligible.** r = 0.031 means R^2 = 0.0009. Even the sharpest possible
+>    relevance-driven shrinkage rule — the one proposed in this entry — would set
+>    λ ~ 0.001. λ = 0 is not a failure of the rule; it is the right answer, arrived
+>    at from a rule that happens to be testing something else.
+>
+> The mean being positive while only 46% of buckets exceed zero is the heavy-tail
+> signature from H-G: a minority of buckets carry the signal. That remains the one
+> structurally interesting thing here, and it is still gated on H-F.
+>
+> ---
+>
+> *(superseded) Caveat added at step 11 — that significance was fragile.* One more point moved
 > the bucket-fraction trend from p = 0.046 to **p = 0.112**, and the correlation
 > trend from 0.092 to 0.085. With n ~ 10 a single observation flips the verdict, so
 > "significant at the 0.05 level" was over-read. The *direction* is stable across
