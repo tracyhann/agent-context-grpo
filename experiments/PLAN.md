@@ -42,15 +42,23 @@ by design (T=0.4, 128 episodes, ~±0.048 measured), so a single run is not a res
 
 ## Measured budget
 
-From `gigpo-repro-20260906`: ~3.2 s per rollout turn over 128 environments, so a
-50-turn rollout is ~2.7 min; warm start ~1 min. With
-`ppo_micro_batch_size_per_gpu` at the reference 32 a step lands around 5–6 min,
-plus a validation pass every 5 steps. **100 steps is therefore roughly 8–10 h per
-arm.**
+From `gigpo-repro-20260906`, after enabling flash-attn and `use_remove_padding`:
+**333 s per step** (was 851 s padded), of which `gen` is 177 s and is now the
+floor — 50 turns over 128 environments at ~3.3 s each, which is vLLM plus
+TextWorld, not something a config change reaches. A validation pass runs every 5
+steps. **100 steps is roughly 10 h per arm.**
 
-Arms cannot run in parallel here — each needs ~192 ALFWorld ray actors and two
-sets would exceed the container's 8192-pid ceiling (see `README.md`). So the
-schedule is sequential, and Phase 1's three arms would be ~30 h. If the budget is
+Arms cannot run in parallel here, and the packing speedup does not change that:
+the binding constraint is ~192 ALFWorld ray actors per arm against the container's
+8192-pid ceiling, and the actor count is set by `train_batch_size × group_size`,
+not by GPU count. Two idle GPUs do not buy a second arm. So the schedule is
+sequential and Phase 1's three arms would be ~30 h.
+
+**Realistic allocation:** two arms. `gigpo-repro` (running) then `ccpo-pooled`.
+That yields the harness validation, the strongest baseline this box can reproduce,
+and the method measured against it on an identical config. GRPO is covered by the
+published 72.8 / 70.1 on exactly this model and protocol, and is the arm to run
+third if time allows. If the budget is
 tighter than that, the order to cut is:
 
 1. `gigpo-repro` — never cut. Without it no number here means anything.
