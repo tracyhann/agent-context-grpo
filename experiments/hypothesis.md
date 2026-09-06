@@ -93,6 +93,39 @@ a harness stuck near the floor may simply not exercise the credit-assignment
 differences these arms exist to test. An estimator cannot show its worth on a
 policy that solves nothing.
 
+**Sharpened at step 12 — the policy has learned exactly one task type.**
+Per-type success on the training draw:
+
+| step | pick_and_place | pick_clean | pick_cool | pick_heat | pick_two_obj |
+|---|---|---|---|---|---|
+| 10 | **0.438** | 0.062 | 0.000 | 0.000 | 0.000 |
+| 11 | **0.250** | 0.062 | 0.000 | 0.000 | 0.000 |
+| 12 | **0.062** | 0.000 | 0.000 | 0.000 | 0.000 |
+
+`pick_and_place` — the simplest type, one object one destination — carries
+essentially every success. The four compositional types are at ~0 after 12 steps,
+and `pick_two_obj_and_place` has **never succeeded once**. Published GiGPO's 90.16
+requires solving all five.
+
+So the plateau is not uniform underperformance. It is a policy that has learned the
+easy type and nothing else. That is consistent with the benign reading — the
+compositional types plausibly need far more than 12 steps — but it also says the
+overall success rate is the wrong thing to watch: **per-type success is the
+progress signal**, and the first compositional type to lift is the event that
+would settle H-F.
+
+**Train success is a poor progress signal at this batch size.** Each step draws 16
+fresh tasks, so the number of `pick_and_place` tasks in the draw dominates. Observed
+sd across 12 steps is 0.024 against a binomial 0.019 at the same mean — the excess
+is task composition. Only the held-out set (fixed 128 episodes) is comparable
+across steps, and step-to-step swings in train success (0.086 -> 0.008) carry
+almost no information. Several earlier readings in this file leaned on that signal
+and should not have.
+
+**Health is fine** — no collapse to blame: KL 0.019 -> 0.022 bounded, entropy
+0.79-0.86 stable, grad norm 1.5-3.2, clip fraction 0.005-0.011,
+`valid_action_ratio` 0.996-0.999.
+
 **Candidate causes, none tested:**
 * genuinely needs 100-150 steps (the benign reading)
 * something in the config still differs from the reference in a way that matters —
@@ -474,6 +507,12 @@ self-corrected to 0.996 within three steps — RL fixed the format unaided.
 * **`perf/max_memory_reserved_gb` is an aggregate across pools.** It read 103.8 GB
   against a 102.6 GB card. Sample `nvidia-smi` during the update instead.
 * **Never quote `n_eff` from a reduced-`group_size` run** — it is capped by `J`.
+* **`episode/success_rate` on the training draw is mostly task-composition noise.**
+  16 fresh tasks per step, and only `pick_and_place` is ever solved, so the metric
+  tracks how many easy tasks were drawn. Use the held-out set, or per-type rates.
+* **A p-value at n~10 is not a finding.** The bucket-fraction trend read p=0.046 at
+  step 10, 0.112 at step 11, 0.312 at step 12. Read the direction across windows,
+  never the threshold crossing.
 * **A degenerate batch fakes agreement.** With every episode reward 0, all node
   values are 0 and `r_vs_gigpo`/`r_vs_g2po` both read ~0.97. Check `reward_sum`
   before reading any correlation.
