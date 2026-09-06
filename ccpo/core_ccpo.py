@@ -543,7 +543,24 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
     # context-conditioning is for, yet they LOWER n_eff and so trigger fallback to
     # the uniform baseline. n_eff sees only the variance cost of conditioning,
     # never the bias benefit.
+    # Both rules are ALWAYS evaluated and reported; only the selected one is
+    # applied. The per-occurrence rule degenerating to lambda = 0 is exactly the
+    # failure that makes CCPO the uniform baseline in disguise, and it is invisible
+    # unless the alternative is measured on the same batch.
     lam_pooled = None
+    _lam_pooled_obs = float("nan")
+    if _rec:
+        _d2 = np.array([(r["rho"] * (r["b_obs"] - r["b_loo"])) ** 2 for r in _rec])
+        _vd = np.array([r["rho"] ** 2 * r["s2"] * r["var_gain"] for r in _rec])
+        _den = float(_d2.mean())
+        _lam_pooled_obs = 0.0 if _den <= 1e-12 else max(0.0, min(1.0, 1.0 - float(_vd.mean()) / _den))
+        _lam_eb_obs = np.array([
+            0.0 if abs(r["rho"] * (r["b_obs"] - r["b_loo"])) < 1e-12
+            else max(0.0, min(1.0, 1.0 - (r["s2"] * r["var_gain"])
+                              / ((r["rho"] * (r["b_obs"] - r["b_loo"])) ** 2)))
+            for r in _rec])
+    else:
+        _lam_eb_obs = np.zeros(1)
     if shrink == "eb_pooled" and _rec:
         # James-Stein / Efron-Morris: with d = signal + noise and
         # Var(noise) = s2*(1/n_eff - 1/J) known per occurrence,
@@ -551,10 +568,7 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
         # is the fraction of the realised disagreement that is real signal,
         # estimated over every live occurrence in the batch rather than over the
         # two or three trajectories of a single bucket.
-        _d2 = np.array([(r["rho"] * (r["b_obs"] - r["b_loo"])) ** 2 for r in _rec])
-        _vd = np.array([r["rho"] ** 2 * r["s2"] * r["var_gain"] for r in _rec])
-        _den = float(_d2.mean())
-        lam_pooled = 0.0 if _den <= 1e-12 else max(0.0, min(1.0, 1.0 - float(_vd.mean()) / _den))
+        lam_pooled = _lam_pooled_obs
 
     for _r in _rec:
         i, b_loo, b_obs = _r["i"], _r["b_loo"], _r["b_obs"]
@@ -663,6 +677,10 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
         lam_u_mean=float(np.mean(lam_all)) if lam_all else 0.0,
         lam_u_gt50=float(np.mean(np.array(lam_all) > 0.5)) if lam_all else 0.0,
         lam_pooled=(float(lam_pooled) if lam_pooled is not None else float('nan')),
+        # what each rule WOULD give on this batch, whichever is in force
+        lam_pooled_obs=float(_lam_pooled_obs),
+        lam_eb_obs=float(np.mean(_lam_eb_obs)),
+        lam_eb_obs_gt0=float(np.mean(_lam_eb_obs > 0)),
         n_eff_mean=float(np.mean(neff_all)) if neff_all else 0.0,
         E_w=float(np.mean(w_all)) if w_all else float("nan"),
         live_frac=float(_live.mean()), live_mask=_live,

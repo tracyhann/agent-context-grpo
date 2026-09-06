@@ -690,6 +690,19 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
           <td>0.0 (exact)</td>
           <td>GiGPO already ships this (<span class="m">are_similar</span>, SequenceMatcher &ge; 0.95). One
           changed character currently makes a different bucket, which feeds the singleton rate directly.</td></tr>
+        <tr><td class="dim">Shrinkage weight estimated from the batch, not the bucket</td>
+          <td><span class="m">ACG_CCPO_SHRINK=eb_pooled</span></td>
+          <td>off</td>
+          <td>The per-occurrence rule asks whether <em>this</em> bucket's disagreement clears <em>its own</em>
+          sampling noise. That test has about two degrees of freedom — a bucket holds a handful of trajectories — so
+          it demands <span class="m">|b_obs &minus; b_LOO| &gt; sqrt(1/n_eff &minus; 1/J)/&rho;</span> standard
+          deviations, which a weighted against an unweighted mean of three numbers essentially never reaches.
+          Measured on a real batch: <b>&lambda; = 0.000 on every occurrence</b>, which makes A<sup>CC</sup> exactly
+          the uniform baseline and the whole estimator inert. Pooling is the standard empirical-Bayes move
+          (James–Stein): with <span class="m">d = signal + noise</span> and Var(noise) known per occurrence,
+          <span class="m">1 &minus; E[Var(d)]/E[d&sup2;]</span> is the fraction of the realised disagreement that is
+          real, estimated over thousands of occurrences instead of over one bucket. Both rules are now computed and
+          logged every step whichever is in force, so the degeneracy cannot recur unnoticed.</td></tr>
         <tr><td class="dim">Coarse backoff for singleton buckets</td>
           <td><span class="m">ACG_CCPO_SIM_BACKOFF</span></td>
           <td>0.0 (off)</td>
