@@ -7,6 +7,13 @@
 # actually clean before launching the next generation.
 EST=${1:-ccpo}; TAG=${2:-verl_${EST}_alfworld}; GPUS=${3:-0,1,2,3,4,5}   # container-local indices (all six; ocean released GPUs 0-3 on 09-02)
 C=acg_persist
+# Arm guard. The GRPO baseline ran as CCPO from step 8 to 38 because a caller
+# passed the tag but not the estimator; refuse the launch rather than produce
+# 30 steps of the wrong arm under the right directory name.
+case "$TAG:$EST" in
+  *grpo*:ccpo|*ccpo*:grpo)
+    echo "[exec] REFUSING: tag '$TAG' and estimator '$EST' disagree" >&2; exit 2 ;;
+esac
 docker exec $C bash -c '
   [ -f /tmp/acg_trainer.pgid ] && kill -9 -- -"$(cat /tmp/acg_trainer.pgid)" 2>/dev/null
   ray stop --force 2>/dev/null; pkill -9 -f main_ppo 2>/dev/null

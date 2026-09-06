@@ -1,0 +1,472 @@
+<title>CCPO Method Changes</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --ground:   #f6f7f9;
+    --surface:  #ffffff;
+    --sunk:     #eef1f4;
+    --ink:      #16202b;
+    --ink-soft: #4c5967;
+    --ink-mute: #75828f;
+    --rule:     #dde2e8;
+    --rule-firm:#c3ccd6;
+    --accent:   #1f6f6b;
+    --accent-soft: #e2efee;
+    --ok:       #2f7d4f;
+    --ok-soft:  #e4f0e8;
+    --warn:     #9a6a12;
+    --warn-soft:#f6eeda;
+    --bad:      #a33a34;
+    --bad-soft: #f7e6e4;
+
+    --f-display: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+    --f-body:    "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --f-mono:    "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+    --measure: 68ch;
+    --pad: clamp(1.1rem, 4vw, 3rem);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:   #12171d;
+      --surface:  #192028;
+      --sunk:     #1e262f;
+      --ink:      #e6ecf2;
+      --ink-soft: #aab6c2;
+      --ink-mute: #7e8b98;
+      --rule:     #2a333d;
+      --rule-firm:#3b4753;
+      --accent:   #57b7b0;
+      --accent-soft: #17302f;
+      --ok:       #6cc08a;
+      --ok-soft:  #16291d;
+      --warn:     #d5a445;
+      --warn-soft:#2b2313;
+      --bad:      #e08079;
+      --bad-soft: #2e1a19;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:   #12171d;
+    --surface:  #192028;
+    --sunk:     #1e262f;
+    --ink:      #e6ecf2;
+    --ink-soft: #aab6c2;
+    --ink-mute: #7e8b98;
+    --rule:     #2a333d;
+    --rule-firm:#3b4753;
+    --accent:   #57b7b0;
+    --accent-soft: #17302f;
+    --ok:       #6cc08a;
+    --ok-soft:  #16291d;
+    --warn:     #d5a445;
+    --warn-soft:#2b2313;
+    --bad:      #e08079;
+    --bad-soft: #2e1a19;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--f-body);
+    font-size: 16px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: var(--pad); }
+  .col  { max-width: var(--measure); }
+
+  /* ---------- masthead ---------- */
+  .mast { border-bottom: 2px solid var(--ink); padding-bottom: 1.4rem; margin-bottom: 2.4rem; }
+  .eyebrow {
+    font-family: var(--f-mono); font-size: .72rem; font-weight: 500;
+    letter-spacing: .14em; text-transform: uppercase; color: var(--accent);
+  }
+  h1 {
+    font-family: var(--f-display); font-weight: 600;
+    font-size: clamp(1.9rem, 4.6vw, 2.9rem); line-height: 1.12;
+    margin: .5rem 0 .6rem; text-wrap: balance; letter-spacing: -.012em;
+  }
+  .standfirst { font-size: 1.06rem; color: var(--ink-soft); max-width: var(--measure); }
+  .meta {
+    display: flex; flex-wrap: wrap; gap: .5rem 1.6rem; margin-top: 1.1rem;
+    font-family: var(--f-mono); font-size: .76rem; color: var(--ink-mute);
+  }
+  .meta b { color: var(--ink-soft); font-weight: 500; }
+
+  /* ---------- sections ---------- */
+  section { margin-top: 3.2rem; }
+  h2 {
+    font-family: var(--f-display); font-weight: 600; font-size: 1.42rem;
+    line-height: 1.25; margin: 0 0 .3rem; text-wrap: balance;
+  }
+  h2 .num {
+    font-family: var(--f-mono); font-size: .78rem; font-weight: 500;
+    color: var(--accent); margin-right: .6rem; vertical-align: .12em;
+  }
+  h3 {
+    font-family: var(--f-body); font-weight: 600; font-size: .95rem;
+    letter-spacing: .01em; margin: 2rem 0 .5rem;
+  }
+  .kicker {
+    font-family: var(--f-mono); font-size: .73rem; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--ink-mute); margin-bottom: 1.1rem;
+    padding-bottom: .5rem; border-bottom: 1px solid var(--rule);
+  }
+  p { margin: 0 0 .9rem; max-width: var(--measure); }
+  .lede { font-size: 1.02rem; }
+  code, .m { font-family: var(--f-mono); font-size: .87em; }
+  code { background: var(--sunk); padding: .1em .34em; border-radius: 3px; }
+  a { color: var(--accent); text-underline-offset: 2px; }
+
+  /* ---------- tables ---------- */
+  .scroll { overflow-x: auto; margin: 1.1rem 0 .4rem; border: 1px solid var(--rule); background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: .855rem; }
+  th, td { padding: .58rem .8rem; text-align: left; vertical-align: top; border-bottom: 1px solid var(--rule); }
+  thead th {
+    font-family: var(--f-mono); font-size: .7rem; font-weight: 600;
+    letter-spacing: .07em; text-transform: uppercase; color: var(--ink-mute);
+    background: var(--sunk); border-bottom: 1px solid var(--rule-firm); white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.n, th.n { font-family: var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.k { font-family: var(--f-mono); font-size: .8rem; color: var(--ink-soft); white-space: nowrap; }
+  .row-head { font-weight: 600; }
+  tbody tr.mark td { background: var(--accent-soft); }
+  .caption { font-size: .8rem; color: var(--ink-mute); max-width: var(--measure); margin: .5rem 0 0; }
+
+  /* ---------- chips ---------- */
+  .chip {
+    display: inline-block; font-family: var(--f-mono); font-size: .67rem; font-weight: 600;
+    letter-spacing: .08em; text-transform: uppercase; padding: .16em .5em;
+    border-radius: 2px; white-space: nowrap;
+  }
+  .chip-ok   { background: var(--ok-soft);   color: var(--ok); }
+  .chip-warn { background: var(--warn-soft); color: var(--warn); }
+  .chip-bad  { background: var(--bad-soft);  color: var(--bad); }
+  .chip-mute { background: var(--sunk);      color: var(--ink-mute); }
+
+  /* ---------- callout ---------- */
+  .defect {
+    border-left: 3px solid var(--bad); background: var(--surface);
+    padding: 1.1rem 1.3rem; margin: 1.3rem 0;
+  }
+  .defect h3 { margin-top: 0; }
+  pre {
+    font-family: var(--f-mono); font-size: .8rem; line-height: 1.55;
+    background: var(--sunk); border: 1px solid var(--rule);
+    padding: .85rem 1rem; overflow-x: auto; margin: .9rem 0;
+  }
+  pre .del { color: var(--bad); }
+  pre .add { color: var(--ok); }
+  pre .cmt { color: var(--ink-mute); }
+
+  /* ---------- work order ---------- */
+  ol.order { list-style: none; padding: 0; margin: 1.2rem 0 0; counter-reset: step; }
+  ol.order li {
+    counter-increment: step; position: relative; padding: .85rem 0 .85rem 3rem;
+    border-top: 1px solid var(--rule); max-width: var(--measure);
+  }
+  ol.order li::before {
+    content: counter(step); position: absolute; left: 0; top: .85rem;
+    font-family: var(--f-mono); font-size: .78rem; font-weight: 600;
+    color: var(--accent); border: 1px solid var(--rule-firm);
+    width: 1.7rem; height: 1.7rem; display: grid; place-items: center; border-radius: 50%;
+  }
+  ol.order b { font-weight: 600; }
+  ol.order .cost { font-family: var(--f-mono); font-size: .76rem; color: var(--ink-mute); }
+
+  ul.risks { padding-left: 1.1rem; margin: .8rem 0 0; max-width: var(--measure); }
+  ul.risks li { margin-bottom: .7rem; }
+
+  footer {
+    margin-top: 4rem; padding-top: 1.2rem; border-top: 1px solid var(--rule);
+    font-family: var(--f-mono); font-size: .75rem; color: var(--ink-mute);
+  }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="wrap">
+
+  <header class="mast">
+    <div class="eyebrow">Estimator revision · ALFWorld · Qwen3-1.7B</div>
+    <h1>CCPO Method Changes</h1>
+    <p class="standfirst">A correctness defect in the step-credit baseline invalidated the v6 diagnostics.
+      This records what was fixed, what is proposed, and how the estimator and training
+      configuration now line up against GRPO and G²PO/GiGPO.</p>
+    <div class="meta">
+      <span><b>Evidence base</b> 304,858 per-sample rows, v6 steps 1–51</span>
+      <span><b>Probe corpus</b> 1,652 records, v6 <span class="m">global_step_51</span></span>
+      <span><b>Status</b> no training run since any fix</span>
+    </div>
+  </header>
+
+  <section>
+    <div class="kicker">The defect that reset the picture</div>
+    <h2>Every v6 diagnostic was measured through a corrupted baseline</h2>
+    <p class="lede">In the per-sample loop, <code>other</code> holds <em>local</em> positions into
+      <code>idx</code>. The <span class="m">b_LOO</span> aggregation maps them back correctly via
+      <code>G[idx[b]]</code>. Two lines below did not, so <span class="m">b_obs</span> and
+      <span class="m">s²</span> were read off rows <span class="m">0…len(idx)−1</span> of the whole
+      batch — arbitrary trajectories with no relation to the bucket.</p>
+
+    <div class="defect">
+      <h3>What it cost</h3>
+<pre><span class="cmt">other = [b for b in range(len(idx)) if trajs[b] != trajs[a]]   # LOCAL positions</span>
+<span class="cmt">per[trajs[b]][0] += w[k] * G[idx[b]]        # correct</span>
+<span class="del">- s2    = float(np.var(G[other]))           # reads global rows 0..len(idx)-1</span>
+<span class="del">- b_obs = float(G[other].mean())            # same</span>
+<span class="add">+ oth   = [idx[b] for b in other]</span>
+<span class="add">+ s2    = float(np.var(G[oth]))</span>
+<span class="add">+ b_obs = float(G[oth].mean())</span></pre>
+      <p style="margin-bottom:0"><span class="m">b_obs</span> matched the correct leave-one-trajectory-out
+        mean on <b>56.5%</b> of rows, correlation <b>+0.051</b>, mean absolute error 0.627 (max 10.1).
+        It carries weight <span class="m">(1−λ)</span> on every sample and is the <em>entire</em>
+        estimator wherever <span class="m">λ = 0</span> — 69.8% of samples in v6.</p>
+    </div>
+
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Quantity</th><th class="n">Reported from v6</th><th class="n">Recomputed correctly</th><th>Reading</th></tr></thead>
+        <tbody>
+          <tr><td class="k">r(A_CC, A_G2PO)</td><td class="n">0.68</td><td class="n">0.956</td><td>The “materially distinct estimator” was the bug</td></tr>
+          <tr><td class="k">sign disagreement</td><td class="n">23.7%</td><td class="n">0.3%</td><td>Same gradient direction almost everywhere</td></tr>
+          <tr><td class="k">mean |effect|</td><td class="n">0.229</td><td class="n">0.027</td><td>An order of magnitude smaller</td></tr>
+          <tr><td class="k">mean signed effect</td><td class="n">+0.62</td><td class="n">+0.0004</td><td>The “upward advantage bias” was an artefact</td></tr>
+          <tr><td class="k">mean A_CC</td><td class="n">+0.386</td><td class="n">−0.026</td><td>Mean-zero property restored</td></tr>
+          <tr><td class="k">|d| above its own noise</td><td class="n">—</td><td class="n">0.8%</td><td>Almost nothing for the shrinkage to gate on</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="caption">Recomputed on all 304,858 well-formed rows of the v6 dump by rebuilding each
+      sample’s leave-one-trajectory-out set from <span class="m">(step, bucket, traj_uid)</span>;
+      reconstructed <span class="m">J</span> matches the dumped value on 100% of rows.</p>
+  </section>
+
+  <section>
+    <div class="kicker">Change ledger</div>
+    <h2>Five changes landed, two proposed, one queued</h2>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Change</th><th>Where</th><th>Status</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="row-head">Baseline index fix</td>
+            <td class="k">core_ccpo.py:212–218</td>
+            <td><span class="chip chip-ok">Landed</span></td>
+            <td>b_obs correlation with truth +0.051 → exact; mean A_CC −0.026</td>
+          </tr>
+          <tr>
+            <td class="row-head">Empirical-Bayes shrinkage</td>
+            <td class="k">core_ccpo.py · ACG_CCPO_SHRINK</td>
+            <td><span class="chip chip-ok">Landed</span></td>
+            <td>corr(λ,|d|) −0.239 → +0.212; λ = 0 on the 295k below-noise samples where the old rule fired at 0.136; λ = 0.875 above 2σ</td>
+          </tr>
+          <tr>
+            <td class="row-head">Digest-delimited prompt trim</td>
+            <td class="k">rollout_loop.py · compact.py</td>
+            <td><span class="chip chip-ok">Landed</span></td>
+            <td>Crashes at 2058–2211 tokens against a 2048 cap while the raw guard measured 1997; the chat template’s ~200 tokens were uncounted</td>
+          </tr>
+          <tr>
+            <td class="row-head">Publication-matched eval</td>
+            <td class="k">run_verl_ccpo.sh</td>
+            <td><span class="chip chip-ok">Landed</span></td>
+            <td>T 0.7→0.4, top_p 0.8→1.0, top_k 20→0, split → valid_seen</td>
+          </tr>
+          <tr>
+            <td class="row-head">Arm guard + estimator passthrough</td>
+            <td class="k">auto_resume.sh · run_exec_ccpo.sh</td>
+            <td><span class="chip chip-ok">Landed</span></td>
+            <td>The GRPO baseline silently ran <span class="m">adv_estimator=ccpo</span> from step 8 to 38; only steps 1–7 were GRPO</td>
+          </tr>
+          <tr class="mark">
+            <td class="row-head">φ from reference-policy hidden states</td>
+            <td class="k">core_ccpo.py · FrozenPhi</td>
+            <td><span class="chip chip-warn">Proposed</span></td>
+            <td>Conflation AUC 0.568 → 0.795; reference model already runs each step for KL, so no extra forward pass</td>
+          </tr>
+          <tr class="mark">
+            <td class="row-head">ρ measured, not hardcoded</td>
+            <td class="k">core_ccpo.py</td>
+            <td><span class="chip chip-warn">Proposed</span></td>
+            <td>ρ = 2(AUC−0.5) = 0.59 instead of 1.0 → λ ≈ 0.26 at the observed var_gain ≈ 0.09</td>
+          </tr>
+          <tr>
+            <td class="row-head">Multi-seed evaluation</td>
+            <td class="k">eval protocol</td>
+            <td><span class="chip chip-mute">Queued</span></td>
+            <td>±0.048 per single 128-episode eval, measured from two evaluations of the same checkpoint (0.094 vs 0.188)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="kicker">Estimator comparison</div>
+    <h2>Where CCPO sits against GRPO and G²PO/GiGPO</h2>
+    <p>All three share the same episode-level term. Everything that distinguishes CCPO lives in
+      the step-credit column, and — as run in v6 — that column collapsed onto the G²PO one.</p>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Dimension</th>
+            <th>GRPO</th>
+            <th>G²PO / GiGPO</th>
+            <th>CCPO — v6 as run</th>
+            <th>CCPO — proposed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="row-head">Episode advantage</td><td>Group-relative over 8 siblings</td><td>Same</td><td>Same</td><td>Same</td></tr>
+          <tr><td class="row-head">Step advantage</td><td><span class="chip chip-mute">None</span></td><td class="k">G_i − mean(G over bucket)</td><td class="k">G_i − (λ·b_LOO + (1−λ)·b_obs)</td><td class="k">same form, working φ</td></tr>
+          <tr><td class="row-head">Grouping key</td><td>—</td><td class="k">(task_uid, raw obs text)</td><td class="k">(task_uid, raw obs text)</td><td class="k">unchanged</td></tr>
+          <tr><td class="row-head">Own return in own baseline</td><td>—</td><td><span class="chip chip-bad">Yes — leaks</span></td><td><span class="chip chip-ok">No — LOO</span></td><td><span class="chip chip-ok">No — LOO</span></td></tr>
+          <tr><td class="row-head">Within-bucket weighting</td><td>—</td><td>Uniform</td><td class="k">exp(−d(φ)/τ), φ = bag-of-words</td><td class="k">exp(−d(φ)/τ), φ = whitened hidden state</td></tr>
+          <tr class="mark"><td class="row-head">φ conflation AUC</td><td class="n">—</td><td class="n">n/a (uniform)</td><td class="n">0.568</td><td class="n">0.795</td></tr>
+          <tr><td class="row-head">Shrinkage λ</td><td>—</td><td>n/a</td><td class="k">0.09/(0.09+var_gain) ≡ n_eff rule</td><td class="k">max(0, 1 − Var(d)/d²)</td></tr>
+          <tr><td class="row-head">Metric confidence ρ</td><td>—</td><td>—</td><td class="n">1.0 hardcoded</td><td class="n">0.59 measured</td></tr>
+          <tr><td class="row-head">Mean λ in practice</td><td class="n">—</td><td class="n">—</td><td class="n">≈ 0 (69.8% exactly zero)</td><td class="n">≈ 0.26</td></tr>
+          <tr class="mark"><td class="row-head">r with G²PO step credit</td><td class="n">—</td><td class="n">1.000</td><td class="n">0.956</td><td class="n">not yet measured</td></tr>
+          <tr><td class="row-head">State conflation inherited</td><td>—</td><td colspan="3">42.8% of observations merge distinct states; conflated pairs differ 1.56–1.69× more in return. The hard gate is shared, so both methods inherit it.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="caption">The r = 0.956 figure is the crux: a step credit that agrees with the baseline on
+      99.7% of sign decisions cannot steer the policy anywhere different. A discriminating φ is
+      necessary to change that — it is not on its own sufficient.</p>
+  </section>
+
+  <section>
+    <div class="kicker">Measurement behind the φ proposal</div>
+    <h2>Conflation AUC, and why the corpus distribution mattered more than the encoder</h2>
+    <p>Labels are the admissible-command set, which no encoder sees; 0.50 is blind. The same
+      pair construction as the earlier probes, so the numbers are comparable throughout.</p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Representation</th><th class="n">Random-policy corpus</th><th class="n">Trained-policy corpus</th></tr></thead>
+        <tbody>
+          <tr><td>Bag-of-words φ <span class="chip chip-mute">shipped</span></td><td class="n">0.483 / 0.492</td><td class="n">0.568</td></tr>
+          <tr><td>φ + compaction digest</td><td class="n">0.533</td><td class="n">not re-run</td></tr>
+          <tr><td>Hidden state, mean-pooled</td><td class="n">0.505</td><td class="n">—</td></tr>
+          <tr><td>Hidden state, last-token, raw</td><td class="n">0.598</td><td class="n">0.659</td></tr>
+          <tr><td>Hidden state, last-token, whiten-1</td><td class="n">—</td><td class="n">0.730</td></tr>
+          <tr><td>Hidden state, last-token, whiten-2</td><td class="n">—</td><td class="n">0.771</td></tr>
+          <tr class="mark"><td>Hidden state, last-token, whiten-3</td><td class="n">—</td><td class="n">0.795</td></tr>
+          <tr><td>Mid-layer, last-token, whiten-3</td><td class="n">—</td><td class="n">0.640</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>Leakage control</h3>
+    <p>The embedded context contains <span class="m">“you tried ‘X’ and then saw …”</span>, where X came
+      from the <em>previous</em> step’s admissible set while the label is the <em>current</em> one. Rebuilding
+      the context from observation history alone, with no action strings, keeps the signal:</p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Context variant</th><th class="n">raw</th><th class="n">whiten-1</th><th class="n">whiten-2</th><th class="n">whiten-3</th></tr></thead>
+        <tbody>
+          <tr><td>Observation history, no action strings</td><td class="n">0.655</td><td class="n">0.677</td><td class="n">0.688</td><td class="n">0.682</td></tr>
+          <tr><td>Recent window only, with actions</td><td class="n">0.617</td><td class="n">0.617</td><td class="n">0.688</td><td class="n">0.706</td></tr>
+          <tr class="mark"><td>Full context</td><td class="n">0.659</td><td class="n">0.730</td><td class="n">0.771</td><td class="n">0.795</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="caption">Both components clear the 0.65 gate independently and the full context beats
+      either by ~0.09 — complementary information, not leakage. Leakage would show the action-bearing
+      arm carrying everything while the action-free arm fell to chance.</p>
+    <p style="margin-top:1rem">The secondary finding is the one with the widest reach: moving from an
+      admissible-random corpus to the trained policy lifted even the <em>unchanged</em> bag-of-words φ
+      from 0.492 to 0.568. Every earlier negative result in this project was scored on the random-policy
+      distribution and is therefore suspect — including the two-level gate rejected at 98.9% singletons.</p>
+  </section>
+
+  <section>
+    <div class="kicker">Training configuration</div>
+    <h2>Ours against the G²PO reference</h2>
+    <p>Source: <span class="m">g2po_official/examples/g2po_trainer/run_alfworld.sh</span>, the script
+      the published numbers come from. Divergences that remain are marked; those shared by both of our
+      arms do not affect the internal comparison.</p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Setting</th><th>G²PO reference</th><th>Ours — v6 as run</th><th>Ours — proposed</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td class="k">model</td><td>Qwen2.5-1.5B-Instruct</td><td>Qwen3-1.7B</td><td>Qwen3-1.7B</td><td>Absolute numbers not comparable to their table</td></tr>
+          <tr><td class="k">train_data_size</td><td class="n">16</td><td class="n">18</td><td class="n">18</td><td>verl requires episodes % n_gpus = 0 at 6 GPUs</td></tr>
+          <tr><td class="k">env.rollout.n</td><td class="n">8</td><td class="n">8</td><td class="n">8</td><td>Matched</td></tr>
+          <tr><td class="k">ppo_mini_batch_size</td><td class="n">256</td><td class="n">240</td><td class="n">240</td><td>Same divisibility constraint</td></tr>
+          <tr><td class="k">max_prompt_length</td><td class="n">2048</td><td class="n">2048</td><td class="n">2048 + digest trim</td><td>Trim is new</td></tr>
+          <tr><td class="k">max_response_length</td><td class="n">512</td><td class="n">768</td><td class="n">768</td><td>Headroom for budget forcing; shared by both arms</td></tr>
+          <tr><td class="k">optim.lr</td><td class="n">1e-6</td><td class="n">1e-6</td><td class="n">1e-6</td><td>Matched</td></tr>
+          <tr><td class="k">kl_loss_coef · type</td><td class="n">0.01 · low_var_kl</td><td class="n">0.01 · low_var_kl</td><td class="n">0.01 · low_var_kl</td><td>Matched</td></tr>
+          <tr><td class="k">gamma</td><td class="n">0.95</td><td class="n">0.95</td><td class="n">0.95</td><td>Matched</td></tr>
+          <tr><td class="k">step_advantage_w</td><td class="n">1.0</td><td class="n">1.0</td><td class="n">1.0</td><td>Matched</td></tr>
+          <tr><td class="k">invalid_action_penalty</td><td class="n">True · 0.1</td><td class="n">True · 0.1</td><td class="n">True · 0.1</td><td>Matched</td></tr>
+          <tr><td class="k">env.max_steps</td><td class="n">50</td><td class="n">50</td><td class="n">50</td><td>Matched</td></tr>
+          <tr><td class="k">total_epochs</td><td class="n">100</td><td class="n">75</td><td class="n">75</td><td>Compute budget</td></tr>
+          <tr><td class="k">test_freq</td><td class="n">5</td><td class="n">5</td><td class="n">5</td><td>Matched</td></tr>
+          <tr><td class="k">val_batch_size</td><td class="n">128</td><td class="n">128</td><td class="n">128</td><td>Matched</td></tr>
+          <tr class="mark"><td class="k">val temperature</td><td class="n">0.4</td><td class="n">0.7</td><td class="n">0.4</td><td>Fixed</td></tr>
+          <tr class="mark"><td class="k">val top_p · top_k</td><td class="n">1.0 · −1</td><td class="n">0.8 · 20</td><td class="n">1.0 · 0</td><td>top_k 0 is the hf-rollout spelling of unrestricted</td></tr>
+          <tr class="mark"><td class="k">eval_dataset</td><td class="n">eval_in_distribution</td><td class="n">eval_out_of_distribution</td><td class="n">both, seen as headline</td><td>Fixed; split now <span class="m">ACG_EVAL_SPLIT</span></td></tr>
+          <tr><td class="k">val_before_train</td><td class="n">False</td><td class="n">True</td><td class="n">True</td><td>Gives free same-checkpoint replicates</td></tr>
+          <tr><td class="k">rollout engine</td><td>vLLM, TP 2, 8 GPUs</td><td>hf + vLLM 0.28 sidecars, TP 1, 6 GPUs</td><td>Same</td><td>Blackwell sm_120 constraint</td></tr>
+          <tr><td class="k">attention</td><td>XFORMERS</td><td>sdpa trainer · TRITON_ATTN sidecars</td><td>Same</td><td>No flash-attn build for sm_120</td></tr>
+          <tr><td class="k">use_remove_padding</td><td class="n">True</td><td class="n">False</td><td class="n">False</td><td>sm_120 constraint</td></tr>
+          <tr><td class="k">compaction budget</td><td class="n">none</td><td class="n">512</td><td class="n">512</td><td>Ours; shared by both arms</td></tr>
+          <tr><td class="k">budget forcing</td><td class="n">none</td><td class="n">512 think + 32 action</td><td class="n">same</td><td>Ours; shared by both arms</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="kicker">Open risks</div>
+    <h2>What would still make the φ result wrong</h2>
+    <ul class="risks">
+      <li><b>Corpus quality.</b> 45.2% of actions in the probe corpus were inadmissible pass-throughs from
+        a hand-rolled generation loop. There is no logged training rate to compare against —
+        <span class="m">episode/valid_action_ratio = 0.999</span> measures parser validity, not admissibility.</li>
+      <li><b>Dependent pairs.</b> 4,925 same-pairs drawn from only 8 games. The quoted 51σ is optimistic;
+        the effect is clearly large, but the interval is not that tight.</li>
+      <li><b>Necessary, not sufficient.</b> The step term still acts only where a bucket holds ≥2 trajectories
+        with disagreeing returns. ~44% of buckets are singletons and back off to A_CC = 0, and the shared
+        episode advantage still dominates the gradient.</li>
+      <li><b>Whitening depth chosen post hoc.</b> k = 3 was picked after seeing the curve. It is unsupervised —
+        no labels enter — but it should be fixed in advance for the reported run.</li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="kicker">Work order</div>
+    <h2>Cheap validation first, GPU-days last</h2>
+    <ol class="order">
+      <li><b>Re-run the φ probe at 32 tasks with trainer-path generation.</b> Confirms 0.795 holds and makes
+        the pair statistics honest. <span class="cost">≈ 40 min · 1 GPU</span></li>
+      <li><b>Re-score the two-level gate on the trained-policy corpus.</b> That negative was measured on the
+        random-policy distribution, which we now know understates everything.
+        <span class="cost">minutes · CPU, corpus cached</span></li>
+      <li><b>Implement φ from the reference model’s whitened last-layer hidden state</b>, with ρ set to the
+        measured value. No extra forward pass — the reference model already runs for the KL term.
+        <span class="cost">implementation</span></li>
+      <li><b>Matched two-arm run</b>, publication-matched eval, both splits, three seeds on the best
+        checkpoints. <span class="cost">≈ 30 h · GPUs 0–3, 6, 7</span></li>
+    </ol>
+    <p class="caption" style="margin-top:1.4rem">Steps 1 and 2 de-risk step 4. The prediction going in:
+      a working metric moves the answer to “will CCPO beat GRPO” from <em>no</em> to <em>unknown and worth
+      testing</em> — not to <em>yes</em>.</p>
+  </section>
+
+  <footer>
+    Sources — estimator: <span class="m">verl-agent/ccpo/core_ccpo.py</span> ·
+    probes: <span class="m">experiments/08-27/probe_shrinkage.py</span>,
+    <span class="m">probe_phi_policy.py</span>, <span class="m">probe_phi_control.py</span> ·
+    results: <span class="m">experiments/08-27/results/</span> ·
+    reference: <span class="m">g2po_official/examples/g2po_trainer/run_alfworld.sh</span>
+  </footer>
+
+</div>

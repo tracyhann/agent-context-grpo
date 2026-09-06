@@ -25,6 +25,57 @@ import re
 import numpy as np
 import torch
 
+# Shrinkage rule for lambda*. "eb" (default) is the positive-part empirical-Bayes
+# rule on the realised baseline disagreement; "mse" reproduces the v6 rule.
+# Validated offline in experiments/08-27/probe_shrinkage.py against 305k real
+# training samples -- see results/probe_shrinkage.txt.
+_SHRINK = os.environ.get("ACG_CCPO_SHRINK", "eb").lower()
+
+# Affinity metric. "hidden" uses the frozen REFERENCE policy's last-prompt-token
+# hidden state (supplied by the trainer as phi_feats), whitened batch-wide;
+# "bow" is the original hashed bag-of-words FrozenPhi.
+#
+# Measured on a trained-policy corpus, conflation AUC (0.50 = blind, labels are
+# admissible-command sets that no encoder sees):
+#     bag-of-words phi          0.568
+#     hidden, mean-pooled       0.505   <- pooling dilutes the discriminating line
+#     hidden, last-token raw    0.659
+#     hidden, last-token +PCA1  0.730
+#     hidden, last-token +PCA2  0.771
+#     hidden, last-token +PCA3  0.795   <- default
+# Leakage control: with all action strings stripped from the context the same
+# encoder still scores 0.655-0.688, so this is state inference, not the previous
+# step's admissible set leaking through action names.
+_PHI_MODE = os.environ.get("ACG_CCPO_PHI", "hidden").lower()
+
+# Number of principal directions removed before distances are taken. Decoder-LM
+# embeddings are anisotropic: the leading directions encode register ("this is
+# ALFWorld prose"), not state. Unsupervised -- no labels enter.
+_WHITEN_K = int(os.environ.get("ACG_CCPO_WHITEN", "3"))
+
+# rho is the estimator's declared confidence in its distances and enters as
+# B_eff = rho * bias_prior * sigma. AUC calibrates it: rho = 2*(AUC - 0.5), so a
+# blind metric (AUC 0.5) gives rho = 0, lambda -> 0 and an exact fallback to the
+# uniform G2PO baseline. It shipped hardcoded at 1.0 while the metric in use was
+# at chance; 0.795 gives 0.59, which puts lambda ~ 0.26 at the observed var_gain.
+_RHO = float(os.environ.get("ACG_CCPO_RHO", "0.59"))
+
+
+def whiten_feats(F, k=None):
+    """Centre, remove the top-k principal directions, L2-normalise. Batch-local."""
+    k = _WHITEN_K if k is None else k
+    X = np.asarray(F, dtype=np.float64)
+    if X.ndim != 2 or X.shape[0] < 2:
+        return X
+    X = X - X.mean(0, keepdims=True)
+    if k > 0 and X.shape[0] > k:
+        try:
+            _, _, Vt = np.linalg.svd(X, full_matrices=False)
+            X = X - X @ Vt[:k].T @ Vt[:k]
+        except np.linalg.LinAlgError:
+            pass                      # un-whitened distances still beat the bag
+    return X / np.maximum(np.linalg.norm(X, axis=1, keepdims=True), 1e-9)
+
 _TOK = re.compile(r"[a-z0-9]+")
 
 
@@ -132,9 +183,16 @@ def derive_context(anchor_obs, index, traj_index):
 def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
                         traj_index, phi, tau_scale=1.0, min_traj=2,
                         epsilon=1e-6, return_diag=False, ctx_override=None,
-                        rho=1.0, bias_prior=0.30, shrink='mse', progress_w=0.0,
-                        aff_labels=None, step_tag=""):
-    """Weighted cross-trajectory leave-one-out step advantage."""
+                        rho=None, bias_prior=0.30, shrink='mse', progress_w=0.0,
+                        aff_labels=None, step_tag="", phi_feats=None):
+    """Weighted cross-trajectory leave-one-out step advantage.
+
+    phi_feats: optional (n, d) array of per-sample affinity features. When given
+    and ACG_CCPO_PHI=hidden, distances are taken on these (whitened batch-wide)
+    instead of on phi(obs, ctx). The trainer supplies the frozen reference
+    policy's last-prompt-token hidden state, which costs no extra forward pass.
+    """
+    rho = _RHO if rho is None else rho
     dev = step_rewards.device
     scores = (step_rewards * response_mask).sum(-1) if step_rewards.dim() > 1 else step_rewards
     G = scores.detach().float().cpu().numpy()
@@ -148,6 +206,16 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
     _dump = os.environ.get("ACG_CCPO_DUMP")
     _rows = [] if _dump else None
 
+    # Whitening is batch-wide, not per bucket: the directions being removed are
+    # corpus-level register, and estimating them inside a 4-member bucket would
+    # delete the very variation the gate is meant to see.
+    PHI = None
+    if _PHI_MODE == "hidden" and phi_feats is not None:
+        _pf = phi_feats.detach().float().cpu().numpy() if hasattr(phi_feats, "detach") \
+            else np.asarray(phi_feats, dtype=float)
+        if _pf.ndim == 2 and _pf.shape[0] == n:
+            PHI = whiten_feats(_pf)
+
     buckets = defaultdict(list)
     for i in range(n):
         buckets[(str(index[i]), str(anchor_obs[i]))].append(i)
@@ -157,7 +225,8 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
         trajs = [str(traj_index[i]) for i in idx]
         if len(set(trajs)) < min_traj:
             continue                                   # backoff: A^CC = 0
-        F = np.stack([phi(anchor_obs[i], ctx[i]) for i in idx])
+        F = PHI[idx] if PHI is not None else \
+            np.stack([phi(anchor_obs[i], ctx[i]) for i in idx])
         D = np.sqrt(np.maximum(((F[:, None, :] - F[None, :, :]) ** 2).sum(-1), 0.0))
         off = D[np.triu_indices(len(idx), 1)]
         tau = float(np.median(off)) if off.size and np.median(off) > 1e-9 else 1.0
@@ -202,12 +271,48 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
             # all correct: rho->0 or B->0 gives b_obs; n_eff->J gives b_LOO=b_obs;
             # s2->0 gives full conditioning.
             J = float(len(per))
-            s2 = float(np.var(G[other])) if len(other) > 1 else 0.0
+            # `other` holds LOCAL positions into idx, so it must be mapped back to
+            # global rows before indexing G -- as the b_loo loop above already does
+            # via G[idx[b]]. Without the map, G[other] reads rows 0..len(idx)-1 of
+            # the whole batch: arbitrary trajectories with no relation to this
+            # bucket. That made b_obs uncorrelated (r=+0.051) with the baseline it
+            # was meant to be, and on the ~70% of samples where lambda=0, b_obs IS
+            # the entire estimator.
+            oth = [idx[b] for b in other]
+            s2 = float(np.var(G[oth])) if len(oth) > 1 else 0.0
             var_gain = max(1.0 / max(ne, 1e-9) - 1.0 / max(J, 1e-9), 0.0)
-            B_eff = rho * bias_prior * (np.sqrt(s2) + 1e-9)
-            lam = float((B_eff ** 2) / ((B_eff ** 2) + s2 * var_gain + 1e-12))
+            b_obs = float(G[oth].mean())
+            if _SHRINK == "mse":
+                # The rule above, kept for reproducing v6. Note that writing the
+                # bias prior in sd units (B = 0.30*sigma) makes s2 cancel outright,
+                # so this reduces to 0.09/(0.09+var_gain): a pure function of
+                # n_eff and J, i.e. exactly the n_eff rule the comment rejects.
+                # Measured on 305k real samples: corr(lam,|d|) = -0.239 (it shrinks
+                # hardest where the correction is largest) and corr(lam,n_eff/J)
+                # = +0.947. It also fires at lam=0.136 on the 295k samples whose
+                # disagreement sits below its own sampling noise.
+                B_eff = rho * bias_prior * (np.sqrt(s2) + 1e-9)
+                lam = float((B_eff ** 2) / ((B_eff ** 2) + s2 * var_gain + 1e-12))
+            else:
+                # Positive-part empirical Bayes on the REALISED disagreement.
+                #   d      = b_obs - b_LOO
+                #   Var(d) = s2 * (1/n_eff - 1/J)
+                #   lam    = max(0, 1 - Var(d)/(rho*d)^2)
+                # Scale-free, and positively correlated with |d| by construction
+                # (+0.212 measured). Zeroes the below-noise band exactly and gives
+                # lam=0.875 where d exceeds 2 sigma.
+                #
+                # rho carries the same meaning as in the MSE rule: only a metric
+                # that is actually informative realises the disagreement as bias
+                # reduction, so rho scales d before it is compared to its own
+                # noise. Without this factor an uninformative phi still fires
+                # wherever d happens to clear its noise band -- precisely the
+                # noise-injection mode this whole revision exists to remove --
+                # and the rho -> 0 limit stops reducing to the uniform baseline.
+                _d = rho * (b_obs - b_loo)
+                _vd = s2 * var_gain
+                lam = 0.0 if abs(_d) < 1e-12 else float(1.0 - _vd / (_d * _d))
             lam = min(1.0, max(0.0, lam))
-            b_obs = float(G[other].mean())
             adv[i] = G[i] - (lam * b_loo + (1 - lam) * b_obs)
             lam_all.append(lam); neff_all.append(ne); live += 1
             # ---- per-sample diagnostics --------------------------------------
@@ -318,6 +423,7 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
         n_eff_mean=float(np.mean(neff_all)) if neff_all else 0.0,
         E_w=float(np.mean(w_all)) if w_all else float("nan"),
         live_frac=live / max(n, 1), n_buckets=len(buckets), progress_cov=prog_cov,
+        phi_mode=("hidden" if PHI is not None else "bow"), rho=rho,
         acc_len_corr=_corr,
         # Q3 diagnostics
         effect_mean=float(_eff.mean()), effect_p90=float(np.percentile(_eff, 90)),

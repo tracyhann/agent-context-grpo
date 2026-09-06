@@ -23,6 +23,13 @@ Nothing here parses domain vocabulary. The two primitives are:
 import hashlib
 from typing import Any, Dict, List, Optional, Sequence
 
+# The digest is the one expendable block in the prompt, so it is explicitly
+# delimited: when the chat-templated prompt overruns max_prompt_length the
+# rollout collector trims digest lines from the end (least valuable: null-effect
+# and oldest, given the sort in build_digest) instead of losing the whole step.
+DIGEST_HEADER = "What you have already tried and found:\n"
+DIGEST_FOOTER = "(end of summary)"
+
 
 def _norm(s: str) -> str:
     return " ".join(str(s).split()).strip()
@@ -96,7 +103,7 @@ def build_digest(records: Sequence[Dict[str, Any]],
             return max(1, len(text) // 4)  # rough fallback, only for tests
         return len(tokenizer(text).input_ids)
 
-    header = "What you have already tried and found:\n"
+    header = DIGEST_HEADER
     kept: List[str] = []
     used = n_tokens(header)
     for e in entries:
@@ -108,7 +115,7 @@ def build_digest(records: Sequence[Dict[str, Any]],
         used += cost
     if not kept:
         return ""
-    return header + "\n".join(kept)
+    return header + "\n".join(kept) + "\n" + DIGEST_FOOTER
 
 
 def fits(prompt: str, tokenizer: Any, max_tokens: int, margin: int = 64) -> bool:

@@ -4,6 +4,18 @@
 # = 128 episodes/step, minibatch 256, 150 steps -- mirroring
 # examples/gigpo_trainer/run_alfworld.sh with algorithm.adv_estimator=ccpo.
 # Usage: run_verl_ccpo.sh <gpus e.g. 0,3> <estimator ccpo|grpo> <tag>
+#
+# Eval protocol matches g2po_official/examples/g2po_trainer/run_alfworld.sh, which
+# is what their reported numbers come from:
+#   val temperature 0.4, top_p 1.0, top_k unrestricted, do_sample True, 128 episodes
+#   eval_dataset unset -> eval_in_distribution (valid_seen)
+# We had been running temperature 0.7 / top_p 0.8 / top_k 20 on valid_unseen. The
+# split is now ACG_EVAL_SPLIT (default eval_in_distribution) so both can be run.
+# top_k is 0 rather than -1 because ours is the `hf` rollout, where 0 is the
+# unrestricted value (-1 is the vllm spelling; G2PO runs vllm).
+# NOTE eval is stochastic by design here, so a single 128-episode score carries
+# ~+/-0.048 (measured from two evaluations of the same checkpoint, 0.094 vs 0.188).
+# Report the mean of >=3 seeds per checkpoint, do not read single points.
 set -x
 source /DATA/tracy/agentic-context-grpo/env.sh
 GPUS=${1:-0,1,2,3,6,7}; EST=${2:-ccpo}; TAG=${3:-verl_${EST}_alfworld}
@@ -100,9 +112,9 @@ RP=False; "$VENV/python" -c "import flash_attn_2_cuda" 2>/dev/null && RP=True
     actor_rollout_ref.rollout.free_cache_engine=False \
     actor_rollout_ref.rollout.top_p=0.95 \
     actor_rollout_ref.rollout.top_k=20 \
-    actor_rollout_ref.rollout.val_kwargs.temperature=0.7 \
-    actor_rollout_ref.rollout.val_kwargs.top_p=0.8 \
-    actor_rollout_ref.rollout.val_kwargs.top_k=20 \
+    actor_rollout_ref.rollout.val_kwargs.temperature=${ACG_VAL_TEMP:-0.4} \
+    actor_rollout_ref.rollout.val_kwargs.top_p=1.0 \
+    actor_rollout_ref.rollout.val_kwargs.top_k=0 \
     actor_rollout_ref.rollout.val_kwargs.do_sample=True \
     actor_rollout_ref.ref.log_prob_micro_batch_size_per_gpu=$MICRO \
     actor_rollout_ref.ref.fsdp_config.param_offload=True \
@@ -115,7 +127,7 @@ RP=False; "$VENV/python" -c "import flash_attn_2_cuda" 2>/dev/null && RP=True
     env.seed=0 \
     env.max_steps=50 \
     env.rollout.n=8 \
-    env.alfworld.eval_dataset=eval_out_of_distribution \
+    env.alfworld.eval_dataset=${ACG_EVAL_SPLIT:-eval_in_distribution} \
     env.resources_per_worker.num_cpus=0.1 \
     trainer.critic_warmup=0 \
     trainer.logger=['console'] \

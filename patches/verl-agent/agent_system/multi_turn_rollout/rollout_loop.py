@@ -105,6 +105,38 @@ class TrajectoryCollector:
             tokenize=False,
             **apply_chat_template_kwargs
         )
+        # The cap applies to the CHAT-TEMPLATED ids, not to the raw observation:
+        # the template adds ~200 tokens that the raw_prompt_ids guard further
+        # down never sees. With truncation='error' that gap crashed the trainer
+        # at 2058-2211 tokens against a 2048 cap while the raw prompt measured
+        # 1997. Trim the compaction digest -- the one expendable block, and the
+        # only part of the prompt that grows without bound -- until it fits,
+        # rather than losing the step. Task, recent window and current
+        # observation are never touched.
+        _cap = int(self.config.data.max_prompt_length)
+        if len(self.tokenizer.encode(prompt_with_chat_template,
+                                     add_special_tokens=False)) > _cap:
+            from agent_system.memory.compact import DIGEST_FOOTER, DIGEST_HEADER
+            if DIGEST_HEADER in obs_content and DIGEST_FOOTER in obs_content:
+                _pre, _tail = obs_content.split(DIGEST_HEADER, 1)
+                _body, _post = _tail.split(DIGEST_FOOTER, 1)
+                _lines = [l for l in _body.split("\n") if l]
+                while _lines and len(self.tokenizer.encode(
+                        prompt_with_chat_template, add_special_tokens=False)) > _cap:
+                    _lines.pop()          # drop the least valuable digest entry
+                    _blk = (DIGEST_HEADER + "\n".join(_lines) + "\n" + DIGEST_FOOTER
+                            if _lines else "")
+                    obs_content = _pre + _blk + _post
+                    prompt_with_chat_template = self.tokenizer.apply_chat_template(
+                        np.array([{"content": obs_content, "role": "user"}]),
+                        add_generation_prompt=True, tokenize=False,
+                        **apply_chat_template_kwargs)
+                TrajectoryCollector._trim_n = getattr(TrajectoryCollector, "_trim_n", 0) + 1
+                if TrajectoryCollector._trim_n <= 5:
+                    print(f"[digest-trim] prompt over {_cap}; digest cut to "
+                          f"{len(_lines)} lines, now "
+                          f"{len(self.tokenizer.encode(prompt_with_chat_template, add_special_tokens=False))} toks",
+                          flush=True)
         if not getattr(TrajectoryCollector, "_tmpl_logged", False):
             TrajectoryCollector._tmpl_logged = True
             print(f"[tmpl-debug] kwargs={apply_chat_template_kwargs} tail={prompt_with_chat_template[-60:]!r}", flush=True)

@@ -1,10 +1,11 @@
 #!/bin/bash
 # Launch the 6 vLLM sidecar generation servers (one per training GPU).
-# Serves the symlink results/verl_ccpo_alfworld/sidecar_hf, which sidecar_sync.sh
+# Serves the symlink results/$TAG/sidecar_hf, which sidecar_sync.sh
 # repoints at the newest global_step_N/actor/huggingface before each restart.
 set -u
 ACG=/DATA/tracy/agentic-context-grpo
-RES=$ACG/experiments/08-27/results/verl_ccpo_alfworld
+TAG=${1:-verl_ccpo_alfworld}
+RES=$ACG/experiments/08-27/results/$TAG
 # No sidecar on host GPU 0: it already hosts the rank-0 worker AND verl's
 # TaskRunner driver actor — a sidecar there OOMs compute_log_prob (crash1).
 # Ranks 0 and 1 share the GPU-1 engine instead (ACG_SIDECAR_PORTS lists 8101 twice).

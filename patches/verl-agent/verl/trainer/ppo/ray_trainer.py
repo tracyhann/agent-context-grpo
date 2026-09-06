@@ -359,8 +359,10 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
             phi=phi, tau_scale=kwargs.get('ccpo_tau_scale', 1.0),
             aff_labels=data.non_tensor_batch.get('anchor_aff'),
             step_tag=kwargs.get('ccpo_step_tag', ''),
+            phi_feats=data.batch.get('ccpo_phi_feats'),
             return_diag=True)
-        print(f"[ccpo] lam_u={diag['lam_u_mean']:.3f} lam>.5={diag['lam_u_gt50']:.2f} "
+        print(f"[ccpo] phi={diag.get('phi_mode','?')} rho={diag.get('rho', float('nan')):.2f} "
+              f"lam_u={diag['lam_u_mean']:.3f} lam>.5={diag['lam_u_gt50']:.2f} "
               f"n_eff={diag['n_eff_mean']:.2f} E[w]={diag['E_w']:.3f} "
               f"live={diag['live_frac']:.2f} buckets={diag['n_buckets']} "
               f"acc_len_r={diag.get('acc_len_corr', float('nan')):.3f} "
