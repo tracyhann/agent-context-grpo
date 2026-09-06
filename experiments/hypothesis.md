@@ -75,7 +75,7 @@ Note `V(g)` carries trajectory-length information through `γ^(T−t)`, so watch
 
 ## Settled — refuted
 
-### [~] H-A. Uncertainty should measure *grouping relevance*, not penalise within-bucket variance
+### [!] H-A. Uncertainty should measure *grouping relevance*, not penalise within-bucket variance
 
 > **SETTLED 2026-09-06 by `ccpo-mem-20260906` — the second branch.**
 > φ-distance does **not** predict target-distance inside a bucket — measured
@@ -88,12 +88,25 @@ Note `V(g)` carries trajectory-length information through `γ^(T−t)`, so watch
 > | 2 | **+0.0016** | 41% | 0.00000 | 0.000 |
 > | 3 | **+0.0600** | **51%** | 0.00000 | 0.000 |
 > | 4 | **+0.0377** | 46% | 0.00000 | 0.000 |
+> | 5 | **+0.0090** | 40% | 0.00000 | 0.000 |
 >
-> **REOPENED — the closure was premature, and steps 3-4 confirm it was.** First two
-> steps average **−0.004** with the positive-bucket fraction *below* the 50% chance
-> rate; last two average **+0.049** at or above it. φ is beginning to order
-> neighbours within a bucket as the policy differentiates. This is H-A's **first**
-> branch, not the second:
+> **RE-CLOSED at step 5 on the pre-registered criterion "falls back toward 0".**
+> The series is non-monotonic — mean **+0.020**, and the positive-bucket fraction
+> averages **44%**, below the 50% chance rate at every step except one. Steps 3-4
+> were an excursion, not a trend.
+>
+> Both of my readings were over-reactions to two points. The closure at steps 1-2
+> was premature; the reopening at steps 3-4 was equally so. **The right reading of
+> five points is: small, noisy, centred near zero, with no trend** — which is what
+> the pre-registered third criterion says, and why writing the criteria down before
+> the data arrived was worth doing.
+>
+> Residual caveat, honestly stated: mean +0.020 is *slightly* positive rather than
+> exactly zero, and five steps of an early-training policy is not many. If a longer
+> arm ever runs, this is worth re-reading at step 20+. It does not change the
+> verdict at any magnitude reachable here — an R²-driven λ would be ~0.0004.
+>
+> Original framing, retained: this is H-A's **second** branch, not the first:
 >
 > * `phi_rel_corr > 0` while `λ = 0` ⇒ φ carries signal the shrinkage rule is
 >   discarding, and the fix is in the rule. **Act on it.**
