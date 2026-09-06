@@ -76,7 +76,7 @@ within the bucket, or a permutation test per bucket, before it can be trusted.
 
 Also blocked by H-F: measured on a policy stuck near the floor.
 
-### [ ] H-F. The harness plateaus far below published, and we do not know why
+### [x] H-F. The harness plateaus far below published — RESOLVED: under-trained, not broken
 
 **The elephant.** Every arm run here sits at 5-10% training success and 0.06-0.21
 held-out, while published GiGPO reports **90.16** on this exact model and protocol.
@@ -93,7 +93,41 @@ a harness stuck near the floor may simply not exercise the credit-assignment
 differences these arms exist to test. An estimator cannot show its worth on a
 policy that solves nothing.
 
-**Sharpened at step 12 — the policy has learned exactly one task type.**
+> **RETRACTED at step 15, and H-F resolves toward the benign reading.** The
+> held-out set reports per-type success, and it says the opposite of the training
+> draw:
+>
+> | task type | s5 | s10 | s15 |
+> |---|---|---|---|
+> | look_at_obj_in_light | 0.000 | 0.167 | **0.226** |
+> | pick_and_place | 0.119 | 0.142 | **0.210** |
+> | pick_clean_then_place | 0.105 | 0.075 | **0.150** |
+> | pick_cool_then_place | 0.000 | 0.045 | **0.077** |
+> | pick_heat_then_place | 0.000 | 0.071 | 0.000 |
+> | pick_two_obj_and_place | 0.071 | 0.000 | 0.050 |
+> | **OVERALL** | 0.062 | 0.078 | **0.125** |
+> | partial-credit score | 0.226 | 0.386 | **0.453** |
+>
+> **Four of six types are rising**, held-out success has doubled, and the
+> partial-credit score has doubled — the agent is making substantial progress on
+> tasks it does not finish. This is a healthy learning trajectory at step 15 of a
+> process the published work runs for 100-150 steps. **The plateau was not real;
+> it was the training-draw metric.**
+>
+> The claim below — that the policy had learned exactly one task type — came from
+> per-type rates on the 16-task training draw, where each type gets a handful of
+> samples per step. It was wrong, and it is a second instance of the same mistake
+> the gotchas section already warns about: **never read progress off the training
+> draw.**
+>
+> Bearing on H-A: relevance did *not* grow over 14 steps even though the policy was
+> demonstrably improving over the same window. So "the early nulls measured an
+> undifferentiated policy" is refuted too — the policy differentiated, and
+> `phi_rel_corr` stayed at ~0.03.
+>
+> ---
+>
+> *(retracted) Sharpened at step 12 — the policy has learned exactly one task type.*
 Per-type success on the training draw:
 
 | step | pick_and_place | pick_clean | pick_cool | pick_heat | pick_two_obj |
