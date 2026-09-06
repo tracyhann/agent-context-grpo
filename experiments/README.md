@@ -74,6 +74,27 @@ in-distribution / out-of-distribution success):
 for HGPO, the depth of its group hierarchy. Our default is 2, so the K=2 rows are the
 comparable ones.
 
+## Picking up a run in flight
+
+Runs are detached (`start_new_session`), so they outlive the shell that started
+them. To see where one is:
+
+```bash
+scripts/exp_status.py                                     # every run, one line
+tail -f experiments/<exp>/outputs/train.log | grep '\[turn\]'   # rollout cadence
+nvidia-smi --query-compute-apps=pid --format=csv,noheader  # which phase
+```
+
+The process name tells you the phase: `generate_sequences` (rollout),
+`compute_log_prob` / `ref_compute_ref_log_prob` (the two forward passes),
+`update_actor` (PPO). A silent log with the GPUs at 100% is normal during the
+forwards and the update; the `[turn]` lines cover the rollout.
+
+To stop one cleanly: `kill $(cat experiments/<exp>/outputs/train.pid)`, then
+`.venv/bin/ray stop --force`, then check `nvidia-smi --query-compute-apps` for a
+lingering context and kill that pid too — ray occasionally leaves one holding
+tens of GB, which will OOM the next launch.
+
 ## Environment constraints on this box
 
 Two things bind, and both are recorded here because they cost hours to find:
