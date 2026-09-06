@@ -64,16 +64,24 @@ def first_key(rows, *cands):
 
 
 def panel(rows, specs, out, title):
-    n = len(specs)
+    # Lay out only the panels that have data, so a series that has not been
+    # written yet (a held-out score before the first evaluation) does not leave a
+    # hole in the grid.
+    live = []
+    for label, cands, kw in specs:
+        keys = cands if isinstance(cands, (list, tuple)) else [cands]
+        if any(first_key(rows, c) and series(rows, first_key(rows, c))[0] for c in keys):
+            live.append((label, keys, kw))
+    if not live:
+        return False
     ncol = 3
-    nrow = (n + ncol - 1) // ncol
+    nrow = (len(live) + ncol - 1) // ncol
     fig, axes = plt.subplots(nrow, ncol, figsize=(4.6 * ncol, 3.1 * nrow), squeeze=False)
     for ax in axes.flat:
         ax.set_visible(False)
     drew = 0
-    for i, (label, cands, kw) in enumerate(specs):
+    for i, (label, keys, kw) in enumerate(live):
         ax = axes[i // ncol][i % ncol]
-        keys = cands if isinstance(cands, (list, tuple)) else [cands]
         plotted = False
         for j, cand in enumerate(keys):
             k = first_key(rows, cand)
