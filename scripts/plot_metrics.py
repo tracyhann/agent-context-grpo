@@ -122,6 +122,10 @@ STANDARD = [
     ("policy loss", ["actor/pg_loss"], {}),
     ("learning rate", ["actor/lr"], {}),
     ("step time (s)", ["timing_s/step"], {}),
+    ("time breakdown (s)", ["timing_s/gen", "timing_s/old_log_prob", "timing_s/ref",
+                            "timing_s/adv", "timing_s/update_actor", "timing_s/testing"], {}),
+    ("KL (reward-side)", ["actor/reward_kl_penalty", "critic/kl"], {}),
+    ("advantage magnitude", ["critic/advantages/mean", "critic/advantages/max"], {}),
 ]
 
 CCPO = [

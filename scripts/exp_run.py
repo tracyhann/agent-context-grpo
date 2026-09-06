@@ -279,6 +279,7 @@ def build_env(cfg, exp_dir):
         "OPENBLAS_NUM_THREADS": "1",
         "NUMEXPR_NUM_THREADS": "1",
         "RAYON_NUM_THREADS": "1",
+        "ACG_ADV_ESTIMATOR": cfg["arm"],
         "ACG_EXP_DIR": exp_dir,
         "ACG_METRICS_JSONL": os.path.join(exp_dir, "outputs", "metrics.jsonl"),
         "ACG_CCPO_DUMP": os.path.join(exp_dir, "outputs", "ccpo_samples.csv"),

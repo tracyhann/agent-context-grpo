@@ -737,8 +737,12 @@ class ActorRolloutRefWorker(Worker):
             # reference policy is frozen by definition, which is exactly what the
             # estimator's phi requires, and it already runs every step for the KL
             # term -- so a discriminating metric costs no extra compute.
+            # Only the CCPO arm needs these features. Capturing them on a GiGPO or
+            # GRPO arm is wasted work AND unfair: the baseline would pay a cost the
+            # method needs. ACG_ADV_ESTIMATOR is set by scripts/exp_run.py.
             self.ref_policy._acg_capture_hidden = (
-                os.environ.get("ACG_CCPO_PHI", "hidden").lower() == "hidden")
+                os.environ.get("ACG_ADV_ESTIMATOR", "ccpo").lower() == "ccpo"
+                and os.environ.get("ACG_CCPO_PHI", "hidden").lower() == "hidden")
             output, _ = self.ref_policy.compute_log_prob(data=data, calculate_entropy=False)
             _feats = getattr(self.ref_policy, "_acg_hidden", None)
             _t = {"ref_log_prob": output}
