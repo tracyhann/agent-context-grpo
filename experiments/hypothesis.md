@@ -12,13 +12,24 @@ Each settled entry carries: the arm that tested it, the numbers, and what follow
 
 ## Bottom line as of 2026-09-06
 
-**CCPO's central mechanism is refuted on ALFWorld.** Six φ variants — the policy's
-hidden state, explicit `{t, n_unique, revisit, progress}`, both concatenated,
-bag-of-words, and whole-episode memory, under two targets — all give `λ = 0.000`
-and `phi_rel_corr ≈ 0`. φ-similarity does not predict return-similarity inside a
-bucket, measured both through the baseline's mean shift (λ) and directly through
-within-bucket ordering (`phi_rel_corr = −0.0096`, positive in 42% of buckets
-against a 50% chance rate).
+**CCPO's central mechanism is real but far too small to matter on ALFWorld.**
+Six φ variants — the policy's hidden state, explicit `{t, n_unique, revisit,
+progress}`, both concatenated, bag-of-words, and whole-episode memory, under two
+targets — all give `λ = 0.000`. Over 14 steps `phi_rel_corr` averages **+0.0306**,
+95% CI [+0.0140, +0.0473], which excludes zero: φ-similarity *does* predict
+return-similarity inside a bucket. It is just ~3 orders of magnitude below what the
+estimator needs (implied R² = 0.0009).
+
+H-H then bounded what any better φ could buy: **6.1% of target variance**, from a
+400-permutation ICC test. That 6.1% is CCPO's entire theoretical margin over GiGPO,
+because GiGPO already uses the uniform bucket mean and context conditioning only
+competes for the within-bucket, between-trajectory slice. So λ = 0.000 was never a
+bug — the shrinkage correctly reported that there is almost nothing to shrink
+toward.
+
+(An earlier version of this paragraph quoted `phi_rel_corr = −0.0096` as the
+headline. That was one step's value, and the multi-step interval above contradicts
+it. The premise is true and negligible, which is a different claim from false.)
 
 **What survives** is not the thesis but two components corrected along the way:
 
@@ -27,8 +38,16 @@ against a 50% chance rate).
 * the **successor-value target** (`ACG_CCPO_TARGET=nextnode`) — G²PO's component 1.
 
 Together they move the credit a long way from GiGPO (`r_vs_gigpo` +0.977 → **+0.319**)
-without any context conditioning at all. Whether that helps the *policy* is
-untested — it needs a matched baseline arm, which the budget has not allowed.
+without any context conditioning at all. Whether that helps the *policy* is now
+being tested by `ccpo-long-20260906`, which runs to step 100 — the reference
+protocol's own length — so its held-out number is directly comparable to the
+published GiGPO/G²PO figures without spending a GPU-month on baseline arms.
+
+**The largest known gap to the baselines is training length, not method.** Every
+arm so far ran 20 steps against a published 100, and held-out was still rising
+monotonically at the cutoff (0.0625 → 0.0781 → 0.1250 → 0.1719, partial credit
+0.226 → 0.803). Nothing about φ can be judged against published numbers until an
+arm has run the published length.
 
 **What this does not say.** Nothing here rules out context conditioning on a
 benchmark where situation similarity does predict outcome similarity. On ALFWorld,
