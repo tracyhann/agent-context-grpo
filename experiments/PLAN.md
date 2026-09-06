@@ -35,6 +35,34 @@ Chosen after Phase 1, one variable at a time, each against `ccpo-base`:
 | `ccpo-gate` | `ccpo_sim=0.95`, `ccpo_sim_backoff=0.8` | ~44% of buckets are singletons and take `A_CC = 0`. GiGPO already ships the similarity gate; the backoff borrows HGPO's "never waste a sample" idea. |
 | `ccpo-full` | both, if each helps alone | Only run if the ablations justify it. |
 
+## Choosing the CCPO arm's configuration — and a fairness trap in it
+
+The default `eb` shrinkage measured **λ = 0.000** on a real batch, which makes
+`A_CC` exactly the uniform baseline: that arm would be numerically identical to
+`gigpo-repro` and ten hours would buy nothing. So the CCPO arm must use
+`ccpo_shrink=eb_pooled`.
+
+The similarity gate is a harder call. It lifts effective neighbourhood size from
+`n_eff` 2.1 to 7.0 with full coverage, which the estimator plainly needs — but
+GiGPO has the *same* gate natively (`algorithm.gigpo.enable_similarity`), and
+`gigpo-repro` runs with exact match because that is the published setting. So
+**CCPO(sim) vs GiGPO(exact) would confound the context conditioning with the
+gate**, and the obvious criticism of any win is that the gate did the work.
+
+Order of preference:
+
+1. **CCPO with `eb_pooled` and the exact gate** (`ccpo_sim=0`). Differs from
+   `gigpo-repro` in exactly one thing — the context-conditioned baseline — so a
+   win is attributable. Risk: with `n_eff` ≈ 2.1 the estimator may still be inert.
+2. If it is inert, **add the similarity gate** — and then a GiGPO arm with
+   `enable_similarity=True` becomes mandatory, not optional, for the comparison to
+   mean anything.
+
+**Decide this in 30 minutes, not 10 hours.** `lam_pooled_obs`, `effect_rel`,
+`n_eff_mean` and `r_vs_gigpo` are logged every step, so run option 1 for ~5 steps
+and read them: `effect_rel` ≈ 0 or `r_vs_gigpo` ≈ 1.0 means inert, and the arm is
+restarted under option 2 having cost half an hour.
+
 ## Phase 3 — if a winner emerges
 
 Repeat the winning arm on 2 further seeds. Held-out evaluation here is stochastic
