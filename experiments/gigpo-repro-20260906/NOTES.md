@@ -29,6 +29,10 @@ parses 127/128 valid, 124 admissible) and `response_length/mean` for inflation.
 timing showed `update_actor` dominating with `ppo_micro_batch_size_per_gpu=8`,
 four times below the reference 32. This run uses the reference value.
 
+**Observed cadence.** ~3.2 s per rollout turn over 128 environments, so a 50-turn
+rollout is ~2.7 min; warm-cache startup ~1 min. The untrained policy already
+completes episodes (two successes by turn 11 of step 1).
+
 **Result.** _pending_
 
 **Reading.** _pending_
