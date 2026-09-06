@@ -97,10 +97,10 @@ it triggers on *plateau*, not on being behind schedule, so this is a manual call
 
 **Tracking — `ccpo-long-20260906`, held-out (128 fixed episodes):**
 
-| step | 5 | 10 | 15 | 20 | 25 | 30 | 35 | 40 |
-|---|---|---|---|---|---|---|---|---|
-| success | .0625 | .0781 | .1250 | .1719 | .2422 | .2500 | .3047 | **.3438** |
-| partial | .226 | .386 | .454 | .803 | 1.043 | 1.278 | 1.475 | **1.821** |
+| step | 5 | 10 | 15 | 20 | 25 | 30 | 35 | 40 | 45 | 50 | 55 | 60 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| success | .0625 | .0781 | .1250 | .1719 | .2422 | .2500 | .3047 | .3438 | .2891 | **.4219** | .4141 | .4141 |
+| partial | .226 | .386 | .454 | .803 | 1.043 | 1.278 | 1.475 | 1.821 | 1.391 | **2.371** | 2.152 | 2.038 |
 
 (Steps 5–20 are `ccpo-mem`; 25+ are the warm-started continuation. Same config, same
 constant LR, so the series is one curve.)
@@ -120,6 +120,33 @@ success curves saturate, and the remaining tasks are the compositional ones that
 convert last. But the honest statement is that the band's *upper* half is the live
 region, not its middle. I am not revising the prediction; a band you move once it
 starts resolving is not a prediction.
+
+**Step-60 checkpoint: the pre-registered marker is cleared, but a plateau has
+appeared.** The marker was ~0.35 by step 60; actual is **0.4141**. By the criterion
+written down in advance, the run continues.
+
+Against that: three consecutive evaluations at 0.4219 / 0.4141 / 0.4141 — 15 steps
+with no improvement — and partial credit drifting *down* across the same window
+(2.371 → 2.152 → 2.038). Partial credit is the less noisy indicator, so a decline
+there is worth more than the flatness in success.
+
+**Decision: continue to 100.** Reasoning, recorded now so it can be judged later:
+
+* The marker was set in advance precisely so a plateau would not be re-litigated
+  mid-run. 0.414 clears 0.35 comfortably.
+* This series has flattened twice before and resumed both times — step 30 was flat
+  (+.008) then jumped to .3047; step 45 *fell* to .2891 then jumped to .4219. A
+  third flat window after two false alarms is weak evidence.
+* Early stopping is armed and handles the true-plateau case without my judgement:
+  patience 8 with two stale evaluations banked means it fires at **step 90**, so
+  the exposure is 30 steps (~3.5 h), not 40.
+* `step50-best` is preserved regardless, so a plateau costs compute, not the result.
+
+**What would change the decision:** step 65 or 70 coming in *below* 0.39 — that
+would be a decline rather than a plateau, and partial credit falling for a fourth
+consecutive evaluation would corroborate it. In that case kill immediately rather
+than waiting for step 90; early stopping fires on plateau, and a decline is worse
+than a plateau.
 
 **One caution against reading the increments too finely:** at p≈0.3 with n=128 the
 binomial SE is 0.040, so any single step-to-step move under ~0.08 is inside noise.
