@@ -11,6 +11,38 @@ from HGPO Table 1 (in-distribution / out-of-distribution success):
 
 HGPO K=2 is what "SOTA" means at our `history_length=2`.
 
+## Revised design, 2026-09-06: a 2x2 over estimator x memory
+
+The baseline arm has already answered what it was for — the harness learns
+(0.041 untrained -> 0.195 at step 5). Running it to 50 buys a longer baseline
+curve, not new information, and the published 90.16 needs 100-150 steps, which is
+not affordable here. So: **cut every arm to a common 20 steps** (four held-out
+evaluations each, ~2.1 h) and spend the freed budget on the components that have
+never been tested together.
+
+|  | memory off | memory on (`compact_budget=512`) |
+|---|---|---|
+| **GiGPO** | `gigpo-repro` (running) | `gigpo-mem` |
+| **CCPO** | `ccpo-base` | `ccpo-mem` |
+
+This is the design the evidence actually calls for:
+
+* **Compaction is the component with prior evidence of a win** — "frozen phi +
+  memory" was the only arm beating plain GRPO (0.625 vs 0.604), and it has never
+  been separated from the estimator. HGPO's K=2->K=4 result says the same thing
+  from outside: more history in the prompt bought them more than their entire
+  estimator contribution.
+* A 2x2 **separates the two**, so a win can be attributed instead of argued about.
+  Turning memory on for CCPO only would rebuild exactly the confound removed from
+  the similarity gate.
+* Four arms at 20 steps costs about what two arms at 50 would.
+
+**The honest limit of a 20-step budget.** Held-out evaluation carries ~+/-0.048 on
+128 episodes, so only differences larger than roughly 0.1 are readable. If the
+2x2 comes out inside that band the answer is "not separable at this budget",
+which is a result, not a failure — and it is the correct thing to report rather
+than reading a ranking out of noise.
+
 ## Phase 1 — validate the harness and get a fair three-way comparison
 
 Three arms, 2 GPUs each, launched together so they see identical wall-clock

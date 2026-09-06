@@ -110,12 +110,13 @@ DEFAULTS = {
     "gamma": 0.95,
     "step_advantage_w": 1.0,
     "adv_mode": "mean_std_norm",        # both advantage terms, same convention
-    # 50, not the reference's 100. Arms cannot run in parallel here, so the budget
-    # buys either one finished arm or two comparable ones -- and a comparison at a
-    # common step count is fair, while a finished arm against a truncated one is
-    # not. gigpo-repro-20260906 was launched at 100 and is stopped at 50 for the
-    # same reason; its config.json records 100, its NOTES the step it was cut at.
-    "total_epochs": 50,
+    # 20, not the reference's 100-150. Arms cannot run in parallel here, so the
+    # budget buys one long arm or several comparable short ones. A 2x2 over
+    # estimator x memory is worth more than one finished baseline, because the
+    # memory component has prior evidence of a win and has never been separated
+    # from the estimator. See experiments/PLAN.md, including what a 20-step budget
+    # can and cannot resolve (+/-0.048 per evaluation).
+    "total_epochs": 20,
     "test_freq": 5,
     "save_freq": 5,
 
