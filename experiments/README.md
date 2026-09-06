@@ -144,8 +144,12 @@ is worth more to the backward pass.
 
 **Batch/GPU divisibility.** verl asserts `train_batch_size * rollout.n % n_gpus == 0`.
 The reference `train_batch_size=16` with `group_size=8` gives 128, so 4 GPUs
-divides cleanly and 6 does not. Arms run on 4 GPUs to keep the reference batch
-exactly, rather than perturbing the batch to use two more GPUs.
+divides cleanly and 6 does not. Arms run on 4 GPUs and **two GPUs sit idle by
+choice**: the alternative is `train_batch_size=18` (144 episodes/step), which would
+buy ~1.5x throughput at the cost of no longer matching the batch the published
+numbers were produced with. For `gigpo-repro`, matching that batch *is* the
+experiment. The idle GPUs cannot be used for a second arm either — the pid ceiling
+above, not GPU count, is what caps parallelism.
 
 ## Index
 
