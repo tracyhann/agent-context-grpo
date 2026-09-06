@@ -76,3 +76,21 @@ context conditioning contributed nothing under either target, which points at ph
 rather than the target. With lambda = 0 this arm is G2PO's component 1 with
 leave-one-out instead of self-inclusive — a real variant, but not a
 context-conditioned one.
+
+## memory arm, first attempt (reversed digest) — not kept as metrics
+
+Step 1 with `compact_budget=512` solved **0 of 128 episodes**, where memory-off
+arms solved 7-16 on the same seed. Actions were still 124/128 parser-valid and 120
+admissible: legal moves, no progress. `lambda` was 0.000 again, but that step is
+degenerate for judging the estimator — with every episode reward 0 all node values
+are 0, which is why `r_vs_gigpo` and `r_vs_g2po` both read ~0.97.
+
+Cause: the digest was rendered in its **eviction** order (informative before
+no-effect, recent before old), so the agent read its own history backwards, most
+recent action first. Fixed in `agent_system/memory/compact.py` — eviction still
+decides what survives the budget, then the kept lines are re-sorted chronologically.
+
+Worth recording as a near-miss: the reversed order had been in the codebase since
+compaction was written, and "frozen phi + memory" was nonetheless the only arm the
+prior work found beating GRPO. Whatever that result was, it was obtained with the
+history inverted.

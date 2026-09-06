@@ -447,6 +447,11 @@ def main():
         fh.write(str(p.pid))
     print(f"[exp] launched pid {p.pid}, log -> {log}")
     if not a.no_plot:
+        # Kill any watcher left over from an earlier launch. They are long-lived and
+        # accumulate one per launch; twelve of them once helped exhaust the
+        # container's pid budget mid-run, which looks like a training crash.
+        subprocess.run(["pkill", "-9", "-f", f"plot_metrics.py --exp {exp_dir}"],
+                       capture_output=True)
         subprocess.Popen([cfg["venv_python"], os.path.join(ROOT, "scripts", "plot_metrics.py"),
                           "--exp", exp_dir, "--watch"],
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,

@@ -74,6 +74,14 @@ in-distribution / out-of-distribution success):
 for HGPO, the depth of its group hierarchy. Our default is 2, so the K=2 rows are the
 comparable ones.
 
+## Hypotheses
+
+[`hypothesis.md`](hypothesis.md) is the running brainstorm and tracker: what we
+believe, what has been tested, and what is worth testing next. **Add a hypothesis
+there before running the arm that tests it**, so the prediction is on record and
+cannot be rewritten after the fact. Settled entries carry the arm name, the
+numbers, and what follows from them.
+
 ## Method-specific metrics (CCPO arms)
 
 Every one of these is written to `outputs/metrics.jsonl` each step and plotted in
