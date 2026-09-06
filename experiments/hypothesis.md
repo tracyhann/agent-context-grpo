@@ -166,8 +166,15 @@ Note `V(g)` carries trajectory-length information through `γ^(T−t)`, so watch
 > | `phi_rel_corr` | +0.0057 | +0.512 | 0.092 | +0.020 -> +0.043 |
 > | frac buckets > 0 | +0.0151 | +0.576 | **0.046** | 0.440 -> 0.490 |
 >
-> **The upward drift is real.** The bucket-fraction trend is significant at the
-> 0.05 level: the *proportion* of buckets in which φ-distance predicts
+> **Caveat added at step 11 — that significance was fragile.** One more point moved
+> the bucket-fraction trend from p = 0.046 to **p = 0.112**, and the correlation
+> trend from 0.092 to 0.085. With n ~ 10 a single observation flips the verdict, so
+> "significant at the 0.05 level" was over-read. The *direction* is stable across
+> every window (first half below chance, second half at or above it); the p-value is
+> not. Read the direction, not the threshold.
+>
+> **The upward drift is probably real.** The bucket-fraction trend reached the
+> 0.05 level at step 10: the *proportion* of buckets in which φ-distance predicts
 > target-distance genuinely rises as the policy differentiates. That is the
 > mechanism predicted when this was reopened, and it means the flat categorical
 > claim "φ carries no signal" was **wrong**.
