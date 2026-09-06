@@ -63,6 +63,10 @@ DEFAULTS = {
     "val_top_k": -1,
 
     # optimisation
+    # Pure memory/compute trade, no effect on the math: a 1.5B model on 96 GB does
+    # not need activation checkpointing, and paying ~30% extra compute for it makes
+    # the update phase the long pole of a step.
+    "grad_ckpt": True,
     "lr": 1e-6,
     "kl_loss_coef": 0.01,
     "kl_loss_type": "low_var_kl",
@@ -185,7 +189,7 @@ def build_command(cfg, exp_dir):
         "actor_rollout_ref.actor.use_kl_loss=True",
         f"actor_rollout_ref.actor.kl_loss_coef={cfg['kl_loss_coef']}",
         f"actor_rollout_ref.actor.kl_loss_type={cfg['kl_loss_type']}",
-        "actor_rollout_ref.model.enable_gradient_checkpointing=True",
+        f"actor_rollout_ref.model.enable_gradient_checkpointing={cfg['grad_ckpt']}",
         "actor_rollout_ref.actor.fsdp_config.param_offload=False",
         "actor_rollout_ref.actor.fsdp_config.optimizer_offload=False",
         f"actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu={cfg['ppo_micro_batch_size_per_gpu']}",
