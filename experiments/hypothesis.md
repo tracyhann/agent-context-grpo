@@ -10,9 +10,90 @@ Each settled entry carries: the arm that tested it, the numbers, and what follow
 
 ---
 
+## Bottom line as of 2026-09-06
+
+**CCPO's central mechanism is refuted on ALFWorld.** Six φ variants — the policy's
+hidden state, explicit `{t, n_unique, revisit, progress}`, both concatenated,
+bag-of-words, and whole-episode memory, under two targets — all give `λ = 0.000`
+and `phi_rel_corr ≈ 0`. φ-similarity does not predict return-similarity inside a
+bucket, measured both through the baseline's mean shift (λ) and directly through
+within-bucket ordering (`phi_rel_corr = −0.0096`, positive in 42% of buckets
+against a 50% chance rate).
+
+**What survives** is not the thesis but two components corrected along the way:
+
+* the **leave-one-out exclusion** (`i_u ≠ i_v`) — GiGPO and G²PO both include the
+  scored trajectory in its own baseline; this does not;
+* the **successor-value target** (`ACG_CCPO_TARGET=nextnode`) — G²PO's component 1.
+
+Together they move the credit a long way from GiGPO (`r_vs_gigpo` +0.977 → **+0.319**)
+without any context conditioning at all. Whether that helps the *policy* is
+untested — it needs a matched baseline arm, which the budget has not allowed.
+
+**What this does not say.** Nothing here rules out context conditioning on a
+benchmark where situation similarity does predict outcome similarity. On ALFWorld,
+from a given observation, what happens next is dominated by which action is chosen
+now rather than by how the agent arrived — and φ is computed from the prompt,
+before the action exists.
+
+---
+
 ## Open — ranked by expected value
 
-### [ ] H-A. Uncertainty should measure *grouping relevance*, not penalise within-bucket variance
+### [ ] H-C. The learned successor-feature φ — now the only surviving route, and a long shot
+
+**Reprioritised down, not up.** Five φ variants — the policy's hidden state,
+explicit `{t, n_unique, revisit, progress}`, both concatenated, bag-of-words, and
+whole-episode memory — all give `phi_rel_corr ≈ 0`. A learned encoder would have to
+find within-bucket ordering structure that none of them sees, and Phase 1 already
+found no advantage over a null control. Cost is high (plumbing plus reward-free TD
+training inside the rollout loop).
+
+*(original entry below)*
+
+`ccpo/learned.py` — `LearnedPhi` + action-conditioned successor features +
+learned affinity, TD-trained reward-free. This is §02's actual method and **has
+never been wired in**. Cost: plumbing plus TD training inside the rollout loop.
+Prior evidence is weak (Phase 1 found no advantage over a null control), so this
+ranks below H-A and H-B despite being the headline method.
+
+### [ ] H-D. Similarity gate raises bucket occupancy
+
+`ACG_CCPO_SIM=0.95` — GiGPO ships this (`are_similar`, SequenceMatcher). Would
+raise `n_eff` and cut the 33% singleton rate. **Deprioritised**: support is not the
+binding constraint (see H-2), and GiGPO has the same gate natively, so a
+CCPO-with-gate vs GiGPO-without comparison would confound the gate with the
+estimator.
+
+### [ ] H-E. G²PO's edge term
+
+`ACG_CCPO_EDGE_W>0` adds `V(next) − V(current)`, standardised per task. Untested.
+Note `V(g)` carries trajectory-length information through `γ^(T−t)`, so watch
+`acc_len_corr` for a length bias.
+
+---
+
+## Settled — refuted
+
+### [!] H-A. Uncertainty should measure *grouping relevance*, not penalise within-bucket variance
+
+> **SETTLED 2026-09-06 by `ccpo-mem-20260906` — the second branch.**
+> `phi_rel_corr = −0.0096`, positive in only **42%** of buckets (chance = 50%),
+> `tau2 = 0.00000`. φ-distance does **not** predict target-distance inside a
+> bucket — measured directly, independent of whether φ shifts the baseline's mean.
+>
+> This was the escape hatch for the four earlier nulls: λ only detects a *mean*
+> shift, so a φ that ordered neighbours correctly without moving that mean would
+> have read as zero signal. It doesn't order them either. **The premise does not
+> hold on ALFWorld, and no shrinkage rule repairs that** — the R²-driven
+> replacement proposed below would be estimating an R² of zero.
+>
+> The inversion identified below (high `s²` suppressing conditioning, when high
+> `s²` is the evidence of conflation) is still a genuine design flaw and would
+> matter on a benchmark where φ carried signal. It is simply not what is blocking
+> CCPO here. **Do not spend compute on it.**
+
+*(original entry retained below)*
 
 **The inversion.** `λ_i = τ² / (τ² + ρ²·s²·var_gain)`. Within-bucket variance `s²`
 sits in the **denominator**, so **high within-bucket variance → lower λ → less
@@ -54,9 +135,27 @@ leave-one-out argument is untouched.
 
 Status: measured for the first time by `ccpo-mem-20260906`.
 
----
+### [!] H-B. Compaction makes φ informative — and has never actually been evaluated
 
-### [~] H-B. Compaction makes φ informative — and has never actually been evaluated
+> **SETTLED 2026-09-06 by `ccpo-mem-20260906`.** The digest reaches the prompt
+> (`prompt_length/mean` 549 → **775**, ~226 tokens of digest) and λ is **still
+> 0.000**, `phi_rel_corr` −0.0096, on a non-degenerate batch. Whole-episode history
+> in the prompt does not make φ carry within-bucket signal.
+>
+> Two sub-results worth keeping:
+> * **The digest-order bug was the real damage.** 0/128 episodes solved with the
+>   reversed digest, **4/128** with it chronological, against 7/128 memory-off. 4 vs
+>   7 is ~1.2 binomial sd — compaction is roughly **neutral**, not harmful. 0 vs 7
+>   was ~2.7 sd.
+> * **The mechanism claim does not hold either.** `episode/length/mean` = 49.6 of a
+>   50-turn cap: remembering what it already tried did not shorten episodes, which
+>   was the stated justification (58.7% of turns revisit an already-seen observation).
+>
+> So "frozen φ + memory beats GRPO" (0.625 vs 0.604) remains unexplained. It was
+> obtained with the history inverted, and with the digest fixed the component is
+> neutral on this model at step 1.
+
+*(original entry retained below)*
 
 Inside a bucket the observation is **constant by construction**, and without a
 digest the prompt carries only `step_count` plus the most recent `history_length`
@@ -75,33 +174,6 @@ Arm: `ccpo-mem-20260906`. Watch `phi_rel_corr`, `λ`, then `episode/length/mean`
 (the mechanism claim is that remembering where it searched shortens episodes:
 58.7% of turns revisit an already-seen observation, failures 2.68× as often).
 
----
-
-### [ ] H-C. The learned successor-feature φ
-
-`ccpo/learned.py` — `LearnedPhi` + action-conditioned successor features +
-learned affinity, TD-trained reward-free. This is §02's actual method and **has
-never been wired in**. Cost: plumbing plus TD training inside the rollout loop.
-Prior evidence is weak (Phase 1 found no advantage over a null control), so this
-ranks below H-A and H-B despite being the headline method.
-
-### [ ] H-D. Similarity gate raises bucket occupancy
-
-`ACG_CCPO_SIM=0.95` — GiGPO ships this (`are_similar`, SequenceMatcher). Would
-raise `n_eff` and cut the 33% singleton rate. **Deprioritised**: support is not the
-binding constraint (see H-2), and GiGPO has the same gate natively, so a
-CCPO-with-gate vs GiGPO-without comparison would confound the gate with the
-estimator.
-
-### [ ] H-E. G²PO's edge term
-
-`ACG_CCPO_EDGE_W>0` adds `V(next) − V(current)`, standardised per task. Untested.
-Note `V(g)` carries trajectory-length information through `γ^(T−t)`, so watch
-`acc_len_corr` for a length bias.
-
----
-
-## Settled — refuted
 
 ### [!] H-1. Context conditioning improves credit assignment on ALFWorld
 
