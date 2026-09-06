@@ -158,7 +158,42 @@ Note `V(g)` carries trajectory-length information through `γ^(T−t)`, so watch
 > | 4 | **+0.0377** | 46% | 0.00000 | 0.000 |
 > | 5 | **+0.0090** | 40% | 0.00000 | 0.000 |
 >
-> **STATUS AT STEP 9: the trend test says drifting upward, p ~ 0.07.** Regressing
+> **RESOLVED AT STEP 10 (the pre-registered re-read), n=10 — "real but too weak
+> to exploit".**
+>
+> | statistic | slope/step | r | p | first half -> second half |
+> |---|---|---|---|---|
+> | `phi_rel_corr` | +0.0057 | +0.512 | 0.092 | +0.020 -> +0.043 |
+> | frac buckets > 0 | +0.0151 | +0.576 | **0.046** | 0.440 -> 0.490 |
+>
+> **The upward drift is real.** The bucket-fraction trend is significant at the
+> 0.05 level: the *proportion* of buckets in which φ-distance predicts
+> target-distance genuinely rises as the policy differentiates. That is the
+> mechanism predicted when this was reopened, and it means the flat categorical
+> claim "φ carries no signal" was **wrong**.
+>
+> **But the magnitude stays too small to matter.** Mean `phi_rel_corr` +0.032,
+> second half +0.043, and the fit projects **+0.114 at step 20** — below the 0.15
+> threshold registered in advance. At that magnitude an R²-driven λ would be
+> ~0.013. So λ = 0 remains the correct verdict at every magnitude reachable here,
+> and the substance of the refutation stands: **the conditioning cannot be made to
+> do useful work on ALFWorld at this scale**, not because φ is uninformative but
+> because it is informative far too weakly.
+>
+> **Correction to the earlier framing.** The refutation should not be stated as
+> "φ-similarity does not predict return-similarity". It should be: *φ-similarity
+> predicts return-similarity weakly and increasingly, at roughly r = 0.03-0.09 over
+> the first ten steps, which is one to two orders of magnitude below what the
+> estimator would need.* The first version is false; the second is what was measured.
+>
+> **Still live for a longer horizon.** The trend does not plateau within ten steps.
+> Whether it saturates near 0.1 or keeps climbing over 100-150 steps — the published
+> training length — is unmeasured, and is the single most interesting open question
+> about this method. It is also gated on H-F.
+>
+> ---
+>
+> *(superseded) STATUS AT STEP 9: the trend test says drifting upward, p ~ 0.07.* Regressing
 > `phi_rel_corr` on step over nine points: slope **+0.0073/step**, r = **+0.560**,
 > p ~ 0.073 (normal approximation on n=9, indicative only). Positive-bucket
 > fraction: slope +0.0124/step, r = +0.448. First three steps average **+0.017**,
