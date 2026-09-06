@@ -742,7 +742,7 @@ class ActorRolloutRefWorker(Worker):
             # method needs. ACG_ADV_ESTIMATOR is set by scripts/exp_run.py.
             self.ref_policy._acg_capture_hidden = (
                 os.environ.get("ACG_ADV_ESTIMATOR", "ccpo").lower() == "ccpo"
-                and os.environ.get("ACG_CCPO_PHI", "hidden").lower() == "hidden")
+                and os.environ.get("ACG_CCPO_PHI", "hidden").lower().startswith("hidden"))
             output, _ = self.ref_policy.compute_log_prob(data=data, calculate_entropy=False)
             _feats = getattr(self.ref_policy, "_acg_hidden", None)
             _t = {"ref_log_prob": output}

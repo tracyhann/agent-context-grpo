@@ -331,10 +331,10 @@
     "balance_batch": true,
     "critic_warmup": 0,
     "default_hdfs_dir": null,
-    "default_local_dir": "/workspace/experiments/ccpo-nextnode-20260906/outputs/checkpoints",
+    "default_local_dir": "/workspace/experiments/ccpo-ctx-20260906/outputs/checkpoints",
     "del_local_ckpt_after_load": false,
     "device": "cuda",
-    "experiment_name": "ccpo-nextnode-20260906",
+    "experiment_name": "ccpo-ctx-20260906",
     "log_val_generations": 0,
     "logger": [
       "console",

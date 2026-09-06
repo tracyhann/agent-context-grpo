@@ -67,6 +67,12 @@ class TrajectoryCollector:
         # Qwen3: native thinking must stay off or 512-token responses never reach the
         # <action> tag (valid_action_ratio 0.0). Forced here because the hydra
         # override did not reach this call in practice.
+        #
+        # On Qwen2.5-1.5B-Instruct -- the model this repo now trains, and the one
+        # GiGPO/HGPO/G2PO publish on -- this is a verified no-op: its chat template
+        # never references enable_thinking, and passing it leaves the rendered
+        # prompt byte-identical. Reasoning there is prompt-level (<think> blocks),
+        # exactly as in the reference scripts, neither of which sets this flag.
         apply_chat_template_kwargs.setdefault("enable_thinking", False)
         
         # Get observation components

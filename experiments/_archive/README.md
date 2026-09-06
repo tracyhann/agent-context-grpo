@@ -52,3 +52,27 @@ remove noise that lives in the *target* -- which is the argument for `nextnode`.
 Also the first measurement of CCPO against G2PO's real estimator: **+0.39**, against
 +0.98 for GiGPO. The two references are genuinely different quantities, which is
 what the attribution correction claimed.
+
+## `ccpo-nextnode-step1-metrics.jsonl`
+
+1 step of CCPO with `target=nextnode`, `shrink=eb_hier`. Kept because it settles a
+hypothesis, read against one step of `ccpo-base`:
+
+| | `target=return` | `target=nextnode` |
+|---|---|---|
+| `lam_u_mean` | 0.000 | **0.000** |
+| `effect_rel` | 0.0000 | **0.0000** |
+| `r_vs_gigpo` | +0.977 | **+0.530** |
+| `r_vs_g2po` | +0.393 | **+0.719** |
+| `acc_len_corr` | +0.005 | -0.011 |
+
+The target change did what it was designed to do — the credit is now genuinely
+different from GiGPO and much closer to G2PO — but **lambda is still 0**. So "the
+target is too noisy for the conditioning to register" is refuted: with the pooled,
+far lower variance successor value, tau^2 is still 0.
+
+Everything that moved came from the target and the leave-one-out exclusion. The
+context conditioning contributed nothing under either target, which points at phi
+rather than the target. With lambda = 0 this arm is G2PO's component 1 with
+leave-one-out instead of self-inclusive — a real variant, but not a
+context-conditioned one.
