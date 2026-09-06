@@ -239,12 +239,35 @@ class DataParallelPPOActor(BasePPOActor):
             # than the whole output_hidden_states tuple (29 x that, ~3.3 GB here).
             # Only valid on the padded path: with remove_padding the sequence is
             # packed to (1, total_nnz) and a per-row position index is meaningless.
-            if getattr(self, "_acg_capture_hidden", False) and not self.use_remove_padding:
+            if getattr(self, "_acg_capture_hidden", False):
                 h = getattr(self, "_acg_hook_out", None)
-                if h is not None and h.dim() == 3 and h.shape[0] == batch_size:
-                    pos = h.shape[1] - response_length - 1
-                    if 0 <= pos < h.shape[1]:
-                        self._acg_hidden_buf.append(h[:, pos, :].detach().float().cpu())
+                if h is not None and h.dim() == 3:
+                    if not self.use_remove_padding and h.shape[0] == batch_size:
+                        pos = h.shape[1] - response_length - 1
+                        if 0 <= pos < h.shape[1]:
+                            self._acg_hidden_buf.append(h[:, pos, :].detach().float().cpu())
+                    elif (self.use_remove_padding and h.shape[0] == 1
+                          and not self.use_ulysses_sp):
+                        # Packed path. verl left-pads prompts and right-pads
+                        # responses to a common seqlen, so the last prompt token of
+                        # every sample sits at the same padded column,
+                        # seqlen - response_length - 1; `indices` holds the flat
+                        # (b*seqlen) positions of the tokens that survived unpadding,
+                        # ascending, so searchsorted maps that column into the packed
+                        # run. Without this the estimator silently loses its
+                        # hidden-state phi the moment remove_padding is enabled --
+                        # which would make the fast path and the method mutually
+                        # exclusive. Sequence parallelism is excluded because it
+                        # slices the packed run across ranks.
+                        _col = seqlen - response_length - 1
+                        if 0 <= _col < seqlen:
+                            _flat = (torch.arange(batch_size, device=indices.device,
+                                                  dtype=indices.dtype) * seqlen + _col)
+                            _p = torch.searchsorted(indices, _flat)
+                            _p = _p.clamp(max=indices.numel() - 1)
+                            if bool((indices[_p] == _flat).all()):
+                                self._acg_hidden_buf.append(
+                                    h[0, _p, :].detach().float().cpu())
                 self._acg_hook_out = None
 
             return entropy, log_probs
@@ -331,11 +354,11 @@ class DataParallelPPOActor(BasePPOActor):
         # ACG: arm the affinity-feature hook for this call only.
         self._acg_hidden_buf, self._acg_hook_out, _acg_h = [], None, None
         if getattr(self, "_acg_capture_hidden", False):
-            _mod = None if self.use_remove_padding else self._acg_final_norm()
+            _mod = None if self.use_ulysses_sp else self._acg_final_norm()
             if _mod is None:
                 self._acg_capture_hidden = False
                 print("[ccpo-phi] no affinity features "
-                      f"({'remove_padding packs the batch' if self.use_remove_padding else 'final norm not found'}); "
+                      f"({'ulysses sequence parallelism slices the packed run' if self.use_ulysses_sp else 'final norm not found'}); "
                       "the estimator falls back to bag-of-words phi", flush=True)
             else:
                 _acg_h = _mod.register_forward_hook(self._acg_hidden_hook)

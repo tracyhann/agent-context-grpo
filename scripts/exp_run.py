@@ -72,6 +72,14 @@ DEFAULTS = {
     # Pure memory/compute trade, no effect on the math: a 1.5B model on 96 GB does
     # not need activation checkpointing, and paying ~30% extra compute for it makes
     # the update phase the long pole of a step.
+    # flash-attn 2.8.3 DOES have sm_120 kernels (measured: varlen 0.10 ms/call on
+    # this card), contrary to the long-standing assumption in this repo -- that was
+    # true of the older flash-attn/torch pair, not this one. With it,
+    # use_remove_padding packs the batch instead of padding every sequence to
+    # max_prompt_length + max_response_length. Measured on step 1: prompts average
+    # 549 tokens (max 1120) and responses 54, against 2560 padded -- a >4x waste,
+    # and perf/mfu/actor read 0.0.
+    "remove_padding": True,
     "grad_ckpt": True,
     # vLLM reserves this fraction of the card up front and holds it for the whole
     # run. It only needs KV cache for ~32 concurrent generations of <=512 tokens;
@@ -153,6 +161,16 @@ def _coerce(v):
     return v
 
 
+def _have_flash_attn(python):
+    """A real flash-attn with kernels for this card, not the import stub."""
+    try:
+        r = subprocess.run([python, "-c", "import flash_attn, sys; sys.exit(0)"],
+                           capture_output=True, timeout=120)
+        return r.returncode == 0
+    except Exception:                                        # noqa: BLE001
+        return False
+
+
 def git_state():
     def _run(*a):
         try:
@@ -193,7 +211,7 @@ def build_command(cfg, exp_dir):
         "data.return_raw_chat=True",
         f"actor_rollout_ref.model.path={cfg['model_path']}",
         f"actor_rollout_ref.actor.optim.lr={cfg['lr']}",
-        "actor_rollout_ref.model.use_remove_padding=False",
+        f"actor_rollout_ref.model.use_remove_padding={cfg['remove_padding']}",
         f"actor_rollout_ref.actor.ppo_mini_batch_size={cfg['ppo_mini_batch_size']}",
         f"actor_rollout_ref.actor.ppo_micro_batch_size_per_gpu={cfg['ppo_micro_batch_size_per_gpu']}",
         "actor_rollout_ref.actor.use_kl_loss=True",
@@ -253,10 +271,14 @@ def build_env(cfg, exp_dir):
         "CUDA_VISIBLE_DEVICES": cfg["gpus"],
         "ALFWORLD_DATA": cfg["alfworld_data"],
         "HF_HOME": cfg["hf_home"],
-        "PYTHONPATH": f"{ROOT}/verl-agent:{ROOT}:{ROOT}/docker/fa_stub",
+        # docker/fa_stub only satisfies the import when no real flash-attn is
+        # installed; it must NOT shadow a working one, so it is appended only as a
+        # fallback. PYTHONPATH precedes site-packages.
+        "PYTHONPATH": (f"{ROOT}/verl-agent:{ROOT}" if _have_flash_attn(cfg["venv_python"])
+                       else f"{ROOT}/verl-agent:{ROOT}:{ROOT}/docker/fa_stub"),
         # Blackwell (sm_120): flash-attn has no build, so the trainer runs sdpa and
         # vllm runs its Triton attention kernels, which JIT per-arch.
-        "VERL_ATTN_IMPL": "sdpa",
+        "VERL_ATTN_IMPL": ("flash_attention_2" if _have_flash_attn(cfg["venv_python"]) else "sdpa"),
         "VLLM_ATTENTION_BACKEND": "TRITON_ATTN",
         "TRITON_PTXAS_PATH": "/usr/local/cuda/bin/ptxas",
         "VLLM_USE_FLASHINFER_SAMPLER": "0",

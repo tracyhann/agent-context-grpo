@@ -5,8 +5,9 @@
 # container restart does not cost another hour of downloads.
 #
 # Blackwell (sm_120) notes:
-#   * flash-attn has no sm_120 wheel, so the trainer runs sdpa and
-#     use_remove_padding stays False. docker/fa_stub/ satisfies the import.
+#   * flash-attn 2.8.3 works on sm_120 and is installed below, so the trainer can
+#     pack sequences (use_remove_padding=True). docker/fa_stub/ remains only as the
+#     fallback that satisfies the import where no real build exists.
 #   * vLLM runs its Triton attention backend (VLLM_ATTENTION_BACKEND=TRITON_ATTN),
 #     which JIT-compiles per architecture.
 set -euo pipefail
@@ -35,6 +36,21 @@ if [ ! -d "$ROOT/verl-agent" ]; then
 fi
 "$ROOT/scripts/sync_patches.sh"
 "$PIP" install -q -e "$ROOT/verl-agent"
+
+# flash-attn. 2.8.3 DOES have sm_120 kernels (verified: varlen 0.10 ms/call on an
+# RTX PRO 6000 Blackwell); the repo's older assumption that Blackwell has no build
+# was true of an earlier flash-attn/torch pair. With it, use_remove_padding packs
+# the batch instead of padding to max_prompt_length + max_response_length -- a >4x
+# saving on ALFWorld, where prompts average 549 tokens and responses 54. Prebuilt
+# wheel, no compilation.
+if ! "$PY" -c 'import flash_attn' 2>/dev/null; then
+  FA_WHL="flash_attn-2.8.3.post1+cu12torch2.8cxx11abiFALSE-cp310-cp310-linux_x86_64.whl"
+  curl -sSL -o "/tmp/$FA_WHL" \
+    "https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3.post1/${FA_WHL/+/%2B}"
+  "$PIP" install --no-deps -q "/tmp/$FA_WHL" || \
+    echo "flash-attn install failed; docker/fa_stub keeps the import working and \
+          scripts/exp_run.py falls back to sdpa with use_remove_padding off"
+fi
 
 # ALFWorld
 "$PY" -c 'import alfworld' 2>/dev/null || \
