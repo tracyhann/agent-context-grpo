@@ -48,7 +48,7 @@
     "seed": 0,
     "step_advantage_w": 1.0,
     "test_freq": 5,
-    "total_epochs": 100,
+    "total_epochs": 20,
     "train_batch_size": 16,
     "train_temperature": 1.0,
     "train_top_k": -1,
@@ -60,7 +60,7 @@
     "val_top_p": 1.0,
     "venv_python": "/workspace/.venv/bin/python3"
   },
-  "created": "2026-09-06T12:02:28",
+  "created": "2026-09-06T13:23:48",
   "env": {
     "ACG_ADV_ESTIMATOR": "gigpo",
     "ACG_CCPO_BACKOFF_RHO": "0.5",
@@ -107,7 +107,7 @@
   "experiment": "gigpo-repro-20260906",
   "git": {
     "branch": "main",
-    "commit": "524a76f7dee8de16e49b6692c7ef41bcd9a61868",
+    "commit": "92f5fd66e2e5c3a597027cefda6940c6805f7de3",
     "dirty": true
   },
   "hydra_overrides": [
@@ -176,7 +176,7 @@
     "actor_rollout_ref.actor.checkpoint.contents=[model,optimizer,extra,hf_model]",
     "trainer.default_local_dir=/workspace/experiments/gigpo-repro-20260906/outputs/checkpoints",
     "trainer.test_freq=5",
-    "trainer.total_epochs=100",
+    "trainer.total_epochs=20",
     "trainer.val_before_train=False"
   ],
   "reference_protocol": {

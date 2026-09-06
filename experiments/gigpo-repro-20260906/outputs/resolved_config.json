@@ -35,7 +35,7 @@
         "lr_warmup_steps_ratio": 0.0,
         "min_lr_ratio": 0.0,
         "num_cycles": 0.5,
-        "total_training_steps": 100,
+        "total_training_steps": 20,
         "warmup_style": "constant",
         "weight_decay": 0.01
       },
@@ -210,7 +210,7 @@
       "lr": 1e-05,
       "lr_warmup_steps_ratio": 0.0,
       "min_lr_ratio": null,
-      "total_training_steps": 100,
+      "total_training_steps": 20,
       "warmup_style": "constant",
       "weight_decay": 0.01
     },
@@ -351,7 +351,7 @@
     "rollout_data_dir": null,
     "save_freq": 5,
     "test_freq": 5,
-    "total_epochs": 100,
+    "total_epochs": 20,
     "total_training_steps": null,
     "val_before_train": false,
     "val_only": false,

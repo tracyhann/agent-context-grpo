@@ -111,5 +111,5 @@ exec /workspace/.venv/bin/python3 -m \
   'actor_rollout_ref.actor.checkpoint.contents=[model,optimizer,extra,hf_model]' \
   trainer.default_local_dir=/workspace/experiments/gigpo-repro-20260906/outputs/checkpoints \
   trainer.test_freq=5 \
-  trainer.total_epochs=100 \
+  trainer.total_epochs=20 \
   trainer.val_before_train=False
