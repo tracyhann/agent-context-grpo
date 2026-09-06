@@ -48,8 +48,24 @@ DEFAULTS = {
     # tokens, so the same 32 OOMs in the BACKWARD pass while being fine for the
     # forward-only log-prob passes. Measured: 32 OOMs in update_actor
     # ("Tried to allocate 9.27 GiB"), 32 is fine for old_log_prob and ref.
-    "ppo_micro_batch_size_per_gpu": 16,        # update: forward + backward
-    "log_prob_micro_batch_size_per_gpu": 32,   # forward only
+    # Available but OFF by default, and the default matters: every arm must use the
+    # same setting or the comparison is not fair.
+    #
+    # With packing, a micro-batch counted in SEQUENCES has unbounded token count --
+    # as responses lengthen the same 32 sequences carry more tokens. verl's
+    # perf/max_memory_reserved_gb read 103.8 against a 102.6 GB card at step 3,
+    # which looks like the ceiling; it is not, it is an aggregate across pools.
+    # Sampling nvidia-smi directly during the update showed the true per-GPU peak
+    # well under that. Turn this on (with the token caps below) if the peak watch
+    # in experiments/README.md actually approaches the card, and then rerun every
+    # arm with it.
+    "dynamic_bsz": False,
+    "ppo_max_token_len_per_gpu": 12288,        # update: forward + backward
+    "log_prob_max_token_len_per_gpu": 24576,   # forward only
+    # These ARE the values gigpo-repro-20260906 ran with. Defaults, not flags, so a
+    # later arm launched without arguments cannot silently differ from it.
+    "ppo_micro_batch_size_per_gpu": 32,        # update: forward + backward
+    "log_prob_micro_batch_size_per_gpu": 64,   # forward only
     "val_data_size": 128,
     # Evaluation still covers all 128 reference episodes; verl iterates the whole
     # val dataloader. Splitting it into chunks matters because verl-agent creates
@@ -214,6 +230,10 @@ def build_command(cfg, exp_dir):
         f"actor_rollout_ref.model.use_remove_padding={cfg['remove_padding']}",
         f"actor_rollout_ref.actor.ppo_mini_batch_size={cfg['ppo_mini_batch_size']}",
         f"actor_rollout_ref.actor.ppo_micro_batch_size_per_gpu={cfg['ppo_micro_batch_size_per_gpu']}",
+        f"actor_rollout_ref.actor.use_dynamic_bsz={cfg['dynamic_bsz']}",
+        f"actor_rollout_ref.actor.ppo_max_token_len_per_gpu={cfg['ppo_max_token_len_per_gpu']}",
+        f"actor_rollout_ref.ref.log_prob_max_token_len_per_gpu={cfg['log_prob_max_token_len_per_gpu']}",
+        f"actor_rollout_ref.rollout.log_prob_max_token_len_per_gpu={cfg['log_prob_max_token_len_per_gpu']}",
         "actor_rollout_ref.actor.use_kl_loss=True",
         f"actor_rollout_ref.actor.kl_loss_coef={cfg['kl_loss_coef']}",
         f"actor_rollout_ref.actor.kl_loss_type={cfg['kl_loss_type']}",
