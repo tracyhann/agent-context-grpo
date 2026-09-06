@@ -130,6 +130,18 @@ distinguishable from progress. Before concluding a run is stuck, check
 (`generate_sequences`, `compute_log_prob`, `ref_compute_ref_log_prob`,
 `update_actor`).
 
+**Micro-batch sizes cannot follow the reference directly.** The reference sets
+`ppo_micro_batch_size_per_gpu=32` for both the update and the log-prob passes, but
+it also runs `use_remove_padding=True`, so its micro-batches are packed. Without
+flash-attn we pad every sequence to `max_prompt_length + max_response_length` =
+2560 tokens, and the same 32 OOMs in the **backward** pass of `update_actor`
+("Tried to allocate 9.27 GiB") while being perfectly fine for the forward-only
+log-prob passes. So the two are separate knobs here: `ppo_micro_batch_size_per_gpu`
+16 for the update, `log_prob_micro_batch_size_per_gpu` 32 for the forwards.
+`gpu_memory_utilization` is also cut to 0.35 — vLLM reserves that fraction of the
+card for the whole run and only needs KV cache for ~32 short generations; the rest
+is worth more to the backward pass.
+
 **Batch/GPU divisibility.** verl asserts `train_batch_size * rollout.n % n_gpus == 0`.
 The reference `train_batch_size=16` with `group_size=8` gives 128, so 4 GPUs
 divides cleanly and 6 does not. Arms run on 4 GPUs to keep the reference batch

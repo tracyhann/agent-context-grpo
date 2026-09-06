@@ -43,7 +43,13 @@ DEFAULTS = {
     "train_batch_size": 16,
     "group_size": 8,
     "ppo_mini_batch_size": 256,
-    "ppo_micro_batch_size_per_gpu": 8,
+    # Two separate knobs. The reference can use 32 for both because it packs
+    # sequences (use_remove_padding=True); without flash-attn we pad to 2560
+    # tokens, so the same 32 OOMs in the BACKWARD pass while being fine for the
+    # forward-only log-prob passes. Measured: 32 OOMs in update_actor
+    # ("Tried to allocate 9.27 GiB"), 32 is fine for old_log_prob and ref.
+    "ppo_micro_batch_size_per_gpu": 16,        # update: forward + backward
+    "log_prob_micro_batch_size_per_gpu": 32,   # forward only
     "val_data_size": 128,
     # Evaluation still covers all 128 reference episodes; verl iterates the whole
     # val dataloader. Splitting it into chunks matters because verl-agent creates
@@ -67,6 +73,10 @@ DEFAULTS = {
     # not need activation checkpointing, and paying ~30% extra compute for it makes
     # the update phase the long pole of a step.
     "grad_ckpt": True,
+    # vLLM reserves this fraction of the card up front and holds it for the whole
+    # run. It only needs KV cache for ~32 concurrent generations of <=512 tokens;
+    # everything else is better left to the trainer's backward pass.
+    "gpu_mem_util": 0.35,
     "lr": 1e-6,
     "kl_loss_coef": 0.01,
     "kl_loss_type": "low_var_kl",
@@ -192,10 +202,10 @@ def build_command(cfg, exp_dir):
         f"actor_rollout_ref.model.enable_gradient_checkpointing={cfg['grad_ckpt']}",
         "actor_rollout_ref.actor.fsdp_config.param_offload=False",
         "actor_rollout_ref.actor.fsdp_config.optimizer_offload=False",
-        f"actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu={cfg['ppo_micro_batch_size_per_gpu']}",
+        f"actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu={cfg['log_prob_micro_batch_size_per_gpu']}",
         "actor_rollout_ref.rollout.tensor_model_parallel_size=1",
         "actor_rollout_ref.rollout.name=vllm",
-        "actor_rollout_ref.rollout.gpu_memory_utilization=0.5",
+        f"actor_rollout_ref.rollout.gpu_memory_utilization={cfg['gpu_mem_util']}",
         "actor_rollout_ref.rollout.enable_chunked_prefill=False",
         "actor_rollout_ref.rollout.enforce_eager=False",
         "actor_rollout_ref.rollout.free_cache_engine=False",
@@ -206,7 +216,7 @@ def build_command(cfg, exp_dir):
         f"actor_rollout_ref.rollout.val_kwargs.top_p={cfg['val_top_p']}",
         f"actor_rollout_ref.rollout.val_kwargs.top_k={cfg['val_top_k']}",
         "actor_rollout_ref.rollout.val_kwargs.do_sample=True",
-        f"actor_rollout_ref.ref.log_prob_micro_batch_size_per_gpu={cfg['ppo_micro_batch_size_per_gpu']}",
+        f"actor_rollout_ref.ref.log_prob_micro_batch_size_per_gpu={cfg['log_prob_micro_batch_size_per_gpu']}",
         "actor_rollout_ref.ref.fsdp_config.param_offload=True",
         "actor_rollout_ref.actor.use_invalid_action_penalty=True",
         "actor_rollout_ref.actor.invalid_action_penalty_coef=0.1",
