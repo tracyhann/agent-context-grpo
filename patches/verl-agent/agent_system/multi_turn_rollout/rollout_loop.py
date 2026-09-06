@@ -14,6 +14,7 @@
 # limitations under the License.
 
 import os
+import time
 import torch
 import numpy as np
 from verl import DataProto
@@ -381,6 +382,7 @@ class TrajectoryCollector:
         episode_rewards = np.zeros(batch_size, dtype=np.float32)
         tool_callings = np.zeros(batch_size, dtype=np.float32)
         # Trajectory collection loop
+        _t_turn0 = time.time()
         for _step in range(self.config.env.max_steps):
             active_masks = np.logical_not(is_done)
 
@@ -462,6 +464,17 @@ class TrajectoryCollector:
 
             # Update done states
             is_done = np.logical_or(is_done, dones)
+
+            # One line per turn. A 50-turn rollout over 128 environments is the
+            # long pole of a training step, and without this the log is silent for
+            # minutes at a time and a stall is indistinguishable from progress.
+            if os.environ.get("ACG_TURN_LOG", "1") != "0":
+                _live = int((~is_done).sum())
+                print(f"[turn] "
+                      f"t={len(total_batch_list[0])} active={_live}/{batch_size} "
+                      f"reward_sum={float(episode_rewards.sum()):.1f} "
+                      f"{time.time() - _t_turn0:.1f}s", flush=True)
+                _t_turn0 = time.time()
                 
             # Update observations for next step
             obs = next_obs
