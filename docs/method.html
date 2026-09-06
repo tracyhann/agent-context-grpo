@@ -162,6 +162,17 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
   <div class="mast-in">
     <div class="eyebrow">Group-relative RL · credit assignment · method note</div>
     <h1>Context-Conditioned<br>Predictive Grouping</h1>
+    <div style="border-left:3px solid #a33a34;background:rgba(163,58,52,.06);padding:12px 16px;margin:14px 0 4px;max-width:70ch">
+      <div style="font:600 11px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.09em;text-transform:uppercase;color:#a33a34">Revision notice</div>
+      <p style="margin:6px 0 0;font-size:13.5px;line-height:1.6">An indexing defect in the step-credit baseline invalidated several
+      diagnostics on this page. <span style="font-family:ui-monospace,Menlo,monospace">b_obs</span> and
+      <span style="font-family:ui-monospace,Menlo,monospace">s²</span> were read off unrelated rows of the batch, correlating
+      <b>+0.051</b> with the leave-one-out mean they were meant to be. The headline consequence:
+      <span style="font-family:ui-monospace,Menlo,monospace">corr(A<sup>ours</sup>, A<sup>G²PO</sup>)</span> is
+      <b>0.956</b>, not the 0.64 reported below — the “materially distinct estimator” claim <em>was</em> the defect.
+      Corrected rows are marked in the diagnostics table. Full before/after, the change ledger and the current
+      estimator comparison are in <a href="method-changes.html" style="color:#1f6f6b">method-changes.html</a>.</p>
+    </div>
     <p class="thesis">Existing group-based RL methods <b>prescribe</b> state equivalence — from task, observation, or exact history identity. Ours <b>learns</b> which experiences are equivalent for credit assignment, from their trajectory context, without ever letting reward touch the grouping.</p>
     <div class="status">
       <div class="st ok">
@@ -875,7 +886,7 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
         <tr><td class="dim">Response budget</td><td>768 max, no cap on the think block</td><td><b>budget forcing</b>: think ≤512, then <span class="m">&lt;/think&gt;&lt;action&gt;</span> is injected and a ≤32-token action generated. Responses ≤544; truncation-without-action impossible</td></tr>
         <tr><td class="dim">Agent memory</td><td>2 verbatim turns (G²PO protocol)</td><td><b>compaction</b>: 2 verbatim turns + a 512-token digest of the full history — action→outcome pairs, deduplicated, failures collapsed via <span class="m">obs<sub>t+1</sub> == obs<sub>t</sub></span> (no domain regex)</td></tr>
         <tr><td class="dim">Generation stack</td><td colspan="2">vLLM 0.28 + <span class="m">TRITON_ATTN</span> in sidecar containers (one per training GPU), HTTP; trainer keeps torch 2.7 / transformers 4.51. Measured 6.3× over HF-generate: 1104 s → 175 s per step. Automatic fallback to HF on any sidecar failure.</td></tr>
-        <tr><td class="dim">Steps / eval</td><td>75 (stopped on collapse)</td><td>75, eval every 5 on 128 unseen episodes</td></tr>
+        <tr><td class="dim">Steps / eval</td><td>75 (stopped on collapse)</td><td>75, eval every 5 on 128 episodes (now <span class="m">valid_seen</span>, matching the reference)</td></tr>
         <tr><td class="dim">Step time</td><td>18.3 min</td><td>18.7 min (+2–4%: ~218 extra prompt tokens/turn of prefill)</td></tr>
       </tbody>
     </table>
@@ -889,18 +900,33 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
     <table>
       <thead><tr><th>Question</th><th>Measurement</th><th>Reading</th></tr></thead>
       <tbody>
-        <tr><td>Does A<sup>CC</sup> move credit, or is it G²PO in disguise?</td>
-            <td><span class="m">corr(A<sup>ours</sup>, A<sup>G²PO</sup>)</span> = <b>0.64</b> mean over 27 steps (range 0.45–0.94), computed on the same batch</td>
-            <td>materially distinct; ~⅗ of the variance is unshared. λ*=0 steps sit at ≈0.81, so the leave-one-out baseline alone accounts for ~19% and the context weighting adds the rest</td></tr>
+        <tr style="background:rgba(200,60,50,.07)"><td>Does A<sup>CC</sup> move credit, or is it G²PO in disguise?</td>
+            <td><span class="m">corr(A<sup>ours</sup>, A<sup>G²PO</sup>)</span> = <b>0.956</b>, sign disagreement <b>0.3%</b>, recomputed on all 304,858 dumped samples<br>
+            <span style="opacity:.75">superseded: 0.64 mean over 27 steps (range 0.45–0.94)</span></td>
+            <td><b>G²PO in disguise.</b> The 0.64 was produced by an indexing defect — <span class="m">b_obs</span> and
+            <span class="m">s²</span> were read off unrelated rows of the batch (correlation <b>+0.051</b> with the
+            baseline they were meant to be). With the bag-of-words φ and the defect fixed, the two estimators agree on
+            99.7% of sign decisions. See the revision record.</td></tr>
         <tr><td>Does anchor-state grouping actually conflate distinct states?</td>
             <td><b>42.8%</b> of distinct observations map to more than one admissible-command set</td>
             <td>yes — and G²PO/GiGPO inherit it, since their node key is the same raw text. Exact-match gating is not the correctness guarantee it appears to be</td></tr>
         <tr><td>Does that conflation cost anything?</td>
             <td>within-bucket sibling pairs: |ΔG| = 0.160 same hidden state vs <b>0.270</b> conflated (n ≈ 300k)</td>
             <td>yes — conflated pairs differ 69% more in return. The bias prior B = 0.30 is now measured, not assumed</td></tr>
-        <tr><td>Does φ correct it?</td>
-            <td>AUC <b>0.483</b>; affinity weights 0.389 (same state) vs 0.391 (different state), n ≈ 3,900 pairs</td>
+        <tr><td>Does the bag-of-words φ correct it?</td>
+            <td>AUC <b>0.483 / 0.492</b> on an admissible-random corpus, <b>0.568</b> on a trained-policy corpus;
+            affinity weights 0.389 vs 0.391, <span class="m">E[w]</span> pinned at 0.394–0.400 at every training step</td>
             <td><b>no.</b> Inside a bucket the observation block is constant, leaving four history scalars that cannot see inventory. The premise holds; this φ does not deliver on it</td></tr>
+        <tr style="background:rgba(40,140,120,.07)"><td>Does a policy hidden state correct it?</td>
+            <td>AUC <b>0.795</b> — reference-policy last-prompt-token state, whitened (mean + top-3 PCs), trained-policy corpus.
+            Raw 0.659; mean-pooled only 0.505</td>
+            <td><b>yes.</b> Last-token pooling is load-bearing: only the final position of a causal LM has attended to the
+            whole context, and averaging dilutes the one line that disambiguates the state. Implied
+            ρ = 2(AUC−0.5) = <b>0.59</b>, which puts λ ≈ 0.26 instead of ≈ 0</td></tr>
+        <tr><td>Is that signal leaking from action names?</td>
+            <td>context rebuilt from observation history alone, no action strings: AUC <b>0.655–0.688</b></td>
+            <td>no. Leakage would show the action-bearing arm carrying everything and the action-free arm at chance;
+            instead both clear 0.65 independently and the full context beats either by ~0.09</td></tr>
         <tr><td>Does A<sup>CC</sup> itself reward verbosity?</td>
             <td><span class="m">acc_len_r</span> = 0.007 per step</td>
             <td>no — length inflation comes from the shared objective, not from our term</td></tr>
@@ -922,6 +948,12 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
     <b>0.320 on valid_unseen</b> — no meaningful gap. Our result is split-insensitive, and the distance to published
     numbers is real rather than a protocol artefact. What remains different: backbone, training length, and the
     <span class="m">use_remove_padding</span> + flash-attn stack unavailable on sm_120.</p>
+    <p style="color:var(--ink-2)"><b>Since revised.</b> The runs are now matched to the reference script in full:
+    <span class="m">valid_seen</span> as the headline split (via <span class="m">ACG_EVAL_SPLIT</span>), validation
+    temperature 0.4, <span class="m">top_p</span> 1.0 and <span class="m">top_k</span> unrestricted — we had been running
+    0.7 / 0.8 / 20. Evaluation is sampled by design, and two evaluations of the <em>same</em> checkpoint returned
+    <b>0.094</b> and <b>0.188</b>: a single 128-episode score carries about <b>±0.048</b>, so single points carry
+    almost no information and results are reported as the mean of ≥3 seeds.</p>
   </div>
 </section>
 
