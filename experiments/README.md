@@ -74,6 +74,31 @@ in-distribution / out-of-distribution success):
 for HGPO, the depth of its group hierarchy. Our default is 2, so the K=2 rows are the
 comparable ones.
 
+## Method-specific metrics (CCPO arms)
+
+Every one of these is written to `outputs/metrics.jsonl` each step and plotted in
+`plots/ccpo.png`. They exist because the failure mode that matters for this method
+is not divergence — it is being *inert*, i.e. numerically identical to the baseline
+it is supposed to improve on, which no success-rate curve would ever reveal.
+
+| metric | what it says |
+|---|---|
+| `ccpo/lam_u_mean`, `lam_u_gt50` | the shrinkage weight actually applied. **λ = 0 means A_CC is exactly the uniform baseline** and the arm cannot differ from GiGPO however long it trains |
+| `ccpo/lam_eb_obs`, `lam_pooled_obs`, `lam_eb_obs_gt0` | what each shrinkage rule *would* give on this batch, whichever is in force — the per-occurrence rule's degeneracy is only visible against the pooled one |
+| `ccpo/n_eff_mean` | effective neighbourhood size: how many trajectories the weighted baseline is really averaging |
+| `ccpo/bucket_size_mean`, `_p90`, `bucket_singleton_frac` | anchor-bucket occupancy. Singletons get `A_CC = 0`, so this is the ceiling on how much of the batch the step term can act on |
+| `ccpo/live_frac`, `lvl1_frac` | fraction of samples credited at all, and how many needed the coarse backoff level |
+| `ccpo/E_w` | mean affinity weight; scale-invariant by construction, so it detects nothing on its own — kept because it is cheap and its *drift* is informative |
+| `ccpo/effect_mean`, `effect_p90`, `effect_rel` | how far the credit departs from the uniform baseline, absolutely and relative to \|A\|. Near zero is the inert case |
+| `ccpo/r_vs_gigpo`, `r_vs_g2po` | correlation against **both** reference estimators, computed on the same batch. These are different quantities; conflating them is the error the 2026-09-06 revision corrected |
+| `ccpo/adv_ep_absmean`, `adv_cc_absmean`, `adv_ep_over_cc` | the two advantage terms' magnitudes and their ratio — the quantity the `mean_std_norm` fix exists to keep near 1 |
+| `ccpo/phi_is_hidden` | 1 if φ is the reference-policy hidden state, 0 if it silently fell back to bag-of-words (AUC 0.795 vs 0.568) |
+| `ccpo/acc_len_corr` | corr(A_CC, response length) — rules out the step credit itself rewarding verbosity |
+| `ccpo/rho`, `edge_cov` | metric confidence in force, and whether the edge term fired |
+
+Per-sample rows go to `outputs/ccpo_samples.csv`; `scripts/analyse_dump.py` turns
+them into the correlation and sign-disagreement summary.
+
 ## Picking up a run in flight
 
 Runs are detached (`start_new_session`), so they outlive the shell that started
