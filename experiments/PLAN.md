@@ -1,5 +1,33 @@
 # Experiment plan
 
+> **Superseded 2026-09-06.** The 2x2 below was designed to separate the estimator
+> from compaction. It was overtaken by the estimator result itself: CCPO's context
+> conditioning is **refuted** on ALFWorld — six phi variants across two targets, all
+> with `lambda = 0.000` and `phi_rel_corr` straddling zero. See
+> [`hypothesis.md`](hypothesis.md) for the evidence and what survives.
+>
+> **Current state.** One arm running: `ccpo-mem-20260906` — leave-one-out exclusion
+> + G2PO successor-value target + compaction, with the conditioning inert. It is a
+> curve for the configuration that survives the refutation, not a test of the thesis.
+>
+> **What a further arm would buy, in priority order:**
+> 1. **A matched baseline.** The surviving components (leave-one-out, successor-value
+>    target) move the credit a long way from GiGPO (`r_vs_gigpo` +0.977 -> +0.319),
+>    and whether that helps the *policy* is untested. This needs GiGPO on the same
+>    reference prompt at the same step budget — the one comparison the published
+>    numbers cannot substitute for, because our harness runs far below them
+>    (0.07-0.21 against a published 90.16 after 100-150 steps).
+> 2. **Memory on/off at matched estimator**, to finish what the digest-order fix
+>    started. Compaction has never been evaluated as designed and currently reads
+>    neutral (4 vs 7 of 128 at step 1, ~1.2 binomial sd).
+> 3. Nothing else. H-C (learned phi) is a long shot against six null variants;
+>    H-D and H-E are cheap but address constraints that are not binding.
+>
+> **Not achievable here:** SOTA. Published GiGPO reaches 90.16 after 100-150 steps
+> at ~6-9 min/step, i.e. ~17 h per arm, and arms cannot run in parallel on this box.
+
+---
+
 Target: beat the published ALFWorld numbers on Qwen2.5-1.5B-Instruct. The bar,
 from HGPO Table 1 (in-distribution / out-of-distribution success):
 
