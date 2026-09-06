@@ -59,6 +59,41 @@ before the action exists.
 
 ## Open — ranked by expected value
 
+### [ ] H-I. Will 100 steps actually close the gap? — prediction on record, 2026-09-06
+
+Stated **before** `ccpo-long-20260906` reports, so it cannot be rewritten after.
+
+The gap is large. Published GiGPO (K=2) is **90.16** in-distribution; we are at
+**17.2** at step 20. Calling that "just under-trained" is a real claim and it
+deserves a falsifiable prediction rather than a shrug.
+
+**Why the optimistic reading is defensible.** The held-out series is
+0.0625 → 0.0781 → 0.1250 → 0.1719, accelerating rather than flattening, and
+partial credit is at **0.803** — the agent already completes most sub-goals and is
+failing on the last conversion to a finished task. On ALFWorld that final step
+tends to convert in a burst, so a sigmoid rather than a line is the right prior.
+
+**Prediction.** At step 100, held-out success lands in **0.45–0.70**. Concretely:
+
+* **> 0.45** ⇒ H-F's "under-trained" reading is confirmed and length was indeed the
+  binding constraint; the remaining distance to 90 is then a method/scale question
+  worth spending on.
+* **0.25–0.45** ⇒ length was *part* of it but something else is also wrong. Look
+  first at `history_length=2` and the prompt, not at φ.
+* **< 0.25** ⇒ "under-trained" is **refuted** and the harness has a real deficit
+  that 5x the compute does not fix. That would make every φ result in this file
+  provisional, since they were all measured on a crippled harness.
+
+The third branch is the one to take seriously. If it happens, the honest move is to
+stop method work entirely and diff our rollout loop against `baselines/verl-agent`
+turn by turn.
+
+**Checkpoints to watch:** step 40 should clear ~0.25 and step 60 ~0.35 if the
+0.45–0.70 landing is live. If step 60 is still under 0.25, kill the run rather than
+spend the remaining 4 h — early stopping is armed at step 60 with patience 8, but
+it triggers on *plateau*, not on being behind schedule, so this is a manual call.
+
+
 > **Scheduling decision, 2026-09-06, following H-H below.** The remaining budget
 > goes to *length*, not to another φ variant.
 >
