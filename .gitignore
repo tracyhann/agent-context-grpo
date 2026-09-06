@@ -23,3 +23,4 @@ experiments/*/outputs/checkpoints/
 experiments/*/outputs/train.log
 experiments/*/outputs/train.pid
 experiments/*/outputs/*.csv
+/.cache/

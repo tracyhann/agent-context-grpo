@@ -103,6 +103,16 @@ exactly, rather than perturbing the batch to use two more GPUs.
 
 ## Index
 
+Regenerate the live view with `scripts/exp_status.py --md`.
+
 | experiment | arm | purpose | status |
 |---|---|---|---|
-| _(populated as runs land)_ | | | |
+| `gigpo-repro-20260906` | gigpo | reproduce published GiGPO (90.16 / 84.76) to validate the harness | running |
+
+Analysis helpers:
+
+```bash
+scripts/exp_status.py                       # one line per run + the published targets
+scripts/analyse_dump.py experiments/<exp>   # per-sample estimator diagnostics
+scripts/plot_metrics.py --compare a b -o experiments/compare.png
+```

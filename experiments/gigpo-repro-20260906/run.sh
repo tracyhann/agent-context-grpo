@@ -37,9 +37,11 @@ export \
   RAY_object_manager_rpc_threads_num=1 \
   RAY_start_python_gc_manager_thread=0 \
   TOKENIZERS_PARALLELISM=false \
+  TORCHINDUCTOR_CACHE_DIR=/workspace/.cache/inductor \
   TRITON_PTXAS_PATH=/usr/local/cuda/bin/ptxas \
   VERL_ATTN_IMPL=sdpa \
   VLLM_ATTENTION_BACKEND=TRITON_ATTN \
+  VLLM_CACHE_ROOT=/workspace/.cache/vllm \
   VLLM_USE_FLASHINFER_SAMPLER=0
 exec /workspace/.venv/bin/python3 -m \
   verl.trainer.main_ppo \

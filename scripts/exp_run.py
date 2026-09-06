@@ -252,6 +252,14 @@ def build_env(cfg, exp_dir):
         # old HF-rollout path, where it countered long-run fragmentation.
         "RAY_TMPDIR": "/tmp/ray_acg",
         "TOKENIZERS_PARALLELISM": "false",
+        # Persist vLLM's torch.compile / CUDA-graph cache on the data volume. Cold,
+        # the first generate() call compiles and captures graphs for every engine
+        # and takes minutes with the GPUs pinned at 100% and nothing in the log --
+        # which reads exactly like a hang. Warm, engine start is ~16s. Measured
+        # generation itself is 6127 tok/s per GPU on TRITON_ATTN, so throughput was
+        # never the problem.
+        "VLLM_CACHE_ROOT": os.path.join(ROOT, ".cache", "vllm"),
+        "TORCHINDUCTOR_CACHE_DIR": os.path.join(ROOT, ".cache", "inductor"),
         # belt and braces against the pid ceiling described at ray_num_cpus
         "RAY_num_prestart_python_workers": "4",
         # verl-agent gives every ALFWorld environment its own ray actor, so a

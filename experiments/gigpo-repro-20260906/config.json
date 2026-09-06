@@ -53,7 +53,7 @@
     "val_top_p": 1.0,
     "venv_python": "/workspace/.venv/bin/python3"
   },
-  "created": "2026-09-06T10:43:44",
+  "created": "2026-09-06T10:53:49",
   "env": {
     "ACG_CCPO_BACKOFF_RHO": "0.5",
     "ACG_CCPO_DUMP": "/workspace/experiments/gigpo-repro-20260906/outputs/ccpo_samples.csv",
@@ -89,15 +89,17 @@
     "RAY_object_manager_rpc_threads_num": "1",
     "RAY_start_python_gc_manager_thread": "0",
     "TOKENIZERS_PARALLELISM": "false",
+    "TORCHINDUCTOR_CACHE_DIR": "/workspace/.cache/inductor",
     "TRITON_PTXAS_PATH": "/usr/local/cuda/bin/ptxas",
     "VERL_ATTN_IMPL": "sdpa",
     "VLLM_ATTENTION_BACKEND": "TRITON_ATTN",
+    "VLLM_CACHE_ROOT": "/workspace/.cache/vllm",
     "VLLM_USE_FLASHINFER_SAMPLER": "0"
   },
   "experiment": "gigpo-repro-20260906",
   "git": {
     "branch": "main",
-    "commit": "a28718133ab3733a13937c52349d47272c2adfc2",
+    "commit": "1e49eab83f30fbc03772c6d09457b83aaa0c885f",
     "dirty": true
   },
   "hydra_overrides": [
