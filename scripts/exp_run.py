@@ -120,6 +120,13 @@ DEFAULTS = {
     "test_freq": 5,
     "save_freq": 5,
 
+    # Warm-start from a previous arm's checkpoint: pass a .../global_step_N path.
+    # The step counter CONTINUES from N, so total_epochs is an absolute target,
+    # not an increment -- resume_from=.../global_step_20 with total_epochs=120
+    # runs 100 further steps. Every other knob must match the run that produced
+    # the checkpoint or the warm start is not a continuation of anything.
+    "resume_from": "",
+
     # environment
     # Ray must not size itself from nproc. This box reports 256 CPUs but the
     # cgroup allows only 8192 pids, and Ray prestarts one python worker per CPU;
@@ -157,7 +164,7 @@ DEFAULTS = {
 
 _REFERENCE_DELTA = [
     "base model: Qwen2.5-1.5B-Instruct matches the G2PO/GiGPO/HGPO reference",
-    "attention: sdpa (flash-attn has no sm_120 build) => use_remove_padding=False",
+    "attention: flash-attn 2.8.3 DOES build for sm_120; trainer runs flash_attention_2\n     with use_remove_padding=True (packed). Falls back to sdpa if the import fails.",
     "rollout: vllm with VLLM_ATTENTION_BACKEND=TRITON_ATTN (Blackwell)",
     "tensor_model_parallel_size=1 on 6 GPUs vs their 8 with tp=2",
 ]
@@ -292,6 +299,15 @@ def build_command(cfg, exp_dir):
         f"trainer.total_epochs={cfg['total_epochs']}",
         "trainer.val_before_train=False",
     ]
+    if cfg.get("resume_from"):
+        args += [
+            "trainer.resume_mode=resume_path",
+            f"trainer.resume_from_path={cfg['resume_from']}",
+        ]
+    else:
+        # 'auto' would silently pick up a checkpoint left in this run's own dir,
+        # which turns a rerun of a named arm into an undeclared continuation.
+        args.append("trainer.resume_mode=disable")
     return args
 
 
@@ -305,7 +321,8 @@ def build_env(cfg, exp_dir):
         # fallback. PYTHONPATH precedes site-packages.
         "PYTHONPATH": (f"{ROOT}/verl-agent:{ROOT}" if _have_flash_attn(cfg["venv_python"])
                        else f"{ROOT}/verl-agent:{ROOT}:{ROOT}/docker/fa_stub"),
-        # Blackwell (sm_120): flash-attn has no build, so the trainer runs sdpa and
+        # Blackwell (sm_120): flash-attn 2.8.3 does build here and the packed path
+        # is ~2.6x faster per step, so prefer it; sdpa remains the fallback and
         # vllm runs its Triton attention kernels, which JIT per-arch.
         "VERL_ATTN_IMPL": ("flash_attention_2" if _have_flash_attn(cfg["venv_python"]) else "sdpa"),
         "VLLM_ATTENTION_BACKEND": "TRITON_ATTN",
