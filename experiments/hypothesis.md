@@ -43,7 +43,7 @@ before the action exists.
 > **Scheduling decision, 2026-09-06, following H-H below.** The remaining budget
 > goes to *length*, not to another φ variant.
 >
-> H-H bounds every φ hypothesis at 5.4% of target variance, and that 5.4% *is*
+> H-H bounds every φ hypothesis at 6.1% of target variance, and that 6.1% *is*
 > CCPO's entire theoretical margin over GiGPO — GiGPO already uses the uniform
 > bucket mean, so context conditioning only ever competes for the within-bucket,
 > between-trajectory slice. No encoder turns that into a SOTA-sized lever.
@@ -88,10 +88,17 @@ that permutes trajectory labels *within* each bucket at matched group sizes:
 
 ```
 buckets with >=2 distinct trajectories : 1204
-ICC real  mean +0.0221   median +0.0250
-ICC null  mean -0.1005   median -0.0200     (small-k bias, matched by construction)
-bias-corrected ICC = real - null = +0.1226   (real 95% CI +/- 0.0387)
+ICC real  mean +0.0221
+ICC null  mean -0.1163   null 95% range [-0.1556, -0.0785]   (400 permutations)
+bias-corrected ICC = real - null = +0.1384
+permutation p = 0.0000   (0 of 400 permutations reached the real mean)
 ```
+
+The null is negative because the one-way ICC estimator is biased at small k; the
+permutation preserves each bucket's group sizes, so that bias is matched and the
+difference is the unbiased estimate. (A first pass quoted +0.1226 with a CI taken
+from the real ICC's spread alone, which ignored the null's own variability — the
+permutation test above supersedes it and is the stronger result.)
 
 **Confound checked, and it does not explain the result.** Two occurrences in the
 same trajectory share their future, so targets would cluster by trajectory
@@ -104,15 +111,15 @@ repeats, mean 4.17.
 **Conclusion — the ceiling, and it is low.**
 
 ```
-conditionable share of total target variance  ~=  0.1226 x 0.443  =  0.054
+conditionable share of total target variance  ~=  0.1384 x 0.443  =  0.061
 what the current phi actually captures        ~=  phi_rel_corr^2 =  0.0009
 ```
 
-So there is real structure — the signal is **~60x larger than what φ currently
+So there is real structure — the signal is **~65x larger than what φ currently
 extracts**, which says the estimator is *encoder-limited, not signal-limited*, and
 that is the strongest argument H-C has ever had.
 
-But the oracle is **5.4% of target variance**. Even a perfect trajectory-level φ
+But the oracle is **6.1% of target variance**. Even a perfect trajectory-level φ
 buys a ~5% variance reduction on the step term, which is itself one of two
 advantage components. That is not a SOTA-sized lever, and it retroactively
 explains λ = 0.000 across every variant tried: **the shrinkage is correct.** There
