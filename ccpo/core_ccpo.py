@@ -30,7 +30,9 @@ import torch
 # rule on the realised baseline disagreement; "mse" reproduces the v6 rule.
 # Validated offline in experiments/08-27/probe_shrinkage.py against 305k real
 # training samples -- see results/probe_shrinkage.txt.
-# "eb_pooled" estimates the shrinkage weight ONCE per batch from the ensemble of
+# "eb_hier" is the hierarchical form and the one to prefer: the signal variance is
+# estimated once over the batch, the shrinkage is then per occurrence against its
+# own noise. "eb_pooled" estimates the shrinkage weight ONCE per batch from the ensemble of
 # realised disagreements instead of testing each occurrence against its own noise.
 # The per-occurrence test has about two degrees of freedom -- a bucket holds a
 # handful of trajectories -- so it demands |b_obs - b_LOO| > sqrt(1/n_eff - 1/J)/rho
@@ -564,11 +566,16 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
     # unless the alternative is measured on the same batch.
     lam_pooled = None
     _lam_pooled_obs = float("nan")
+    _tau2 = float("nan")
     if _rec:
         _d2 = np.array([(r["rho"] * (r["b_obs"] - r["b_loo"])) ** 2 for r in _rec])
         _vd = np.array([r["rho"] ** 2 * r["s2"] * r["var_gain"] for r in _rec])
         _den = float(_d2.mean())
         _lam_pooled_obs = 0.0 if _den <= 1e-12 else max(0.0, min(1.0, 1.0 - float(_vd.mean()) / _den))
+        # Signal variance, by method of moments over the batch:
+        #   E[d^2] = tau^2 + E[Var(d)]   =>   tau^2 = max(0, E[d^2] - E[Var(d)])
+        # This is the quantity the ensemble can estimate and a single bucket cannot.
+        _tau2 = max(0.0, _den - float(_vd.mean()))
         _lam_eb_obs = np.array([
             0.0 if abs(r["rho"] * (r["b_obs"] - r["b_loo"])) < 1e-12
             else max(0.0, min(1.0, 1.0 - (r["s2"] * r["var_gain"])
@@ -588,7 +595,20 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
     for _r in _rec:
         i, b_loo, b_obs = _r["i"], _r["b_loo"], _r["b_obs"]
         s2, var_gain, rho_l = _r["s2"], _r["var_gain"], _r["rho"]
-        if lam_pooled is not None:
+        if shrink == "eb_hier":
+            # Hierarchical empirical Bayes (Efron-Morris). tau^2 comes from the
+            # whole batch, which is where the statistical power is; the shrinkage
+            # is then per occurrence against ITS OWN noise:
+            #     lam_i = tau^2 / (tau^2 + Var_i)
+            # "eb" is this with tau^2 estimated from one bucket (about two degrees
+            # of freedom, so lam collapses to 0); "eb_pooled" is this with every
+            # Var_i replaced by its batch mean (power, but no adaptivity). This
+            # keeps both: concentrated, well-supported neighbourhoods shrink less
+            # than thin ones, and the decision of how much signal exists at all is
+            # made once, over thousands of occurrences.
+            _vd_i = (rho_l ** 2) * s2 * var_gain
+            lam = 0.0 if (_tau2 + _vd_i) <= 1e-12 else float(_tau2 / (_tau2 + _vd_i))
+        elif lam_pooled is not None:
             lam = lam_pooled
         elif shrink == "mse":
             # Kept for reproducing v6. Writing the bias prior in sd units
@@ -693,7 +713,7 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
         lam_u_gt50=float(np.mean(np.array(lam_all) > 0.5)) if lam_all else 0.0,
         lam_pooled=(float(lam_pooled) if lam_pooled is not None else float('nan')),
         # what each rule WOULD give on this batch, whichever is in force
-        lam_pooled_obs=float(_lam_pooled_obs),
+        lam_pooled_obs=float(_lam_pooled_obs), tau2=float(_tau2),
         lam_eb_obs=float(np.mean(_lam_eb_obs)),
         lam_eb_obs_gt0=float(np.mean(_lam_eb_obs > 0)),
         n_eff_mean=float(np.mean(neff_all)) if neff_all else 0.0,

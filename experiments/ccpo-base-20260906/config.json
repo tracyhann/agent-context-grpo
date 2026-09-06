@@ -7,7 +7,7 @@
     "ccpo_edge_w": 0.0,
     "ccpo_phi": "hidden",
     "ccpo_rho": 0.59,
-    "ccpo_shrink": "eb_pooled",
+    "ccpo_shrink": "eb_hier",
     "ccpo_sim": 0.0,
     "ccpo_sim_backoff": 0.0,
     "ccpo_target": "return",
@@ -60,7 +60,7 @@
     "val_top_p": 1.0,
     "venv_python": "/workspace/.venv/bin/python3"
   },
-  "created": "2026-09-06T12:52:07",
+  "created": "2026-09-06T12:59:32",
   "env": {
     "ACG_ADV_ESTIMATOR": "ccpo",
     "ACG_CCPO_BACKOFF_RHO": "0.5",
@@ -68,7 +68,7 @@
     "ACG_CCPO_EDGE_W": "0.0",
     "ACG_CCPO_PHI": "hidden",
     "ACG_CCPO_RHO": "0.59",
-    "ACG_CCPO_SHRINK": "eb_pooled",
+    "ACG_CCPO_SHRINK": "eb_hier",
     "ACG_CCPO_SIM": "0.0",
     "ACG_CCPO_SIM_BACKOFF": "0.0",
     "ACG_CCPO_TARGET": "return",
@@ -107,7 +107,7 @@
   "experiment": "ccpo-base-20260906",
   "git": {
     "branch": "main",
-    "commit": "45d71fff07ce86a4557adf1069b38182ce275a66",
+    "commit": "8af8281aa502e23aa8f6adceb5ac6b2fc72a56be",
     "dirty": true
   },
   "hydra_overrides": [

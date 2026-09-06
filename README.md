@@ -68,6 +68,15 @@ uses, and the one under which verl's GRPO arm is also unit-variance.
   carries every downstream accident of one trajectory, so conditioning the
   *baseline* on context cannot remove noise that lives in the *target*. This is
   the largest available change and it is **unmeasured**.
+- `ACG_CCPO_SHRINK=eb_hier` — hierarchical empirical Bayes. The shipped `eb`
+  rule tests each occurrence's disagreement against *its own* sampling noise, a
+  test with about two degrees of freedom that measured **λ = 0.000 on every
+  occurrence of a real batch** — making `A_CC` exactly the uniform baseline and the
+  estimator inert. `eb_hier` estimates the signal variance `τ² = max(0, E[d²] −
+  E[Var(d)])` once over the batch, where the power is, then shrinks per occurrence
+  against its own noise, `λ_i = τ²/(τ² + Var_i)`. `eb_pooled` is the same estimate
+  applied uniformly (power, no adaptivity); measured λ sd 0.000 against `eb_hier`'s
+  0.196 over a 0.34–1.00 range.
 - `ACG_CCPO_SIM=0.95` — GiGPO's SequenceMatcher observation gate in place of
   byte-exact matching, so one changed character stops being a new bucket.
 - `ACG_CCPO_SIM_BACKOFF=0.8` — occurrences whose bucket is a singleton (~44% of
@@ -252,7 +261,7 @@ Key environment variables (all with defaults in the launcher):
 | `ACG_CCPO_PHI` | `hidden` | affinity metric: reference-policy hidden state, or `bow` |
 | `ACG_CCPO_WHITEN` | 3 | principal directions removed before distances |
 | `ACG_CCPO_RHO` | 0.59 | confidence in the metric, `2(AUC−0.5)`; 0 ⇒ exact uniform-baseline fallback |
-| `ACG_CCPO_SHRINK` | `eb` | shrinkage rule; `mse` reproduces the superseded form |
+| `ACG_CCPO_SHRINK` | `eb` | shrinkage rule: `eb_hier` (hierarchical EB, preferred), `eb_pooled`, `eb` (measured inert), `mse` (superseded) |
 | `ACG_CCPO_TARGET` | `return` | what the step credit is computed on; `nextnode` uses G²PO's successor node value |
 | `ACG_CCPO_SIM` | 0.0 | observation gate; >0 uses GiGPO's SequenceMatcher clustering (theirs: 0.95) |
 | `ACG_CCPO_SIM_BACKOFF` | 0.0 | looser second gate for occurrences a singleton bucket leaves at `A_CC=0` |

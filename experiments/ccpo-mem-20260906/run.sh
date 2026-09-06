@@ -9,7 +9,7 @@ export \
   ACG_CCPO_EDGE_W=0.0 \
   ACG_CCPO_PHI=hidden \
   ACG_CCPO_RHO=0.59 \
-  ACG_CCPO_SHRINK=eb_pooled \
+  ACG_CCPO_SHRINK=eb_hier \
   ACG_CCPO_SIM=0.0 \
   ACG_CCPO_SIM_BACKOFF=0.0 \
   ACG_CCPO_TARGET=return \
