@@ -844,6 +844,17 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
     <h2>What actually happened when we trained it</h2>
     <p>Qwen3-1.7B, 40 iterations, four arms, three benchmarks. Held-out = tasks disjoint from training, actions sampled at T=1.</p>
   </div>
+  <p style="margin:0 0 14px;padding:10px 12px;border-left:3px solid #c8a24a;background:#fbf7ec;font-size:13.5px;line-height:1.6">
+  <b>Base model, 2026-09-06.</b> Every number in this section was measured on <b>Qwen3-1.7B</b>. Training has since
+  moved to <b>Qwen2.5-1.5B-Instruct</b> — the model GiGPO, HGPO and G²PO all publish on — so that a result here has
+  a published number to be compared against rather than only an internal one. Two Qwen3-specific workarounds fall
+  away with the switch: <span style="font-family:ui-monospace,Menlo,monospace">enable_thinking=False</span> had to
+  be forced in code because the config override did not reach the call, and the action parser had to accept a
+  missing opening <span style="font-family:ui-monospace,Menlo,monospace">&lt;think&gt;</span> tag because Qwen3
+  carries it in the prompt as an empty prefill (0/32 response-side tags measured). On Qwen2.5-1.5B-Instruct the
+  first turn of an untrained policy parses 127/128 valid with 124 admissible. The &phi; diagnostics elsewhere on
+  this page — conflation AUC, the 0.30 sd bias prior, and &rho; calibrated from it — are model-specific and are
+  being re-measured.</p>
   <div class="scroll">
     <table>
       <thead><tr><th>Benchmark</th><th>GRPO</th><th>frozen φ</th><th class="ourhead">frozen φ + MEMORY</th><th>learned φ+μ+affinity</th></tr></thead>
