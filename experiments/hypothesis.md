@@ -40,6 +40,30 @@ before the action exists.
 
 ## Open — ranked by expected value
 
+> **Scheduling decision, 2026-09-06, following H-H below.** The remaining budget
+> goes to *length*, not to another φ variant.
+>
+> H-H bounds every φ hypothesis at 5.4% of target variance, and that 5.4% *is*
+> CCPO's entire theoretical margin over GiGPO — GiGPO already uses the uniform
+> bucket mean, so context conditioning only ever competes for the within-bucket,
+> between-trajectory slice. No encoder turns that into a SOTA-sized lever.
+>
+> H-F meanwhile resolved the other way: held-out success is climbing monotonically
+> and the run is simply under-trained at 20 steps. The reference protocol
+> (`baselines/G2PO/examples/g2po_trainer/run_alfworld.sh`) is
+> `train_data_size=16, group_size=8, total_epochs=100` — **100 steps**, five times
+> what any arm here has had.
+>
+> So: `ccpo-long-20260906` warm-starts from `ccpo-mem-20260906/global_step_20` and
+> runs to an absolute step 100, matching the reference length exactly. ~10 h on
+> 4 GPUs. Warm-starting is legitimate here — same config, same constant LR, so it
+> is the same run continued, not a new arm.
+>
+> This is the honest ordering: **the largest remaining gap to the baselines is
+> training length, and it is not a method question.** Nothing about φ can be
+> evaluated against published numbers until an arm has run the published length.
+
+
 ### [x] H-H. **The variance budget — how much is on the table for *any* φ**
 
 Before spending another GPU arm on a better encoder, measure the ceiling. All of
