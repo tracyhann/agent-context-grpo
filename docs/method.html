@@ -214,9 +214,9 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
         <div class="n">Learned φ is worst on 2 of 3 benchmarks; learned affinity ties plain Euclidean (0.515 vs 0.514).</div>
       </div>
       <div class="st crit">
-        <div class="k">MOTIVATING PREMISE</div>
-        <div class="v">Not supported</div>
-        <div class="n">46–78% of steps already sit in usable buckets. Exact matching does not degenerate.</div>
+        <div class="k">CENTRAL HYPOTHESIS</div>
+        <div class="v">Null at scale</div>
+        <div class="n">λ = 0 in all four φ/target variants, ~1,500 samples/step. φ-similarity does not predict return-similarity inside a bucket.</div>
       </div>
     </div>
     <div class="mast-meta">
@@ -785,10 +785,13 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
       <div class="fig">ρ(D*, |A|) = +0.95<br>ρ(D*, t) &nbsp;= −0.48<br>ρ(d<sup>pred</sup>, t) = +0.74</div>
     </div>
     <div class="card">
-      <div class="tag"><span class="id">E5</span><span class="verdict v-warn">untested</span></div>
-      <h3>The central hypothesis has no evidence yet</h3>
-      <p>Its first valid test — after fixing oracle noise, the horizon confound, probe mismatch, and a pinned set that contained no context variation — returned a null. Not a refutation: <span class="mono">n = 15–22</span> pairs.</p>
-      <div class="fig">oracle reliability 0.63 · ceiling 0.79<br>best ρ +0.489 (p = 0.069)<br>does not survive the scale-free form</div>
+      <div class="tag"><span class="id">E5</span><span class="verdict v-bad">refuted on ALFWorld</span></div>
+      <h3>The central hypothesis is null at scale</h3>
+      <p>The earlier test — after fixing oracle noise, the horizon confound, probe mismatch, and a pinned set with no context variation — returned a null on <span class="mono">n = 15–22</span> pairs, too small to be a refutation. <b>2026-09-06, in training, on Qwen2.5-1.5B-Instruct:</b> λ is <b>exactly 0</b> in every one of four φ/target combinations, each measured over ~1,500 credited samples per step. The φ-weighted baseline never departs from the uniform one by more than reweighting noise, so <span class="mono">A<sup>CC</sup></span> is that baseline.</p>
+      <div class="fig">hidden / return &nbsp;λ=0.000 · r<sub>GiGPO</sub>=+0.977<br>hidden / nextnode &nbsp;λ=0.000 · +0.530<br>bow (explicit context) &nbsp;λ=0.000 · +0.523<br>hidden+ctx / nextnode &nbsp;λ=0.000 · +0.505</div>
+      <p style="margin-top:10px"><span class="mono">Var(d) = s²(1/n_eff − 1/J)</span> is the variance of <span class="mono">b_obs − b_LOO</span> <em>under the null that the weights are uncorrelated with the returns</em>, and <span class="mono">τ² = max(0, E[d²] − E[Var(d)])</span> is 0 throughout: <b>φ-similarity does not predict return-similarity inside a bucket</b> — not from the policy's hidden state, not from explicit <span class="mono">{t, n_unique, revisit, progress}</span>, not from both.</p>
+      <p style="margin-top:8px">Neither escape survives. <b>Support is ample</b>: <span class="mono">n_eff</span> 4.86–4.93 of a maximum 7, mean bucket size 8.4, 90% of samples credited, 758 buckets per step — the earlier <span class="mono">n_eff ≈ 2.1</span> figure came from a four-rollout smoke test where J was capped at 3 by construction. <b>And the shrinkage rule is not the cause</b>: <span class="mono">eb</span>, <span class="mono">eb_pooled</span> and the hierarchical <span class="mono">eb_hier</span> independently agree.</p>
+      <p style="margin-top:8px">What remains once λ=0 is the <em>leave-one-out exclusion</em> (Eq. 1, which E6 supports) and, with <span class="mono">ACG_CCPO_TARGET=nextnode</span>, G²PO's successor-value target. Both change the credit substantially — <span class="mono">r<sub>GiGPO</sub></span> falls to +0.39 — but neither is context conditioning.</p>
     </div>
     <div class="card">
       <div class="tag"><span class="id">E6</span><span class="verdict v-ok">supports Eq. 1</span></div>
