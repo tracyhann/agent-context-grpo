@@ -174,7 +174,15 @@ def derive_context(anchor_obs, index, traj_index):
     plumbs through the batch.  Phase 0 found `n_unique_obs` (p=0.008) and `t`
     (p=0.011) the most predictive context features on ALFWorld, and both are
     recoverable from the observation sequence alone -- so CCPO needs no new
-    fields in the data pipeline."""
+    fields in the data pipeline.
+
+    NOTE: revisit and n_unique count EXACT observation repeats, while the gate may
+    be clustering near-identical observations (ACG_CCPO_SIM > 0). Two observations
+    the gate calls one state would still count as two distinct states here. This is
+    inert under the shipped configuration -- with phi=hidden the distances come from
+    phi_feats and ctx is never consulted -- but it would matter for the bag-of-words
+    ablation run with a fuzzy gate, and should be reconciled before reading that
+    arm."""
     order = defaultdict(list)
     for i, tj in enumerate(traj_index):
         order[tj].append(i)
