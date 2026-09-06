@@ -96,6 +96,19 @@ At 128 + 128 actors the run reached 8165/8192 threads and died. At 128 + 64 it f
 **Consequence: arms cannot run in parallel on this box** — two arms would need
 ~384 actors. Runs are sequential, each on all available GPUs.
 
+**A cold start looks exactly like a hang.** The first `generate()` call compiles the
+model and captures CUDA graphs for every vLLM engine. With four engines that pins
+the GPUs at 100% for several minutes and writes nothing to the log — and it cost one
+run, killed on the assumption that generation was pathologically slow. It is not:
+benchmarked standalone, `TRITON_ATTN` does **6127 tok/s** on this model (32
+sequences, 512 max tokens, 2.4 s). `scripts/exp_run.py` now points
+`VLLM_CACHE_ROOT` and `TORCHINDUCTOR_CACHE_DIR` at the data volume, where a warm
+engine starts in ~16 s, and the rollout logs one line per turn so a stall is
+distinguishable from progress. Before concluding a run is stuck, check
+`nvidia-smi --query-compute-apps` — the process name says which phase it is in
+(`generate_sequences`, `compute_log_prob`, `ref_compute_ref_log_prob`,
+`update_actor`).
+
 **Batch/GPU divisibility.** verl asserts `train_batch_size * rollout.n % n_gpus == 0`.
 The reference `train_batch_size=16` with `group_size=8` gives 128, so 4 GPUs
 divides cleanly and 6 does not. Arms run on 4 GPUs to keep the reference batch
