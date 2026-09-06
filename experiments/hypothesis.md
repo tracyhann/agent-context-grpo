@@ -288,10 +288,28 @@ ranks below H-A and H-B despite being the headline method.
 ### [ ] H-D. Similarity gate raises bucket occupancy
 
 `ACG_CCPO_SIM=0.95` — GiGPO ships this (`are_similar`, SequenceMatcher). Would
-raise `n_eff` and cut the 33% singleton rate. **Deprioritised**: support is not the
-binding constraint (see H-2), and GiGPO has the same gate natively, so a
-CCPO-with-gate vs GiGPO-without comparison would confound the gate with the
-estimator.
+raise `n_eff` and cut the singleton rate, measured at **0.364** at step 15.
+
+**Re-prioritised, and the earlier reasoning here was wrong on two counts.**
+
+1. *It is not confounded with the baseline.* GiGPO's own default is
+   `enable_similarity: False` (`baselines/verl-agent/verl/trainer/config/ppo_trainer.yaml:253`),
+   and no ALFWorld run script overrides it. So the published GiGPO numbers were
+   produced with **exact** anchor matching, exactly what our `ccpo_sim=0.0` does.
+   There is no fairness gap to close, and enabling the gate is a genuine
+   improvement *over* the baseline's grouping rather than a correction to it.
+
+2. *It is not bounded by H-H.* The 6.1% ceiling was measured on buckets with J≥3 —
+   it caps how much better a φ can predict *within buckets that already exist*.
+   The gate changes something different: whether an occurrence lands in a usable
+   bucket **at all**. 36.4% of occurrences currently get no step credit from any
+   estimator, and that mass is outside H-H's denominator entirely.
+
+That makes H-D the **highest-value open φ-adjacent hypothesis** — it is the only
+one whose upside is not capped at 6.1%. It is still deprioritised behind the
+reference-length run, because a gate change is untestable against published
+numbers until an arm has run the published length, but it is now the first thing
+to try after `ccpo-long`.
 
 ### [ ] H-E. G²PO's edge term
 
