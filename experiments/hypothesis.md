@@ -127,9 +127,9 @@ is almost nothing to shrink toward, and the estimator has been reporting that
 faithfully for 15 steps while I looked for a bug in it.
 
 **This bounds every remaining φ hypothesis.** H-C, H-D and H-G are all competing
-for the same 5.4%. They should be ranked below anything that changes the *other*
+for the same 6.1%. They should be ranked below anything that changes the *other*
 advantage term or the harness, and H-C is worth at most one arm — as a
-measurement of how much of the 5.4% a learned encoder recovers, not as a
+measurement of how much of the 6.1% a learned encoder recovers, not as a
 SOTA attempt.
 
 
