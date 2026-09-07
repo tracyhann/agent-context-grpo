@@ -17,7 +17,7 @@
     "compact_budget": 0,
     "data_dir": "/workspace/envdata/verl_data",
     "dynamic_bsz": true,
-    "early_stop_min_steps": 60,
+    "early_stop_min_steps": 40,
     "early_stop_patience": 8,
     "env_name": "alfworld/AlfredTWEnv",
     "eval_split": "eval_in_distribution",
@@ -64,7 +64,7 @@
     "val_top_p": 1.0,
     "venv_python": "/workspace/.venv/bin/python3"
   },
-  "created": "2026-09-07T04:41:05",
+  "created": "2026-09-07T04:41:53",
   "env": {
     "ACG_ADV_ESTIMATOR": "ccpo",
     "ACG_CCPO_BACKOFF_RHO": "0.5",
@@ -80,7 +80,7 @@
     "ACG_CCPO_TAU": "0.15",
     "ACG_CCPO_WHITEN": "3",
     "ACG_COMPACT_BUDGET": "0",
-    "ACG_EARLY_STOP_MIN_STEPS": "60",
+    "ACG_EARLY_STOP_MIN_STEPS": "40",
     "ACG_EARLY_STOP_PATIENCE": "8",
     "ACG_EXP_DIR": "/workspace/experiments/ccpo-global-20260907",
     "ACG_FORCE_BUDGET": "0",
@@ -113,7 +113,7 @@
   "experiment": "ccpo-global-20260907",
   "git": {
     "branch": "main",
-    "commit": "de86c25ae390888b566c6ad514fdc44e502a77b3",
+    "commit": "c43de8b6cc9117371da1681ba7a6da977a0cd962",
     "dirty": true
   },
   "hydra_overrides": [

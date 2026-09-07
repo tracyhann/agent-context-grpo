@@ -59,6 +59,66 @@ before the action exists.
 
 ## Open — ranked by expected value
 
+### [ ] H-N. **Shrink toward the hard gate, not the uniform mean** — restores uncertainty as a live component
+
+**The problem this fixes.** H-M's global gate runs with **λ = 1.0, hard-set**. Every
+uncertainty quantity is still computed and logged, and none of them touches the
+advantage:
+
+```
+lam_u_mean      1.0000   forced, not estimated
+tau2            0.0000   signal variance: still "no signal"
+lam_eb_obs      0.0173   what the EB rule WOULD give if consulted
+rho             0.5900   metric confidence -- computed, unused
+```
+
+So `ccpo-global` tests context-conditioned **grouping** and does **not** test
+uncertainty at all. If that arm wins, it wins on grouping, and the write-up must
+say so. Uncertainty is one of the two ideas the method is built on; right now it is
+decorative again, in a new way.
+
+**Why λ=1 was necessary and not merely lazy.** Under a global gate `b_obs`
+degenerates to the uniform task mean, measured at R² **0.4248** against the hard
+gate's **0.4579** — *worse*. Shrinking toward it moves the estimator toward the
+worse baseline, and since the EB rule still reports λ≈0.017 that is exactly where
+it would land. λ=1 was the only way to use the estimate that measured better
+(φ-weighted `b_loo`, 0.4841).
+
+**The fix.** Make the shrinkage target the **exact-observation bucket mean** rather
+than the uniform task mean. Then
+
+```
+A_CC  =  target − [ λ · b_loo(global φ-weighted)  +  (1−λ) · b_hard(exact-obs bucket) ]
+```
+
+and λ trades two *defensible* estimators instead of one good and one bad:
+
+* **λ → 1**: the global soft neighbourhood (R² 0.4841)
+* **λ → 0**: GiGPO's exact-observation gate (R² 0.4579) — a **floor**, not a cliff
+
+This makes the hard gate the worst case rather than the uniform mean, so the
+estimator cannot do worse than the published baselines' grouping however badly φ
+behaves. It also restores the original bias-variance story: shrink toward the
+conservative local estimate exactly where the global neighbourhood is thin or φ is
+untrustworthy.
+
+**Implementation** (~20 lines in `ccpo_step_advantage`): compute the exact-obs
+bucket mean alongside the global one, carry it as `b_hard` in `_rec`, and use it in
+place of `b_obs` in the shrinkage when `_GATE == "global"`. Occurrences whose
+exact-obs bucket has <2 distinct trajectories — the ~35% the hard gate cannot serve —
+fall back to λ=1, which is correct: there is no local estimate to shrink toward.
+
+**Predicted outcome, on record before running.** λ will still be small, because
+`lam_eb_obs` says so and nothing about the target changes. So this arm should land
+*close to* `ccpo-global` rather than above it, and its value is (a) removing the
+downside risk of a bad φ and (b) making uncertainty a live, measurable component
+again. **If λ stays under 0.05 the honest conclusion is that CCPO's uncertainty
+half does not earn its place on ALFWorld**, and the method should be presented as
+context-conditioned grouping alone.
+
+Run after `ccpo-global-20260907` reports.
+
+
 ### [~] H-M. **Global context-conditioned grouping** — the first CCPO-shaped idea that measures positive
 
 **The idea.** Drop the hard `(task_uid, observation)` gate. Make the whole task one
