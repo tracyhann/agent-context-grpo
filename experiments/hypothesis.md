@@ -59,6 +59,60 @@ before the action exists.
 
 ## Open — ranked by expected value
 
+### [!] H-O. **The estimator is NOT why we underperform** — three suspects tested, all cleared
+
+Prompted by "why are we still underperforming": 79.7 (ours) vs 95.0 (G²PO) at an
+identical protocol. Decomposed the divergence offline on the 485,888-sample dump
+from `ccpo-global-20260907`, plus the two arms' own diagnostics.
+
+**Suspect 1 — the leave-one-out exclusion.** Ours excludes the scored trajectory;
+G²PO includes it. I had treated this as a correctness fix and never tested it.
+
+**Suspect 2 — the φ weighting.**
+
+**Suspect 3 — the gate** (global task-bucket vs G²PO's per-observation node).
+
+| variant | corr with G²PO | sign disagree |
+|---|---|---|
+| ours as shipped (φ-weighted LOO) | 0.7360 | 17.3% |
+| drop φ, uniform LOO | 0.7250 | 18.4% |
+| self-inclusive mean (G²PO-style) | **0.7449** | 17.1% |
+
+| arm | `r_vs_g2po` | `r_vs_gigpo` |
+|---|---|---|
+| global gate (task = bucket) | 0.8909 | 0.4089 |
+| hard gate (obs = node) | **0.9028** | 0.4517 |
+
+**All three cleared.** LOO costs 0.009. φ *adds* 0.011. The gate moves agreement by
+0.012. Our step term is ~**0.90 correlated with G²PO's**, and every knob we own
+moves that by about one point.
+
+**Conclusion: a 15-point performance gap does not follow from a 0.10 correlation
+gap in the advantage.** The estimator is close to G²PO's; the estimator is
+therefore very unlikely to be the cause. This *retracts* the ranking given earlier
+in this session, which put "reduce divergence from G²PO" and "switch the target"
+at the top — both aim at a component that measures fine.
+
+**What remains, and it is now the only cheap-to-eliminate unknown:** the harness.
+ALFWorld build, env seeding, vLLM version, tokenisation, reward wiring, or seed
+variance (ours is 1 seed against their 3-seed mean, and G²PO reports ±0.8).
+
+**The decisive experiment is a G²PO arm on our harness**, and after this analysis
+it is no longer a matter of methodological preference — it is the only remaining
+way to locate the gap. Two outcomes, both informative:
+
+* **~95** → our harness is fine and our method is genuinely 15 points worse
+  *despite* a 0.90-correlated advantage. That is a surprising result in its own
+  right and would point at the composition (`A_EP + w·A_CC`) or the
+  standardisation level rather than the step term.
+* **~80** → our harness caps every method, and CCPO is at parity with a SOTA
+  method. Every number in this file would then need restating as relative rather
+  than absolute.
+
+Also worth noting: `r_vs_gigpo` is 0.41-0.45, so we are far from GiGPO and close to
+G²PO. Whatever we are, we are a G²PO variant.
+
+
 ### [ ] H-N. **Shrink toward the hard gate, not the uniform mean** — restores uncertainty as a live component
 
 **The problem this fixes.** H-M's global gate runs with **λ = 1.0, hard-set**. Every
