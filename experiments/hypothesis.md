@@ -166,8 +166,33 @@ of every arm in this project. Under the global gate it is **0.3629**.
 **Experiment** `ccpo-global-20260907`: `gate=global, tau=0.15, edge_w=1.0,
 target=nextnode, phi=hidden+ctx`, 100 iterations (G²PO's own length).
 
-**Confound, stated up front.** This arm changes *two* things: the gate (the new
-idea) and `edge_w` 0.0 → 1.0. The latter is not a variable under test — it is
+**Confound, stated up front — and it is worse than two things.** Comparing
+`ccpo-global` against the hard-gate curve (`ccpo-mem` steps 1-20 + `ccpo-long`
+steps 21-100) differs in **four** ways, not one:
+
+| | hard arm | ccpo-global |
+|---|---|---|
+| gate | hard | **global** |
+| `edge_w` | 0.0 | **1.0** |
+| effective λ | 0.000 | **1.0** |
+| `compact_budget` | **512** (steps 1-20), 0 after | 0 throughout |
+
+The memory column is not merely a confound, it is *inconsistent within the
+comparator*: steps 5/10/15/20 compare against a memory-ON hard arm, step 25+
+against a memory-OFF one, because that is where the `ccpo-long` warm start took
+over. **The baseline changed configuration partway through the series.** Any
+matched-step delta read across that boundary — including the +0.039 lead at steps
+5-20 and the −0.031 reversal at step 25 — is contaminated by it.
+
+`ccpo-global` remains valid **on its own terms**: a clean 100-step run from base at
+a fixed config, comparable to G²PO's published 95.0 without needing any internal
+comparator. Use that comparison, not the matched-step one.
+
+A genuine gate-vs-gate ablation needs a hard-gate arm at `edge_w=1.0`,
+`compact_budget=0` throughout. Until that exists, **no causal claim about the gate
+is supported.**
+
+The original note, still true: this arm also changes `edge_w` 0.0 → 1.0. The latter is not a variable under test — it is
 restoring G²PO's edge-centric advantage, which we had switched off while trying to
 beat G²PO, and which their ablation credits for their margin over GiGPO. It is a
 fix, not a treatment. But if this arm wins, the split between the two is unknown
