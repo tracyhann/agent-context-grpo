@@ -59,6 +59,65 @@ before the action exists.
 
 ## Open — ranked by expected value
 
+### [~] H-M. **Global context-conditioned grouping** — the first CCPO-shaped idea that measures positive
+
+**The idea.** Drop the hard `(task_uid, observation)` gate. Make the whole task one
+bucket and let the φ kernel `exp(−d/τ)` decide the neighbourhood softly. The hard
+gate becomes the **τ → 0 limit** of the soft one rather than a separate mechanism —
+a genuine unification of CCPO's context conditioning with G²PO's global view.
+
+**Why it is not bounded by H-H.** That 6.1% ceiling was measured *inside* exact-
+observation buckets, so it bounds the baseline **within** a gate. This changes what
+the gate is. Same reason H-D and H-L escaped the cap — but unlike those two, this
+one measures positive.
+
+**Offline evidence** — `gate-probe-20260907`, 6,912 occurrences, LOO residual R²,
+φ = bag-of-words(obs) ⊕ thermometer context:
+
+| baseline | return-to-go | nextnode |
+|---|---|---|
+| exact-obs gate (GiGPO / G²PO) | 0.4579 | 0.7434 |
+| uniform global (LOO) | 0.4248 | 0.7512 |
+| **global φ-weighted** | **0.4841** (τ=0.15) | **0.7604** (τ=0.25) |
+| | **+0.026** | **+0.017** |
+
+The τ curve is an **inverted U** under both targets — 0.30 at τ=0.02, peak at
+0.15–0.25, decaying toward the uniform mean beyond. The optimum is interior, which
+is the whole argument: neither hard local matching nor global averaging, but a soft
+global neighbourhood.
+
+**Why this works where progress banding (H-J) failed.** Banding made buckets
+sharper *and smaller*, and the sample loss ate the gain. A soft kernel makes them
+sharper *without* shrinking support: low weights replace exclusion instead of
+discarding occurrences. `live_frac` goes 0.88–0.93 → **1.000**; nothing falls dead.
+
+**Implementation trap, caught before launching.** Under a global gate `b_obs`
+degenerates to the **uniform task mean**, which measured 0.4248 — *worse* than the
+hard gate. The quantity that measured better is the φ-weighted `b_loo`, which
+carries weight λ. Since λ has been **exactly 0.000 in every run of this project**,
+a naive global gate would have shrunk onto the worse baseline and lost points while
+looking like a faithful implementation. So the global gate takes **λ = 1**: the
+soft kernel is the gate, and there is nothing left to shrink toward.
+
+**First evidence the estimator is no longer inert.** `effect_rel` — how far the
+credit departs from the uniform baseline — has been *exactly* 0.0000 at every step
+of every arm in this project. Under the global gate it is **0.3629**.
+
+**Experiment** `ccpo-global-20260907`: `gate=global, tau=0.15, edge_w=1.0,
+target=nextnode, phi=hidden+ctx`, 100 iterations (G²PO's own length).
+
+**Confound, stated up front.** This arm changes *two* things: the gate (the new
+idea) and `edge_w` 0.0 → 1.0. The latter is not a variable under test — it is
+restoring G²PO's edge-centric advantage, which we had switched off while trying to
+beat G²PO, and which their ablation credits for their margin over GiGPO. It is a
+fix, not a treatment. But if this arm wins, the split between the two is unknown
+without an ablation, and that ablation should be run before any claim is made.
+
+**Target to beat** (G²PO Table 1, Qwen2.5-1.5B, ALFWorld, *identical* protocol,
+100 iterations, 3 seeds): G²PO **95.0 ± 0.8**, GiGPO 86.7 ± 1.7, GRPO 72.8 ± 3.6,
+RLOO 69.7 ± 2.5. Ours to date: **70.3** (1 seed) — below GRPO.
+
+
 ### [!] H-J. Progress banding the gate — PROPOSED AND REFUTED THE SAME NIGHT
 
 **Experiment** `gate-probe-20260907` (2 steps warm-started from `ccpo-long`
@@ -258,7 +317,7 @@ revised mid-run.
 | CCPO @ step 20 (previous arm) | 17.2 |
 | **CCPO @ step 100 (this run)** | **70.3** |
 | GRPO (published) | 72.8 |
-| GiGPO K=2 (published) | 90.16 |
+| GiGPO (G²PO Table 1, same protocol) | 86.7 |
 | HGPO K=2 (published) | 92.77 |
 
 Per-type at step 100 — every type well above zero, including all four

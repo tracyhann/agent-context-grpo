@@ -158,6 +158,14 @@ DEFAULTS = {
     "ccpo_sim_backoff": 0.0,
     "ccpo_backoff_rho": 0.5,
     "ccpo_edge_w": 0.0,
+    # "hard" = the GiGPO/G2PO exact (task, observation) gate. "global" makes the
+    # task one bucket and lets exp(-d/tau) gate softly; ccpo_tau is then the
+    # kernel width as a multiple of the median phi-distance and is the parameter
+    # that matters. Under "global" the shrinkage is bypassed (lam = 1) because
+    # b_obs degenerates to the uniform task mean, which measures WORSE than the
+    # hard gate -- see H-M in experiments/hypothesis.md.
+    "ccpo_gate": "hard",
+    "ccpo_tau": 1.0,
 
     # supporting components, both off = stock protocol
     "compact_budget": 0,
@@ -178,6 +186,7 @@ ENV_KEYS = {
     "ccpo_target": "ACG_CCPO_TARGET", "ccpo_sim": "ACG_CCPO_SIM",
     "ccpo_sim_backoff": "ACG_CCPO_SIM_BACKOFF",
     "ccpo_backoff_rho": "ACG_CCPO_BACKOFF_RHO", "ccpo_edge_w": "ACG_CCPO_EDGE_W",
+    "ccpo_gate": "ACG_CCPO_GATE", "ccpo_tau": "ACG_CCPO_TAU",
     "compact_budget": "ACG_COMPACT_BUDGET", "force_budget": "ACG_FORCE_BUDGET",
     "force_tail": "ACG_FORCE_TAIL",
     "early_stop_patience": "ACG_EARLY_STOP_PATIENCE",

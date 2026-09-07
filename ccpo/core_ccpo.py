@@ -43,6 +43,19 @@ import torch
 # disagreement that is real, estimated over thousands of occurrences rather than
 # over one bucket.
 _SHRINK = os.environ.get("ACG_CCPO_SHRINK", "eb").lower()
+# Gate mode. "hard" is the GiGPO/G2PO gate: a bucket is an exact (task,
+# observation) match. "global" makes the whole task one bucket and lets the phi
+# kernel decide neighbourhood softly, so the hard gate becomes the tau -> 0 limit
+# rather than a separate mechanism. Measured offline on gate-probe-20260907
+# (6,912 occurrences, both targets): LOO residual R2 0.4579 -> 0.4841 at
+# tau_scale 0.15 on return-to-go, 0.7434 -> 0.7604 at 0.25 on nextnode.
+_GATE = os.environ.get("ACG_CCPO_GATE", "hard").lower()
+# Kernel width as a multiple of the bucket's median phi-distance. Only meaningful
+# under the global gate, where it IS the gate: too tight rebuilds exact matching
+# with worse statistics (R2 0.30 at 0.02), too loose converges on the uniform task
+# mean. The offline optimum is an interior one, which is the whole argument for a
+# soft global neighbourhood over a hard local one.
+_TAU_ENV = os.environ.get("ACG_CCPO_TAU")
 
 # Affinity metric. "hidden" uses the frozen REFERENCE policy's last-prompt-token
 # hidden state (supplied by the trainer as phi_feats), whitened batch-wide;
@@ -289,6 +302,14 @@ def cluster_keys(anchor_obs, index, sim_thresh=0.0):
     """
     n = len(anchor_obs)
     keys = np.empty(n, dtype=object)
+    if _GATE == "global":
+        # One bucket per task: every occurrence is a candidate neighbour of every
+        # other, and exp(-d/tau) does the gating. Nothing falls dead for want of
+        # an exact string match, which is what the hard gate loses ~35% of the
+        # batch to.
+        for i in range(n):
+            keys[i] = (str(index[i]),)
+        return keys
     if sim_thresh <= 0.0:
         for i in range(n):
             keys[i] = (str(index[i]), str(anchor_obs[i]))
@@ -543,7 +564,7 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
             D = np.sqrt(np.maximum(_sq[:, None] + _sq[None, :] - 2.0 * (F @ F.T), 0.0))
             off = D[np.triu_indices(len(idx), 1)]
             tau = float(np.median(off)) if off.size and np.median(off) > 1e-9 else 1.0
-            tau *= max(tau_scale, 1e-6)
+            tau *= max(float(_TAU_ENV) if _TAU_ENV else tau_scale, 1e-6)
 
             # ---- grouping relevance: does phi-distance predict return distance? -
             # lambda only detects whether phi shifts the MEAN of the baseline, so a
@@ -643,7 +664,16 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
     for _r in _rec:
         i, b_loo, b_obs = _r["i"], _r["b_loo"], _r["b_obs"]
         s2, var_gain, rho_l = _r["s2"], _r["var_gain"], _r["rho"]
-        if shrink == "eb_hier":
+        if _GATE == "global":
+            # b_obs here is the uniform mean over the whole task, which measured
+            # 0.4248 against the hard gate's 0.4579 -- WORSE. The quantity that
+            # measured better (0.4841) is the phi-weighted b_loo. Shrinking toward
+            # b_obs would therefore move the estimator toward the worse baseline,
+            # and since lam has been exactly 0.000 in every run to date that is
+            # precisely where it would land. Under a global gate the soft kernel
+            # IS the gate, so there is nothing to shrink toward and lam = 1.
+            lam = 1.0
+        elif shrink == "eb_hier":
             # Hierarchical empirical Bayes (Efron-Morris). tau^2 comes from the
             # whole batch, which is where the statistical power is; the shrinkage
             # is then per occurrence against ITS OWN noise:
