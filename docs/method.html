@@ -260,11 +260,16 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
     </div>
     <div class="rung ours">
       <div class="who">Ours<span>this note</span></div>
-      <div><span class="key">(o_t, c_t) &nbsp;—f_φ→&nbsp; z_t &nbsp;→&nbsp; weighted neighbourhood</span></div>
-      <div class="note">Same observation <em>and</em> similar action-conditioned future consequences. The observation bucket is refined, not replaced.</div>
+      <div><span class="key">(o_t, c_t) &nbsp;—f_φ→&nbsp; z_t &nbsp;→&nbsp; soft neighbourhood over the whole task</span></div>
+      <div class="note">No identity test at all. Every occurrence in the task is a candidate, weighted <span class="mono">exp(−d/τ)</span>. The four gates above are the <span class="mono">τ→0</span> limit.</div>
     </div>
   </div>
-  <p class="tbl-cap">The first four prescribe equivalence by identity; the fifth infers it. Note ours still requires <span class="mono">o_u = o_v</span> as a hard gate — it only ever <em>splits</em> a G²PO bucket, never merges across observations.</p>
+  <p class="tbl-cap">The first four prescribe equivalence by <em>identity</em>; the fifth replaces the test with a
+  <em>kernel</em>. <b>Revised 2026-09-07:</b> earlier versions of this page said ours "still requires
+  <span class="mono">o_u = o_v</span> as a hard gate — it only ever splits a G²PO bucket, never merges across
+  observations." That is no longer true. The shipped gate is <b>global</b>: the whole task is one bucket and the
+  affinity does the gating, so it both splits and merges. Membership becomes continuous rather than binary, which is
+  what stops ~35% of occurrences falling out of the estimator for want of an exact string match.</p>
 </section>
 
 <section>
@@ -278,8 +283,10 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
     <div class="eq">
       <div class="i">1</div>
       <div class="body">
-        <div class="math">C_x(o_u) = { v = (j, t′) : o_v = o_u , j ≠ i }</div>
-        <div class="gloss">Candidate pool: same task, same observation, <b>different trajectory</b>. The <span class="mono">j ≠ i</span> exclusion is load-bearing — if <span class="mono">v</span> came from <span class="mono">u</span>'s own rollout, <span class="mono">G_v</span> would lie downstream of <span class="mono">a_u</span> and the baseline would depend on the action it is meant to evaluate.</div>
+        <div class="math">C_x(o_u) = { v = (j, t′) : task_v = task_u , j ≠ i }</div>
+        <div class="gloss"><span class="rev">revised</span>Candidate pool: same task, <b>different trajectory</b>.
+        The <span class="mono">o_v = o_u</span> condition shown here previously has been <b>removed</b> — under the
+        global gate every occurrence in the task is a candidate and Eq. 4 weights it. The <span class="mono">j ≠ i</span> exclusion is load-bearing — if <span class="mono">v</span> came from <span class="mono">u</span>'s own rollout, <span class="mono">G_v</span> would lie downstream of <span class="mono">a_u</span> and the baseline would depend on the action it is meant to evaluate.</div>
       </div>
     </div>
     <div class="eq">
@@ -299,8 +306,12 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
     <div class="eq">
       <div class="i">4</div>
       <div class="body">
-        <div class="math">w_uv = 1[o_u = o_v] · 1[i_u ≠ i_v] · exp( −d<sup>pred</sup>_uv / τ_b ) ,&nbsp;&nbsp; τ_b = median d<sup>pred</sup></div>
-        <div class="gloss">Affinity, with <span class="mono">w_uu = 0</span>. The adaptive median bandwidth makes the weights invariant to global drift in ψ — but it is also why <span class="mono">E[w]</span> is a <em>useless</em> collapse diagnostic: being scale-invariant, it absorbs the very collapse it was meant to detect.</div>
+        <div class="math">w_uv = 1[i_u ≠ i_v] · exp( −d_uv / τ_b ) ,&nbsp;&nbsp; τ_b = 0.15 · median d</div>
+        <div class="gloss"><span class="rev">revised</span>Affinity, with <span class="mono">w_uu = 0</span>. The
+        <span class="mono">1[o_u = o_v]</span> indicator shown here previously is <b>gone</b> — that indicator
+        <em>was</em> the hard gate. The bandwidth multiplier 0.15 is the offline optimum; the trade is interior, since
+        τ→0 rebuilds exact matching with worse statistics and large τ collapses to the task mean. The adaptive median
+        bandwidth makes the weights invariant to global drift in ψ — but it is also why <span class="mono">E[w]</span> is a <em>useless</em> collapse diagnostic: being scale-invariant, it absorbs the very collapse it was meant to detect.</div>
       </div>
     </div>
     <div class="eq">
@@ -309,6 +320,13 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
         <div class="math">b_u<sup>LOO</sup> = Σ<sub>j≠i</sub> α_uj Ḡ_u,j ⁄ Σ<sub>j≠i</sub> α_uj ,&nbsp;&nbsp; A_u<sup>CC</sup> = G_u − b_u<sup>LOO</sup></div>
         <div class="gloss">Repeated visits are aggregated <b>within</b> each reference trajectory first, so the effective sample size counts trajectories, not correlated repeat visits. Total advantage: <span class="mono">A_u = A_i<sup>EP</sup> + λ_CC · A_u<sup>CC</sup></span>.</div>
         <div class="gloss"><span class="rev">revised</span>Shrinkage was <span class="mono">λ = f(n_eff)</span> alone. That is backwards: concentrating weights onto genuinely comparable neighbours is the method's <em>purpose</em>, yet it lowers <span class="mono">n_eff</span> and so triggered fallback to G²PO. It measured the variance cost of conditioning and was blind to the bias benefit. Now an MSE-optimal trade-off, <span class="mono">λ* = (ρB)² / [ (ρB)² + σ²(1/n_eff − 1/J) ]</span>, where <span class="mono">B</span> is the measured false-merge bias (0.26–0.36 sd) and <span class="mono">ρ</span> is confidence in the metric — the point where <b>grouping uncertainty</b> enters. <span class="mono">ρ→0</span> collapses exactly to G²PO.</div>
+        <div class="gloss"><span class="rev">revised 2026-09-07</span>Two further changes. The MSE rule shown is
+        superseded by positive-part empirical Bayes (σ² cancels in the MSE form, reducing it to the
+        <span class="mono">n_eff</span> rule it was written to replace). And under the shipped <b>global</b> gate
+        <span class="mono">λ is forced to 1</span>: <span class="mono">b_obs</span> there degenerates to the uniform
+        task mean, which measures <em>worse</em> than the exact-match gate, so there is nothing safe to shrink toward.
+        <b>Grouping uncertainty — the second of the method's two ideas — is therefore not exercised in the shipped
+        configuration</b>, and every λ figure on this page describes the hard-gate path only.</div>
       </div>
     </div>
   </div>
@@ -318,7 +336,7 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
   <div class="sec-head">
     <div class="eyebrow">02b — one training step, end to end</div>
     <h2>The pipeline</h2>
-    <p>What happens in each of the 150 steps of the matched-scale run — rollout on the left rail, then credit assignment
+    <p>What happens in each of the 100 steps of a run — rollout on the left rail, then credit assignment
     forking into the episode-level and step-level estimators that sum into the PPO update.</p>
   </div>
 
@@ -455,12 +473,15 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
           <path d="M140,44 C140,110 190,120 205,132"/><path d="M140,72 C150,110 195,122 205,134"/><path d="M388,100 C380,120 260,128 232,136"/>
         </g>
         <rect x="72" y="136" width="392" height="40" rx="4" fill="var(--accent-soft)" stroke="var(--accent)"/>
-        <text x="84" y="152" font-size="9.2" class="mono">key = (task-uid, sha("You open the cabinet 3…"))</text>
-        <text x="84" y="168" font-size="9.2" class="dim">same task + identical observation text ⇒ same bucket</text>
+        <text x="84" y="152" font-size="9.2" class="mono">key = (task-uid,)&nbsp;&nbsp;— every occurrence in the task</text>
+        <text x="84" y="168" font-size="9.2" class="dim">membership is continuous: w = exp(−d/τ), τ = 0.15·median d</text>
       </svg>
-      <div class="cap">G²PO's node, kept as a <strong>hard gate</strong>: only occurrences with byte-identical observation
-      text within one task's sibling group merge. One changed character (a taken plate) is a different bucket; other
-      tasks never mix.</div></div>
+      <div class="cap"><strong>Revised 2026-09-07 — the gate is now global.</strong> The bucket is the whole task;
+      no identity test is applied and the affinity in figure 3 does the gating. The figure previously showed
+      <span class="m">key = (task-uid, sha(observation))</span> — G²PO's node kept as a hard gate, where one changed
+      character made a different bucket. That is now the <span class="m">τ→0</span> limit rather than the shipped
+      rule. Consequence: <span class="m">live_frac</span> 1.000 instead of ~0.65, since nothing is excluded for want
+      of an exact string match. Other tasks still never mix.</div></div>
 
     <div class="accfig"><div class="plabel">2 · context — the φ fingerprint</div>
       <svg viewBox="0 0 560 190">
