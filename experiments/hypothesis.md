@@ -1195,6 +1195,51 @@ self-corrected to 0.996 within three steps — RL fixed the format unaided.
 
 ## Measurement notes — things that will mislead you
 
+### The evaluation set is NOT fixed — corrected 2026-09-07
+
+Every table and comparison earlier in this file describes validation as "128 fixed
+held-out episodes". **That is wrong.** ALFWorld's TextWorld env
+(`textworld/gym/envs/textworld_batch.py`) does:
+
+```
+rng = np.random.RandomState(seed)          # shuffle the game order
+gamefiles = [next(self._gamefiles_iterator) for _ in range(self.batch_size)]
+```
+
+Each worker shuffles the eval pool with its seed and **iterates**. `reset()`
+advances to the next game, so **every validation evaluates a different draw of 128
+episodes.** There is no held-out set held constant across steps.
+
+**Consequences, and they are large:**
+
+* The ±13-point noise floor measured on `ccpo-global` is not merely temperature-0.4
+  sampling — it is a fresh task draw each time. Step-to-step deltas below ~13
+  points carry no information, and I misread several as signal during that run.
+* Any matched-step comparison between two arms compares *different task sets*.
+  The `ccpo-global` vs `ccpo-hardedge` deltas are noisier than they look.
+* Only endpoint numbers, or means over many evaluations, are worth weighing.
+
+**This is NOT a deviation from the baselines** — it is the reference harness's own
+behaviour, so G²PO/GiGPO/HGPO numbers are produced the same way. It does explain
+why they report a mean over **3 seeds** and we report 1 draw.
+
+### `val_batch_size` 64 vs G²PO's 128 — a real but narrow deviation
+
+`_val_envs` is built once with `env_num = val_batch_size` and each worker is seeded
+`seed + i`, so:
+
+* **G²PO:** 128 workers × 1 game per validation = 128 games from 128 shuffles.
+* **Ours:** 64 workers × 2 games per validation = 128 games from 64 shuffles.
+
+Same pool, same count, different draw structure. Set to 64 because of the cgroup
+pid ceiling (`pids.max=8192`; we run at ~7,750 threads during training), so raising
+it needs testing rather than a config flip. Everything else in the protocol matches:
+split `eval_in_distribution`, 128 episodes, val temperature 0.4, `do_sample=True`,
+`test_freq=5`, 50 env steps, reward 10 / −0.1 invalid.
+
+### Other notes
+
+
 * **`E_w` is not evidence about φ.** `τ_b` is the bucket's *median* distance, so
   `E_w ≈ exp(−1) ≈ 0.37` for essentially any distance distribution. It is
   scale-invariant by construction and absorbs the collapse it was meant to detect.
