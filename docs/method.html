@@ -551,29 +551,42 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
         <summary>⊕ the weighting, worked in full — contexts, distances, weights, baseline</summary>
         <div class="unote-body">
           <p><strong>Step 1 — the contexts.</strong> Each occurrence's φ carries the trajectory scalars
-          <span class="m">{t, n_unique, revisit, progress}</span> (thermometer-coded) beside the shared observation half:</p>
+          <span class="m">{t, n_unique, revisit, progress}</span> (thermometer-coded) beside the observation half —
+          which under the shipped <b>global</b> gate is the whitened reference-policy hidden state, and is
+          <em>no longer shared</em>, because the bucket is the whole task rather than one observation:</p>
           <ul>
             <li><span class="m">u</span> (rollout 2, judged): <span class="m">{t: 4, n_unique: 5, revisit: 0, progress: 1.00}</span> — direct route, plate in reach</li>
             <li>rollout 5 (twin): <span class="m">{t: 4, n_unique: 5, revisit: 0, progress: 1.00}</span></li>
             <li>rollout 7 (wanderer): <span class="m">{t: 19, n_unique: 9, revisit: 1, progress: 0.47}</span> — 6 of 12 thermometer cells differ on t alone, plus the revisit bit and half the progress</li>
           </ul>
-          <p><strong>Step 2 — distances → weights.</strong> Within the bucket the observation half of φ is identical, so
-          distance is pure context. With τ_b = the bucket's median pairwise distance (scale-free):</p>
+          <p><strong>Step 2 — distances → weights.</strong> <span class="rev">revised</span>The worked example below
+          keeps three occurrences that <em>do</em> share an observation, so distance is pure context and the arithmetic
+          stays readable. In the shipped configuration the observation half varies too, and the bandwidth is
+          <b>τ_b = 0.15 × the median pairwise distance</b>, not the bare median — the multiplier is the gate's only
+          tuned quantity:</p>
           <p class="m" style="background:var(--sunk);padding:6px 10px;border-radius:3px">
           d(u, r5) ≈ 0&nbsp;&nbsp;→ w₅ = e⁻⁰ = 1.00<br>
           d(u, r7) ≈ 1.5·τ_b → w₇ = e⁻¹·⁵ ≈ 0.22</p>
-          <p><strong>Step 3 — leave-one-out baseline.</strong> u's own trajectory is excluded; the others' returns
-          (G₅ = 0.8, G₇ = 0.1) combine under the weights:</p>
+          <p><strong>Step 3 — leave-one-out baseline.</strong> u's own trajectory is excluded; the others' targets
+          combine under the weights. <b>The target shown is a return-to-go for legibility; the shipped target is
+          G²PO's successor node value V(next(·))</b>, which changes the numbers but not the arithmetic:</p>
           <p class="m" style="background:var(--sunk);padding:6px 10px;border-radius:3px">
           b_LOO(u) = (1.00·0.8 + 0.22·0.1) / (1.00 + 0.22) = 0.822 / 1.22 = <strong>0.67</strong></p>
-          <p><strong>Step 4 — the advantage</strong> (before λ* blending and per-task normalisation):</p>
+          <p><strong>Step 4 — the advantage</strong> (before per-task normalisation; there is <b>no λ blending in the
+          shipped path</b> — λ is forced to 1, so A<sup>CC</sup> is exactly this quantity, with G²PO's edge term added
+          on afterwards):</p>
           <p class="m" style="background:var(--sunk);padding:6px 10px;border-radius:3px">
           A<sup>CC</sup>(u) = G_u − b_LOO = 0.9 − 0.67 = <strong>+0.23</strong></p>
           <p style="color:var(--ink-2)">Contrast at the same moment — G²PO (uniform, self included):
           (0.9 + 0.8 + 0.1)/3 = 0.60 → +0.30, inflated by the doomed wanderer and by u grading its own work. (This is GiGPO's step advantage, not G²PO's — G²PO would instead compare the <em>node each rollout moved into</em>.)
-          GRPO: no step baseline at all — every step of rollout 2 inherits the episode-level +0.59.
-          If the three contexts had been indistinguishable, λ* would return the estimate to the (no-self) uniform mean
-          0.45 — the conditioning is only spent where it can be cashed.</p>
+          GRPO: no step baseline at all — every step of rollout 2 inherits the episode-level +0.59.</p>
+          <p style="color:var(--ink-2)"><b>Revised 2026-09-07.</b> This paragraph used to end: "If the three contexts
+          had been indistinguishable, λ* would return the estimate to the (no-self) uniform mean 0.45 — the
+          conditioning is only spent where it can be cashed." That fallback <b>does not operate in the shipped
+          configuration</b>: under the global gate λ is forced to 1, because the uniform mean it would fall back to is
+          the whole-task mean, which measures worse than the exact-observation gate. And on the hard-gate path, where
+          the shrinkage does run, it returns <span class="m">λ = 0.011</span> — the conditioning is essentially never
+          cashed, because τ² ≈ 0 says the gap between conditioned and uniform baselines is entirely sampling noise.</p>
         </div>
       </details>
 </div>
@@ -607,10 +620,24 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
       <details class="unote">
         <summary>⊕ where uncertainty lives in the method — click to expand</summary>
         <div class="unote-body">
-          <p><strong>Step 4 — the λ* trust dial</strong> is the method's single, load-bearing uncertainty mechanism:
-          before the context-weighted baseline is used, λ* asks <em>"how uncertain is this conditioned estimate relative
-          to the bias it removes?"</em> and blends accordingly:</p>
-          <p class="m" style="background:var(--sunk);padding:6px 10px;border-radius:3px">λ* = (ρB)² / ( (ρB)² + σ²(1/n_eff − 1/J) )</p>
+          <p style="padding:8px 12px;border-left:3px solid #c8a24a;background:#fbf7ec">
+          <b>Status, 2026-09-07.</b> This dial was designed as the method's second idea, alongside context-conditioned
+          grouping. <b>It is not in the shipped path.</b> Under the global gate λ is forced to 1; on the hard-gate path
+          the rule runs and returns λ = 0.011. Everything below describes the intended mechanism and remains the
+          design; read it as such, not as a description of what produced the 79.7% result.</p>
+          <p><strong>Step 4 — the λ trust dial</strong> was intended as the method's single, load-bearing uncertainty
+          mechanism: before the context-weighted baseline is used, λ asks <em>"how uncertain is this conditioned
+          estimate relative to the bias it removes?"</em> and blends accordingly. <span class="rev">revised</span>The
+          shipped rule is <b>hierarchical empirical Bayes</b>, not the MSE form previously shown here:</p>
+          <p class="m" style="background:var(--sunk);padding:6px 10px;border-radius:3px">
+          τ² = max(0, E[d²] − E[Var(d)]),&nbsp;&nbsp; d = ρ(b_obs − b_LOO)<br>
+          λ_i = τ² / ( τ² + ρ²σ²(1/n_eff − 1/J) )</p>
+          <p style="color:var(--ink-2)">τ² is estimated once over the whole batch — thousands of occurrences — where the
+          statistical power is; the shrinkage is then per occurrence against <em>its own</em> noise. The superseded MSE
+          form <span class="m">(ρB)²/((ρB)² + σ²(1/n_eff − 1/J))</span> is kept behind
+          <span class="m">ACG_CCPO_SHRINK=mse</span> and fails for a specific reason: writing the bias prior B in sd
+          units makes σ² cancel, so it reduces to <span class="m">0.09/(0.09 + var_gain)</span> — a pure function of
+          n_eff and J, i.e. exactly the n_eff rule it was written to replace (measured corr(λ,|d|) = −0.239).</p>
           <p>Each symbol carries one species of uncertainty:</p>
           <ul>
             <li><span class="m">σ²</span> — <strong>outcome uncertainty</strong>: within-bucket variance of the other
@@ -622,14 +649,21 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
             <li><span class="m">ρ</span> — <strong>metric uncertainty</strong>: confidence that φ-distances mean anything.
             An uninformative metric can't deliver the bias reduction, so ρ→0 collapses λ→0 (back to G²PO) no matter how
             the numbers look.</li>
-            <li><span class="m">B</span> — <strong>prior belief about the bias</strong>: the measured false-merge magnitude
-            (0.30 sd) — how wrong the unconditioned baseline is expected to be.</li>
+            <li><span class="m">τ²</span> — <strong>signal variance</strong>: how far the conditioned baseline moves
+            from the uniform one <em>beyond</em> sampling noise, pooled over the batch. This replaces the fixed bias
+            prior B (0.30 sd), which was measured on the retired Qwen3 setup and is no longer used.
+            <b>Measured now: τ² ≈ 0</b> — hence λ = 0.011.</li>
           </ul>
-          <p>So uncertainty isn't modeled as an explicit posterior — it's an <strong>MSE arbitration</strong>: trust
-          conditioning exactly when expected-bias-removed² exceeds variance-added. Two supporting appearances elsewhere:
-          <span class="m">τ_b</span> (bucket-median bandwidth) normalizes distance-scale uncertainty away, and the entropy
-          floor on the probe (§02's <span class="m">H(q) ≥ H_min</span>) guards against distributional collapse of the
-          fingerprint — but those are stabilizers, not the dial.</p>
+          <p>So uncertainty isn't modeled as an explicit posterior — it's an <strong>empirical-Bayes arbitration</strong>:
+          trust conditioning exactly in proportion to how much of the observed disagreement survives its own noise. One
+          supporting appearance elsewhere: <span class="m">τ_b</span> (0.15 × median bandwidth) normalises distance-scale
+          uncertainty away. The entropy floor on the probe (§02's <span class="m">H(q) ≥ H_min</span>) belongs to the
+          successor-feature MVP in <span class="m">ccpo/learned.py</span>, <b>which nothing imports</b> — it is not a
+          stabiliser in the shipped path because that path has no probe.</p>
+          <p style="color:var(--ink-2)"><b>What the measurement says.</b> A controlled ablation — context conditioning
+          fully ON (λ=1, effect_rel 0.119) versus fully OFF (λ=0.011, effect_rel 0.001), with target, edge term, prompt
+          and seed identical — returns a mean difference of <b>−0.01 points</b> over nine evaluations, 95% CI
+          [−2.8, +2.8]. The dial is not merely bypassed; on this benchmark there is nothing for it to arbitrate.</p>
           <p style="color:var(--ink-2)">Project history: richer uncertainty machinery — evidential deep learning for the
           affinity, learned variance heads — was built and considered during the learned-components phase, and dropped
           when the whole learned stack failed to beat the frozen φ. The conclusion (recorded in idea.md): uncertainty
