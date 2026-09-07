@@ -119,7 +119,7 @@ context-conditioned grouping alone.
 Run after `ccpo-global-20260907` reports.
 
 
-### [~] H-M. **Global context-conditioned grouping** — the first CCPO-shaped idea that measures positive
+### [x] H-M. **Global context-conditioned grouping** — RESULT: 79.7%, best of the project — the first CCPO-shaped idea that measures positive
 
 **The idea.** Drop the hard `(task_uid, observation)` gate. Make the whole task one
 bucket and let the φ kernel `exp(−d/τ)` decide the neighbourhood softly. The hard
@@ -197,6 +197,56 @@ restoring G²PO's edge-centric advantage, which we had switched off while trying
 beat G²PO, and which their ablation credits for their margin over GiGPO. It is a
 fix, not a treatment. But if this arm wins, the split between the two is unknown
 without an ablation, and that ablation should be run before any claim is made.
+
+---
+
+## RESULT — `ccpo-global-20260907`, clean exit at step 100, 0 errors
+
+**79.69% held-out**, the run's best and still climbing at the cutoff
+(tail slope +2.19 pts/5 steps over the last six evaluations).
+
+```
+5    10   15   20   25   30   35   40   45   50
+10.2 10.9 17.2 21.1 21.1 30.5 35.9 22.7 41.4 50.0
+55   60   65   70   75   80   85   90   95   100
+35.2 41.4 47.7 63.3 68.0 71.9 75.8 75.0 78.1 79.7
+```
+
+| method (same protocol, 100 iters) | ALFWorld All |
+|---|---|
+| G²PO | 95.0 ± 0.8 |
+| GiGPO | 86.7 ± 1.7 |
+| **CCPO global gate (ours, 1 seed)** | **79.7** |
+| GRPO | 72.8 ± 3.6 |
+| CCPO hard gate (previous arm) | 70.3 |
+| RLOO | 69.7 ± 2.5 |
+| PPO | 54.4 ± 3.1 |
+
+**+9.4 points over the previous arm.** Passes PPO, RLOO and GRPO; short of GiGPO
+and G²PO. Per-type at step 100 is uniform — every category between 73 and 92,
+with no dead category, unlike earlier arms:
+
+```
+pick_and_place 91.7   look_at_obj 80.0   pick_heat 78.6
+pick_clean 76.0       pick_two_obj 75.0  pick_cool 73.2
+```
+
+**The mechanism ran, and that is the headline for the method rather than the
+number.** `effect_rel` averaged **0.119** against *exactly 0.0000* in every prior
+arm; `live_frac` 1.000 (nothing dead, against ~0.65 usable under the hard gate);
+`edge_cov` 1.000. CCPO's estimator was doing something other than reproducing the
+uniform bucket baseline for the first time.
+
+**What this does NOT establish.** The four-way confound stands: gate, `edge_w`,
+λ and memory all differ from the previous arm. **The +9.4 cannot be attributed to
+the global gate.** `edge_w=1.0` restored G²PO's edge-centric advantage, which their
+own ablation credits for their margin over GiGPO, and that alone could account for
+most or all of the gain. A hard-gate arm at `edge_w=1.0` is required before any
+gate claim is made, and it is now the highest-value next experiment.
+
+Also: one seed against the baselines' three, and `phi_rel_corr` stayed at 0.011 —
+φ still barely predicts return-similarity, so whatever the global gate bought, it
+was not by making φ informative.
 
 **Target to beat** (G²PO Table 1, Qwen2.5-1.5B, ALFWorld, *identical* protocol,
 100 iterations, 3 seeds): G²PO **95.0 ± 0.8**, GiGPO 86.7 ± 1.7, GRPO 72.8 ± 3.6,
