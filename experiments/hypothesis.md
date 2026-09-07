@@ -59,7 +59,7 @@ before the action exists.
 
 ## Open — ranked by expected value
 
-### [~] H-I. Will 100 steps actually close the gap? — prediction on record, 2026-09-06
+### [x] H-I. Will 100 steps actually close the gap? — RESOLVED: yes, mostly — prediction on record, 2026-09-06
 
 Stated **before** `ccpo-long-20260906` reports, so it cannot be rewritten after.
 
@@ -97,10 +97,15 @@ it triggers on *plateau*, not on being behind schedule, so this is a manual call
 
 **Tracking — `ccpo-long-20260906`, held-out (128 fixed episodes):**
 
-| step | 5 | 10 | 15 | 20 | 25 | 30 | 35 | 40 | 45 | 50 | 55 | 60 | 65 |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| success | .0625 | .0781 | .1250 | .1719 | .2422 | .2500 | .3047 | .3438 | .2891 | .4219 | .4141 | .4141 | **.5703** |
-| partial | .226 | .386 | .454 | .803 | 1.043 | 1.278 | 1.475 | 1.821 | 1.391 | 2.371 | 2.152 | 2.038 | **3.178** |
+| step | 5 | 10 | 15 | 20 | 25 | 30 | 35 | 40 | 45 | 50 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| success | .0625 | .0781 | .1250 | .1719 | .2422 | .2500 | .3047 | .3438 | .2891 | .4219 |
+| partial | .226 | .386 | .454 | .803 | 1.043 | 1.278 | 1.475 | 1.821 | 1.391 | 2.371 |
+
+| step | 55 | 60 | 65 | 70 | 75 | 80 | 85 | 90 | 95 | **100** |
+|---|---|---|---|---|---|---|---|---|---|---|
+| success | .4141 | .4141 | .5703 | .6406 | .5938 | .6172 | .6406 | .6172 | .6719 | **.7031** |
+| partial | 2.152 | 2.038 | 3.178 | 3.477 | 2.900 | 3.321 | 3.312 | 3.048 | 3.076 | **3.752** |
 
 (Steps 5–20 are `ccpo-mem`; 25+ are the warm-started continuation. Same config, same
 constant LR, so the series is one curve.)
@@ -163,6 +168,57 @@ than a plateau.
 > 2.038) and I weighted that as corroborating evidence because it is the less noisy
 > indicator. It then jumped to 3.178. Being less noisy than a noisy thing does not
 > make it a reliable leading indicator over three points.
+
+---
+
+## RESOLVED at step 100: **0.7031** held-out. Run complete, clean exit, 0 errors.
+
+**The prediction was 0.45–0.70. The answer was 0.7031** — at the top edge, a hair
+outside. The band was slightly conservative, as flagged at step 40, and it was not
+revised mid-run.
+
+| | held-out success |
+|---|---|
+| CCPO @ step 20 (previous arm) | 17.2 |
+| **CCPO @ step 100 (this run)** | **70.3** |
+| GRPO (published) | 72.8 |
+| GiGPO K=2 (published) | 90.16 |
+| HGPO K=2 (published) | 92.77 |
+
+Per-type at step 100 — every type well above zero, including all four
+compositional ones that sat at 0.000 through step 20:
+
+```
+pick_heat_then_place_in_recep   0.792     pick_clean_then_place_in_recep  0.731
+pick_and_place                  0.789     pick_two_obj_and_place          0.600
+pick_cool_then_place_in_recep   0.756     look_at_obj_in_light            0.292
+```
+
+**H-F is settled conclusively: the harness was never broken, only under-trained.**
+5x the training turned 17.2 into 70.3.
+
+**The curve had not saturated at the cutoff.** Linear fit over the last six
+evaluations: **+0.0196 per 5 steps, r = +0.909**. Extending is worth real points.
+
+### What this cost me in credibility, recorded so it is not repeated
+
+I called a plateau or leaned toward one **four times** on this curve — steps 30,
+45, 55–60, and 85–90 — and was wrong every time. The step-90 call was the worst:
+I stated "the curve has converged around 0.62" and *reversed a compute
+recommendation* on it. The next three evaluations were .6172 → .6719 → .7031, the
+three highest of the run.
+
+The mistake was not impatience, and "wait 20 steps instead of 15" was the wrong
+fix — it was a tighter version of the same error. The real problem: **at n=128 the
+binomial SE is ~0.042, and the tail's true slope is ~0.02 per 5 steps.** The signal
+is half the noise. Six consecutive evaluations cannot distinguish a flat curve from
+this one, so *no* reading of this series could have supported a saturation call.
+The instrument could not answer the question I kept asking it.
+
+**Rule for future arms:** never call saturation from the 128-episode series alone.
+Either widen the evaluation (n=512 → SE 0.021) or judge from the training-draw
+trend, which was climbing steadily (0.63 → 0.85) throughout the window I called
+converged and was the correct signal all along.
 
 **One caution against reading the increments too finely:** at p≈0.3 with n=128 the
 binomial SE is 0.040, so any single step-to-step move under ~0.08 is inside noise.
