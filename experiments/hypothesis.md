@@ -59,6 +59,82 @@ before the action exists.
 
 ## Open — ranked by expected value
 
+### [!] H-J. Progress banding the gate — PROPOSED AND REFUTED THE SAME NIGHT
+
+**Experiment** `gate-probe-20260907` (2 steps warm-started from `ccpo-long`
+step 100, no val, no checkpoints; 6,912 occurrences with full observation text
+dumped via the new `ACG_CCPO_GDUMP`). Analysis: `scripts/analyse_gate.py`.
+
+**The claim I made:** bucketing on `(task, obs, progress_band)` instead of
+`(task, obs)` fixes the baselines' time-blindness, and since it changes bucket
+*membership* rather than the baseline within a bucket, it escapes H-H's 6.1% cap.
+
+**First measurement (ICC) appeared to confirm it, and was the wrong metric.**
+Bias-corrected ICC rose 0.023 → 0.103, which I read as "4.5x more exploitable
+signal". ICC measures the *share* of within-bucket variance that is
+between-trajectory. It says nothing about whether the estimator can exploit that
+share, because it ignores the noise in estimating the baseline from a smaller
+bucket.
+
+**Correct measurement — variance the LOO baseline actually explains:**
+
+| gate | dead | R² (return-to-go) | R² (nextnode) |
+|---|---|---|---|
+| `(task, obs)` — GiGPO / G²PO | 0.073 | **0.4673** | 0.7458 |
+| `+ progress band` | 0.141 | 0.4398 (−0.028) | 0.7125 (−0.033) |
+| visited-set signature | 0.947 | 0.5263 | 0.7658 |
+| task only, no obs gate | 0.000 | 0.4248 | 0.7512 |
+
+Banding **loses under both targets.** Bucket occupancy falls 5.11 → 3.66
+trajectories and dead weight nearly doubles; the noisier baseline more than eats
+the ICC gain. **Refuted.**
+
+**Lesson: ICC is not a sufficient criterion for a gate change.** It is a
+signal-share statistic; the decision needs a signal-to-noise statistic. Use the
+LOO residual R² from `analyse_gate.py`, which prices both the sharper bucket and
+the smaller sample. The same error killed the visited-set proposal an hour
+earlier from the opposite direction (great ICC, 95% dead).
+
+---
+
+### [ ] H-K. **The nextnode target hollows out the anchor gate** — the real finding
+
+Same dump. Read the two R² columns above *against each other*:
+
+* under **return-to-go** (GiGPO's target), the anchor gate beats no-gate by
+  **+0.043** — GiGPO's grouping is doing real work;
+* under **nextnode** (G²PO's successor value, which *we* run), the anchor gate is
+  worth **−0.005** — ignoring the observation entirely does slightly *better*.
+
+The successor value already encodes where the trajectory ended up, so gating on
+where it started is close to redundant. **We adopted these two components
+separately and never tested them together, and the combination appears to cancel.**
+
+This is a live candidate for part of the 70.3 vs 90.16 gap: our configuration may
+have quietly neutralised the one component that gives GiGPO its edge over GRPO.
+
+**Cheap test, no new training:** `analyse_gate.py` already scores it offline. The
+decisive on-policy test is one arm with `ACG_CCPO_TARGET=return` and everything
+else fixed. But it should be ranked behind the GiGPO baseline, which is now more
+informative than it looked: this analysis produced a concrete mechanism by which
+our own config could cost points against the published number.
+
+---
+
+### [ ] H-L. Relaxed visited-set gate
+
+The visited-set signature has the best R² under both targets (+0.059 under
+return-to-go) but 94.7% dead, so nearly all of that comes from the task-mean
+fallback rather than from the gate. What it actually shows is that **the 5.3% it
+serves, it serves well** — precise state identity works, it just has no support in
+a 128-trajectory batch.
+
+Worth testing: coarsen it until support appears — `state_signature()`'s
+order-invariant successful-action set, or a backoff that falls to `(task, obs)`
+when a visited-set bucket has fewer than 2 trajectories. That keeps the precision
+where it is affordable and the baselines' gate everywhere else.
+
+
 ### [x] H-I. Will 100 steps actually close the gap? — RESOLVED: yes, mostly — prediction on record, 2026-09-06
 
 Stated **before** `ccpo-long-20260906` reports, so it cannot be rewritten after.

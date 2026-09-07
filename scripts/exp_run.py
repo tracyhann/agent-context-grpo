@@ -127,6 +127,9 @@ DEFAULTS = {
     # the checkpoint or the warm start is not a continuation of anything.
     "resume_from": "",
 
+    # Dump raw grouping inputs for offline gate analysis (large; diagnostic arms only).
+    "gdump": False,
+
     # environment
     # Ray must not size itself from nproc. This box reports 256 CPUs but the
     # cgroup allows only 8192 pids, and Ray prestarts one python worker per CPU;
@@ -365,6 +368,11 @@ def build_env(cfg, exp_dir):
         "ACG_EXP_DIR": exp_dir,
         "ACG_METRICS_JSONL": os.path.join(exp_dir, "outputs", "metrics.jsonl"),
         "ACG_CCPO_DUMP": os.path.join(exp_dir, "outputs", "ccpo_samples.csv"),
+        # Raw gate inputs (full observation text) for offline re-bucketing. Off by
+        # default: ~100x the per-step volume of the CSV. Set gdump=True for a short
+        # diagnostic arm whose only purpose is to characterise the grouping.
+        **({"ACG_CCPO_GDUMP": os.path.join(exp_dir, "outputs", "grouping.jsonl")}
+           if cfg.get("gdump") else {}),
     }
     for k, e in ENV_KEYS.items():
         env[e] = str(cfg[k])

@@ -728,6 +728,32 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
     _r_gigpo = _corr(adv[_live], ADV_GIGPO[_live])
     _r_g2po = float("nan") if ADV_G2PO is None else _corr(adv[_live], ADV_G2PO[_live])
 
+    # ---- grouping dump: the RAW inputs to the gate, for offline re-bucketing ---
+    # Separate from the CSV above so that schema stays stable. Written only when
+    # ACG_CCPO_GDUMP is set, because it carries full observation text and is
+    # ~100x larger per step. This is what lets an alternative gate be evaluated
+    # without spending a training run on it.
+    _gdump = os.environ.get("ACG_CCPO_GDUMP")
+    if _gdump:
+        try:
+            import json as _json
+            with open(_gdump, "a") as _fh:
+                for i in range(n):
+                    _fh.write(_json.dumps({
+                        "step": str(step_tag),
+                        "uid": str(index[i]),
+                        "traj_uid": str(traj_index[i]),
+                        "t": ctx[i]["t"],
+                        "n_unique": ctx[i]["n_unique"],
+                        "revisit": ctx[i]["revisit"],
+                        "progress": ctx[i]["progress"],
+                        "obs": str(anchor_obs[i]),
+                        "G": float(G[i]),
+                        "target": float(TGT[i]),
+                    }) + "\n")
+        except OSError:
+            pass
+
     if _rows:
         try:
             _new = not os.path.exists(_dump)
