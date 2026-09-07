@@ -59,6 +59,53 @@ before the action exists.
 
 ## Open — ranked by expected value
 
+### [~] H-P. **The `ccpo-hardedge` ablation is not gate-vs-gate — it is CCPO ON vs OFF**
+
+I launched `ccpo-hardedge-20260907` calling it "hard gate vs global gate, edge term
+held fixed". That label is wrong, and the truth makes it a *better* experiment.
+
+Under the hard gate the empirical-Bayes shrinkage collapses, as it has in every arm
+of this project:
+
+| | λ | `effect_rel` | λ>0.5 | `r_vs_g2po` |
+|---|---|---|---|---|
+| hard gate | **0.0106** | **0.0014** | 1.0% | 0.9090 |
+| global gate | 1.0000 | 0.1185 | 100% | 0.8909 |
+
+λ = 0.011 puts **98.9% of the weight on `b_obs`**, the plain uniform bucket mean.
+φ, the affinity weights and the whole context-conditioning apparatus contribute
+~1%, and the credit departs from the uniform baseline by **0.14%**. That arm is
+therefore *not* CCPO: it is **GiGPO's grouping + G²PO's node-value target + G²PO's
+edge term, with context conditioning switched off**, which is why it sits closer to
+G²PO (0.909) than the global arm does.
+
+**So the comparison actually running is:**
+
+> context conditioning fully ON (λ=1, `effect_rel` 0.119)
+> vs fully OFF (λ=0.01, `effect_rel` 0.001),
+> with target, edge term, prompt, seed and every other knob identical.
+
+That is the **cleanest test of CCPO's central thesis this project has run** — every
+earlier attempt was confounded, and the two 20-step arms never separated the
+estimator from the harness.
+
+**Result at step 40 of 100:** mean delta **+0.87 pts**, 95% CI containing zero over
+eight evaluations, sign flipping four times.
+
+**If this holds to step 100** the conclusion is stated plainly: *CCPO's context
+conditioning is inert on ALFWorld even when the machinery is made to work.* H-M
+fixed the inertness as a mechanism (`effect_rel` 0.000 → 0.119) and bought nothing
+in policy performance. The project's real results would then be:
+
+1. the **negative result** — context-conditioned grouping does not help on this
+   benchmark, established across φ variants (H-1), targets, shrinkage rules,
+   a measured 6.1% ceiling (H-H), and now a clean ON/OFF ablation;
+2. the **79.7%** number, which came from restoring G²PO's edge term, not from CCPO.
+
+Hold the conclusion until step 100 — the global arm's gains appeared late in its
+curve (63.3 → 79.7 between steps 70 and 100), so the informative region is ahead.
+
+
 ### [!] H-O. **The estimator is NOT why we underperform** — three suspects tested, all cleared
 
 Prompted by "why are we still underperforming": 79.7 (ours) vs 95.0 (G²PO) at an
