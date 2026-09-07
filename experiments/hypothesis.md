@@ -1242,6 +1242,50 @@ self-corrected to 0.996 within three steps — RL fixed the format unaided.
 
 ## Measurement notes — things that will mislead you
 
+### The three baseline papers use THREE DIFFERENT training budgets — corrected 2026-09-07
+
+| paper | ALFWorld budget | headline (Qwen2.5-1.5B) | source |
+|---|---|---|---|
+| **G²PO** | **100 iterations** | G²PO 95.0 | "each for 100 iterations" |
+| **GiGPO** | **150 iterations** | GiGPO 86.7 | "each for 150 iterations" |
+| **HGPO** | **160 iterations** | HGPO 92.77, GiGPO 90.16 | "160 training iterations" |
+
+**Consequence: our 100-iteration runs are a matched comparison to G²PO ONLY.**
+Every table in this file that placed our number beside GiGPO's 86.7 or HGPO's
+90.16/92.77 was comparing across a 50-60 iteration deficit. Those rows are *not*
+matched-budget and must be labelled as such.
+
+Note also that **G²PO compared their own 100-iteration result against GiGPO's
+150-iteration numbers** (their Table 1 baseline rows are byte-identical to GiGPO's
+Table 1, standard deviations included) and still reported a win. Their 95.0 is
+therefore a genuinely hard, conservatively-established bar.
+
+### Retraction: GiGPO's ALFWorld hyperparameters are identical to ours
+
+Earlier today, asked why we underperform, I claimed GiGPO's paper used
+`train_data_size=256`, `group_size=5` and validation temperature 0.0, and offered
+that as a candidate source of the gap. **That was a misreading** — those are the
+*Search-Augmented QA* hyperparameters. GiGPO's ALFWorld section specifies:
+
+> group size 8, 16×8 = 128 environments, rollout temperature 1.0, validation
+> temperature 0.4, mini-batch 256, KL coefficient 0.01, γ 0.95, prompt 2048,
+> response 512, 50 environment steps, lr 1e-6, reward 10 / −0.1 invalid
+
+Every one of those matches our configuration. There is no hyperparameter deviation
+from GiGPO, and that line of suspicion was mine, not the data's.
+
+### Neither G²PO nor GiGPO labels the evaluation split
+
+Zero occurrences of "unseen", "in-distribution", "out-of-distribution",
+`valid_seen` or `valid_unseen` in either paper. The split is settled only by code:
+`eval_dataset` defaults to `eval_in_distribution` in both repos and neither ALFWorld
+script overrides it. The In-Success/Out-Success split comes from **HGPO**, a
+separate re-implementation — which is why HGPO reports GiGPO at 90.16 where GiGPO's
+own paper reports 86.7.
+
+### Other notes
+
+
 ### The evaluation set is NOT fixed — corrected 2026-09-07
 
 Every table and comparison earlier in this file describes validation as "128 fixed
