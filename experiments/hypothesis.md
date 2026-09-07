@@ -59,6 +59,46 @@ before the action exists.
 
 ## Open — ranked by expected value
 
+### [!] H-Q. Hard gate **with** context conditioning (λ=1) — the missing cell, REFUTED offline
+
+The two arms confound gate with λ: `ccpo-global` is global gate + λ=1 (conditioning
+ON), `ccpo-hardedge` is hard gate + λ=0.011 (conditioning OFF). **Never run: hard
+gate with λ forced to 1** — φ-weighting *inside* GiGPO's own bucket. That is
+arguably the truest test of the original thesis, since it keeps the baselines'
+grouping and changes only how members are weighted.
+
+**Measured offline** on `gate-probe-20260907`, LOO residual R² within exact-obs
+buckets:
+
+| | return-to-go | nextnode |
+|---|---|---|
+| uniform LOO (λ=0, what `ccpo-hardedge` runs) | **0.4579** | **0.7434** |
+| φ-weighted, τ=0.10 | 0.3589 (−0.099) | 0.6736 (−0.070) |
+| φ-weighted, τ=0.15 | 0.3955 (−0.063) | 0.6976 (−0.046) |
+| φ-weighted, τ=0.25 | 0.4381 (−0.020) | 0.7228 (−0.021) |
+| φ-weighted, τ=0.50 | 0.4653 (+0.007) | 0.7394 (−0.004) |
+| φ-weighted, τ=1.00 | 0.4673 (+0.009) | 0.7434 (−0.000) |
+
+**φ-weighting inside a bucket is worse than uniform at every useful τ**, and the
+curve is monotone toward the uniform baseline — it reaches parity only where τ is
+large enough that `exp(−d/τ) ≈ 1` for everyone, i.e. **the best weighting is no
+weighting**. Under `nextnode` it never exceeds uniform at all.
+
+**This vindicates the shrinkage.** λ = 0.011 is not the estimator missing a signal:
+conditioning inside an exact-observation bucket *actively destroys* information, and
+empirical Bayes correctly refuses to pay for it. Every earlier entry in this file
+that treated λ→0 as a symptom to be fixed (H-2, H-3, and the `eb_pooled`/`eb_hier`
+work) was chasing a component that was behaving correctly.
+
+**It also isolates what the global gate actually does.** There, φ is not re-weighting
+a set that was already well chosen — it is *choosing* the set. **Membership and
+weighting are different jobs, and φ is only competent at the first.** That is the
+sharpest statement of what survives from the context-conditioning idea.
+
+**Decision: do not run this arm.** Offline says it would land 2–10 R² points below
+the arm already paused. The probe cost ~1 minute of CPU against ~11 GPU-hours.
+
+
 ### [~] H-P. **The `ccpo-hardedge` ablation is not gate-vs-gate — it is CCPO ON vs OFF**
 
 I launched `ccpo-hardedge-20260907` calling it "hard gate vs global gate, edge term
