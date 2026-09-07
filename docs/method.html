@@ -367,16 +367,19 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
   <div class="pipe">
     <div class="pstep"><div class="pnum"><div class="n">1</div><div class="stem"></div></div>
       <div class="pbox"><h4>Sample tasks &amp; replicate into groups</h4>
-      <p>Draw <span class="m">18</span> ALFWorld games from the official train split; replicate each
-      <span class="m">×8</span> (same game, same start) → <span class="m">144</span> concurrent episodes.
+      <p>Draw <span class="m">16</span> ALFWorld games from the official train split; replicate each
+      <span class="m">×8</span> (same game, same start) → <span class="m">128</span> concurrent episodes.
       The 8 siblings of a task are the comparison group — no critic anywhere.</p></div></div>
 
     <div class="pstep"><div class="pnum"><div class="n">2</div><div class="stem"></div></div>
       <div class="pbox"><h4>Multi-turn rollout (≤50 turns each)</h4>
       <p>Per turn: prompt = task + last-2 history + observation + admissible actions → policy generates
-      ≤<span class="m">768</span> tokens of <span class="m">&lt;think&gt;…&lt;/think&gt;&lt;action&gt;…&lt;/action&gt;</span>
+      ≤<span class="m">512</span> tokens of <span class="m">&lt;think&gt;…&lt;/think&gt;&lt;action&gt;…&lt;/action&gt;</span>
       (the CoT itself is trained) → parser extracts the action → env returns reward (success 10 / invalid −0.1).
-      Generation runs on the FSDP training model itself (HF path — vLLM was retired for this stack after the sm_120 forensics; see the fix ledger in RESULTS_0827). Sampling per the Qwen3 model card: temp 1.0, top-p 0.95, top-k 20 (val: 0.7/0.8/20).</p></div></div>
+      Generation runs on <span class="m">vLLM 0.11.0</span> with <span class="m">VLLM_ATTENTION_BACKEND=TRITON_ATTN</span>
+      (Blackwell sm_120); the trainer uses flash-attn 2.8.3 with <span class="m">use_remove_padding=True</span>.
+      Sampling matches the reference: rollout temp 1.0, top-p 1.0, top-k unrestricted; validation temp 0.4 with
+      <span class="m">do_sample=True</span>. Measured 190 s of the 406 s step.</p></div></div>
 
     <div class="pstep"><div class="pnum"><div class="n">3</div><div class="stem"></div></div>
       <div class="pbox"><h4>Flatten to occurrences</h4>
@@ -394,16 +397,22 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
           the GRPO baseline arm.</p></div>
         <div class="pbox ours"><div class="plabel">step level — ours (ccpo)</div>
           <h4>A<sup>CC</sup>: context-conditioned step credit</h4>
-          <p><strong>Gate:</strong> occurrences with the same (task, observation text) share a bucket — G²PO's node.<br>
-          <strong>Context:</strong> φ = frozen projection of obs-bag ‖ thermometer-coded
+          <p><strong>Gate:</strong> <em>global</em> — the whole task is one bucket; no identity test.
+          G²PO's node is the <span class="m">τ→0</span> limit.<br>
+          <strong>Target:</strong> G²PO's successor node value <span class="m">V(next(u))</span>, pooled over every
+          sibling that visited that successor — not the return-to-go.<br>
+          <strong>Context:</strong> φ = whitened reference-policy hidden state ‖ thermometer-coded
           <span class="m">{t, n_unique, revisit, progress}</span>.<br>
           <strong>Baseline:</strong> leave-one-out over <em>other</em> trajectories, weighted
-          <span class="m">exp(−d(φ)/τ_b)</span>, τ_b = bucket median.<br>
-          <strong>Trust:</strong> λ* = (ρB)²⁄((ρB)² + σ²(1/n_eff − 1/J)) shrinks toward the uniform bucket mean when
-          contexts can't be told apart.</p>
+          <span class="m">exp(−d(φ)/τ_b)</span>, τ_b = 0.15 × median, aggregated per trajectory before across.<br>
+          <strong>Edge:</strong> G²PO's <span class="m">V(next) − V(current)</span>, standardised per task, added on.<br>
+          <strong>Trust:</strong> <span class="m">λ = 1</span> — bypassed under the global gate, since
+          <span class="m">b_obs</span> there is the uniform task mean and measures worse than the exact gate.</p>
           <div class="pex">Same screen, different history: at <em>"You open the microwave 1…"</em>, the rollout that
           arrived at t=5 carrying the apple is not judged by the one that wandered in at t=23 empty-handed — its weight
-          decays with context distance.</div></div>
+          decays with context distance. <b>Measured outcome:</b> the mechanism runs
+          (<span class="m">effect_rel</span> 0.119 against exactly 0.000 before), and an ON/OFF ablation puts its
+          contribution at <b>−0.01 points</b> over nine evaluations.</div></div>
       </div></div></div>
 
     <div class="pstep"><div class="pnum"><div class="n">5</div><div class="stem"></div></div>
@@ -486,8 +495,8 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
     <div class="accfig"><div class="plabel">2 · context — the φ fingerprint</div>
       <svg viewBox="0 0 560 190">
         <rect x="8" y="14" width="180" height="34" rx="3" fill="var(--sunk)" stroke="var(--rule)"/>
-        <text x="16" y="28" font-size="10">obs text → hashed bag(4096)</text>
-        <text x="16" y="42" font-size="10" class="dim">→ frozen random P → 64-d</text>
+        <text x="16" y="28" font-size="10">ref-policy hidden state (1536-d)</text>
+        <text x="16" y="42" font-size="10" class="dim">→ whitened, top-3 dirs removed</text>
         <text x="196" y="36" font-size="13" class="mono dim">‖</text>
         <text x="206" y="24" font-size="9.5" class="mono">thermometer-coded context scalars</text>
         <g transform="translate(212,32)">
@@ -506,13 +515,16 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
           <text x="158" y="46" font-size="9.5" class="mono">→ 8 cells on</text>
         </g>
         <rect x="8" y="128" width="424" height="30" rx="3" fill="var(--accent-soft)" stroke="var(--accent)"/>
-        <text x="16" y="147" font-size="9.5" class="mono">φ = norm([ P·bag(obs) ‖ thermo(t, n_uniq, prog) ‖ revisit ])</text>
+        <text x="16" y="147" font-size="9.5" class="mono">φ = norm([ whiten(h_last-prompt-tok) ‖ thermo(t, n_uniq, prog) ‖ revisit ])</text>
         <text x="8" y="178" font-size="10" class="dim">frozen, seeded, never trained — nothing about the grouping can co-adapt with the policy (R1)</text>
       </svg>
       <div class="cap"><strong>Thermometer coding</strong> makes φ-distance monotone in context difference: t=4 vs t=19
       differ in 6 of 12 cells, t=4 vs t=5 in ≤1 — unlike hashed tags, where step 1 vs 28 looked no farther apart than
-      15 vs 16 (measured corr −0.187 → +0.92 after the fix). Inside a bucket the obs half is constant, so distances
-      come purely from context.</div></div>
+      15 vs 16 (measured corr −0.187 → +0.92 after the fix). <b>Revised 2026-09-07:</b> the observation half is now
+      the reference policy's <em>whitened hidden state</em> (<span class="m">ACG_CCPO_PHI=hidden+ctx</span>), not a
+      hashed bag — the bag remains as a fallback. And under the global gate the bucket is the whole task, so the
+      observation half is <em>no longer constant within a bucket</em>: distances now come from both halves. Measured
+      grouping relevance stays low either way — <span class="m">phi_rel_corr</span> 0.011 over 100 steps.</div></div>
 
     <div class="accfig"><div class="plabel">3 · baseline — weighted leave-one-out</div>
       <svg viewBox="0 0 560 190">
@@ -530,7 +542,7 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
         <text x="218" y="174" font-size="10" class="dim">u's own trajectory: excluded (leave-one-out)</text></g>
         <rect x="8" y="8" width="300" height="24" rx="3" fill="var(--sunk)"/>
         <text x="16" y="24" font-size="10" class="mono">b_LOO = Σ w·G / Σ w,   w = exp(−d(φ)/τ_b)</text>
-        <text x="8" y="52" font-size="10" class="dim">τ_b = bucket median distance (scale-free)</text>
+        <text x="8" y="52" font-size="10" class="dim">τ_b = 0.15 × median distance (scale-free)</text>
       </svg>
       <div class="cap">u's counterfactual "what do trajectories like mine earn from here" is dominated by its context
       twin and barely dented by the lost wanderer — and u's own outcome never judges its own action (the leakage in
@@ -570,20 +582,28 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
       <svg viewBox="0 0 560 190">
         <line x1="60" y1="70" x2="380" y2="70" stroke="var(--rule-2)" stroke-width="6" stroke-linecap="round"/>
         <circle cx="290" cy="70" r="11" fill="var(--accent)"/>
-        <text x="278" y="52" font-size="10.5" class="mono">λ* = 0.72</text>
+        <text x="272" y="52" font-size="10.5" class="mono">λ = 1 (forced)</text>
         <text x="60" y="100" font-size="10.5">uniform bucket mean</text>
         <text x="60" y="114" font-size="10" class="dim">= G²PO's node value (λ→0)</text>
         <text x="268" y="100" font-size="10.5">context-weighted LOO</text>
         <text x="268" y="114" font-size="10" class="dim">full conditioning (λ→1)</text>
         <rect x="8" y="130" width="424" height="26" rx="3" fill="var(--sunk)"/>
-        <text x="16" y="147" font-size="10.5" class="mono">λ* = (ρB)² / ( (ρB)² + σ²(1/n_eff − 1/J) )</text>
+        <text x="16" y="147" font-size="10.5" class="mono">λ_i = τ² / ( τ² + ρ²σ²(1/n_eff − 1/J) )&nbsp;&nbsp;[hard gate only]</text>
         <text x="8" y="176" font-size="9" class="dim">B = bias prior (0.30 sd, measured) · ρ = metric confidence · n_eff / J = effective / total neighbors</text>
         <text x="30" y="16" font-size="9.5" class="dim">contexts indistinguishable, or all-identical returns → λ→0: gracefully G²PO</text>
         <text x="30" y="30" font-size="9.5" class="dim">clear contrast + enough close neighbors → λ→1: trust the conditioning</text>
       </svg>
-      <div class="cap">A bias–variance arbiter, not a hyperparameter: conditioning is trusted exactly in proportion to
-      the bias it can remove (ρB) versus the variance it costs (fewer effective neighbors). Empirically λ ≈ 0.9 in the
-      matched-scale run's dense buckets and ≈ 0.05 on sparse small-scale ALFWorld — the same formula, both behaviors.</div>
+      <div class="cap"><b>Revised 2026-09-07 — this dial is not in the shipped path.</b> Two changes. The MSE form
+      <span class="m">(ρB)²/((ρB)²+σ²(1/n_eff−1/J))</span> is superseded by hierarchical empirical Bayes, where τ² is
+      estimated once over the whole batch; the MSE rule reduces to the <span class="m">n_eff</span> rule it was written
+      to replace, because σ² cancels when B is written in sd units. And under the shipped <b>global</b> gate
+      <span class="m">λ is forced to 1</span>, because <span class="m">b_obs</span> there degenerates to the uniform
+      task mean, which measures worse than the exact-match gate.
+      <b>Measured, not the ≈0.9 / ≈0.05 claimed previously:</b> under the hard gate the empirical-Bayes rule returns
+      <span class="m">λ = 0.011</span> — τ² ≈ 0, i.e. the whole gap between the conditioned and uniform baselines is
+      explained by sampling noise. That is the estimator working correctly and reporting that φ carries no signal.
+      <b>Grouping uncertainty is therefore currently decorative</b>: computed and logged every step, connected to
+      nothing.</div>
       <details class="unote">
         <summary>⊕ where uncertainty lives in the method — click to expand</summary>
         <div class="unote-body">
