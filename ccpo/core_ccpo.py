@@ -292,6 +292,34 @@ def are_similar(a, b, threshold=0.95):
     return sm.ratio() >= threshold
 
 
+def visited_signatures(anchor_obs, traj_index):
+    """Per-occurrence hash of the SET of distinct observations the trajectory has
+    seen up to and including this step.
+
+    In a deterministic environment entered from a fixed start, the set of states
+    visited so far is a sufficient statistic for the current state -- the node
+    identity GiGPO and G2PO lack, since they key on the current observation alone.
+    Order-invariant on purpose: it keeps buckets populated rather than shattering
+    them by path.
+
+    Measured on gate-probe-20260907 this gate has the best LOO residual R2 under
+    both targets (+0.059 on return-to-go) but leaves 94.7% of occurrences with no
+    second trajectory to compare against -- precise state identity simply has no
+    support in a 128-trajectory batch. It is therefore only usable WITH the
+    observation gate as a backoff level, which is what ACG_CCPO_GATE=sig does.
+    """
+    order = defaultdict(list)
+    for i, tj in enumerate(traj_index):
+        order[str(tj)].append(i)
+    sig = [None] * len(anchor_obs)
+    for _tj, idxs in order.items():
+        seen = set()
+        for i in idxs:
+            seen.add(str(anchor_obs[i]))
+            sig[i] = hashlib.sha1("|".join(sorted(seen)).encode()).hexdigest()[:12]
+    return sig
+
+
 def cluster_keys(anchor_obs, index, sim_thresh=0.0):
     """Bucket key per occurrence: (task, observation) or (task, cluster).
 
@@ -528,10 +556,25 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
         if VAL is not None else None
 
     # ---- gate levels --------------------------------------------------------
-    levels = [(0, cluster_keys(anchor_obs, index, sim), rho)]
-    if sim_backoff > 0.0:
-        levels.append((1, cluster_keys(anchor_obs, index, sim_backoff),
-                       rho * _BACKOFF_RHO))
+    if _GATE == "sig":
+        # Level 0: (task, visited-set signature) -- precise state identity.
+        # Level 1: (task, observation) -- the baselines' gate, as a backoff for the
+        # ~95% of occurrences level 0 cannot serve. The multi-level machinery below
+        # already credits each occurrence at the FINEST level that can serve it, so
+        # this keeps the precision where it is affordable and the standard gate
+        # everywhere else. rho is reduced at level 1 exactly as for the similarity
+        # backoff, because a coarser match deserves less metric confidence.
+        _sig = visited_signatures(anchor_obs, traj_index)
+        _k0 = np.empty(n, dtype=object)
+        for _i in range(n):
+            _k0[_i] = (str(index[_i]), _sig[_i])
+        levels = [(0, _k0, rho),
+                  (1, cluster_keys(anchor_obs, index, 0.0), rho * _BACKOFF_RHO)]
+    else:
+        levels = [(0, cluster_keys(anchor_obs, index, sim), rho)]
+        if sim_backoff > 0.0:
+            levels.append((1, cluster_keys(anchor_obs, index, sim_backoff),
+                           rho * _BACKOFF_RHO))
 
     assigned = np.zeros(n, dtype=bool)
     level_of = np.full(n, -1, dtype=np.int64)

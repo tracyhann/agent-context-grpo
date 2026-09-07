@@ -220,10 +220,10 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
       </div>
     </div>
     <div class="mast-meta">
-      <span>ALFWorld · WebShop · ScienceWorld</span>
-      <span>Qwen3-1.7B/8B · Qwen3.5-2B/9B</span>
-      <span>1,428 logged rollouts</span>
-      <span>2026-08-26</span>
+      <span>ALFWorld</span>
+      <span>Qwen2.5-1.5B-Instruct</span>
+      <span>79.7% held-out @ 100 iters</span>
+      <span>2026-09-07</span>
     </div>
   </div>
 </header>
@@ -663,8 +663,28 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
   form is kept behind <span style="font-family:ui-monospace,Menlo,monospace">ACG_CCPO_SHRINK=mse</span> and is superseded because, with the bias prior
   written in sd units, &sigma;&sup2; cancels and it reduces to the n<sub>eff</sub> rule it was written to replace
   (corr(&lambda;, |d|) = &minus;0.239). See <a href="method-changes.html" style="color:#1f6f6b">method-changes.html</a>.</p>
-  <p style="margin:0 0 14px">Four changes landed on 2026-09-06. One is a fix that is on by default; three are
-  options that default off, so each is a single-flag ablation and none of them silently altered a run.</p>
+  <div class="callout" style="margin:0 0 18px">
+    <div class="lbl">The shipped estimator, as of 2026-09-07 (<span class="m">ccpo-global</span>)</div>
+    <p>A<sup>CC</sup> = target &minus; b<sub>LOO</sub>, where the <b>gate is global</b>: the whole task is one
+    bucket and <span class="m">exp(&minus;d/&tau;)</span> with &tau; = 0.15 &times; median &phi;-distance decides
+    the neighbourhood softly. The exact-observation gate of GiGPO and G&sup2;PO is the <b>&tau;&rarr;0 limit</b> of
+    this, so the two are one mechanism rather than alternatives.</p>
+    <p>The target is G&sup2;PO's successor node value V(next(u)); the baseline is &phi;-weighted, leave-one-out by
+    trajectory, aggregated per trajectory before across; and G&sup2;PO's edge term V(next) &minus; V(current) is
+    added, standardised per task.</p>
+    <p><b>&lambda; is forced to 1 and the shrinkage is bypassed.</b> Under a global gate
+    <span class="m">b_obs</span> degenerates to the uniform <em>task</em> mean, which measures worse than the
+    exact-match gate (LOO residual R&sup2; 0.425 vs 0.458), so shrinking toward it would actively hurt. The soft
+    kernel <em>is</em> the gate and there is nothing left to shrink toward. <b>The uncertainty half of the method is
+    therefore not exercised in this configuration</b>, and the &lambda;* discussion below describes the hard-gate
+    path only.</p>
+    <p>Measured effect: <span class="m">effect_rel</span> 0.119 against <b>exactly 0.000</b> in every prior arm, and
+    <span class="m">live_frac</span> 1.000 &mdash; nothing goes uncredited, where the exact gate leaves ~35% of
+    occurrences with no comparable trajectory. <b>The mechanism runs. A controlled ablation says it buys nothing:
+    context conditioning ON versus OFF differs by &minus;0.01 points over nine evaluations.</b></p>
+  </div>
+  <p style="margin:0 0 14px">The four changes below landed on 2026-09-06, before the global gate. One is a fix that
+  is on by default; three are options that default off, so each is a single-flag ablation.</p>
   <div class="scroll">
     <table>
       <colgroup><col><col><col><col></colgroup>
@@ -715,10 +735,12 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
       </tbody>
     </table>
   </div>
-  <p style="margin:14px 0 0;font-size:13px;color:#5c5c57">Also: G²PO's edge term
-  <span style="font-family:ui-monospace,Menlo,monospace">V(next) &minus; V(current)</span> is available at
-  <span style="font-family:ui-monospace,Menlo,monospace">ACG_CCPO_EDGE_W&gt;0</span>. It replaces a <span style="font-family:ui-monospace,Menlo,monospace">progress_w</span> block that was
-  unreachable — the trainer never passed it, so this half of G²PO has never run here.</p>
+  <p style="margin:14px 0 0;font-size:13px;color:#5c5c57"><b>Update 2026-09-07:</b> G&sup2;PO's edge term
+  <span class="m">V(next) &minus; V(current)</span> (<span class="m">ACG_CCPO_EDGE_W</span>) is <b>now on</b> at
+  weight 1.0 and fires on every step (<span class="m">edge_cov</span> = 1.000). It had defaulted off while we were
+  trying to beat G&sup2;PO &mdash; a component their own ablation credits for their margin over GiGPO. Turning it on
+  coincided with the jump from 70.3 to 79.7, and the running ablation suggests it, rather than the gate, is what
+  earned those points.</p>
 </section>
 
 <section>
@@ -847,42 +869,61 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
   <div class="sec-head">
     <div class="eyebrow">05b — the training runs</div>
     <h2>What actually happened when we trained it</h2>
-    <p>Qwen3-1.7B, 40 iterations, four arms, three benchmarks. Held-out = tasks disjoint from training, actions sampled at T=1.</p>
+    <p>Qwen2.5-1.5B-Instruct on ALFWorld, 100 iterations, at the G&sup2;PO reference protocol. Held-out = 128
+    episodes from <span class="m">eval_in_distribution</span>, sampled at T=0.4, every 5 steps.</p>
   </div>
   <p style="margin:0 0 14px;padding:10px 12px;border-left:3px solid #c8a24a;background:#fbf7ec;font-size:13.5px;line-height:1.6">
-  <b>Base model, 2026-09-06.</b> Every number in this section was measured on <b>Qwen3-1.7B</b>. Training has since
-  moved to <b>Qwen2.5-1.5B-Instruct</b> — the model GiGPO, HGPO and G²PO all publish on — so that a result here has
-  a published number to be compared against rather than only an internal one. Two Qwen3-specific workarounds fall
-  away with the switch: <span style="font-family:ui-monospace,Menlo,monospace">enable_thinking=False</span> had to
-  be forced in code because the config override did not reach the call, and the action parser had to accept a
-  missing opening <span style="font-family:ui-monospace,Menlo,monospace">&lt;think&gt;</span> tag because Qwen3
-  carries it in the prompt as an empty prefill (0/32 response-side tags measured). On Qwen2.5-1.5B-Instruct the
-  first turn of an untrained policy parses 127/128 valid with 124 admissible. The &phi; diagnostics elsewhere on
-  this page — conflation AUC, the 0.30 sd bias prior, and &rho; calibrated from it — are model-specific and are
-  being re-measured.</p>
+  <b>Every earlier result on this page has been removed (2026-09-07).</b> They were measured on <b>Qwen3-1.7B</b>
+  at 40 iterations, on a task listing that returned a <em>single</em> ALFWorld task type, with HF-generate
+  rollouts on a since-retired stack. None of it is comparable to a published number or to the runs below, so
+  quoting it beside them would be misleading. The table below is the current method on the current stack at the
+  reference protocol.</p>
   <div class="scroll">
     <table>
-      <thead><tr><th>Benchmark</th><th>GRPO</th><th>frozen φ</th><th class="ourhead">frozen φ + MEMORY</th><th>learned φ+μ+affinity</th></tr></thead>
+      <colgroup><col><col><col><col></colgroup>
+      <thead><tr><th>Method</th><th>Iterations</th><th>ALFWorld held-out</th><th>Note</th></tr></thead>
       <tbody>
-        <tr><td class="dim">ALFWorld — held-out</td><td>0.604</td><td>0.583</td><td><b>0.625</b></td><td>0.417</td></tr>
-        <tr><td class="dim">ALFWorld — peak held-out</td><td>0.667</td><td>0.708</td><td><b>0.917</b></td><td>0.583</td></tr>
-        <tr><td class="dim">ScienceWorld — mean score</td><td>0.185</td><td><b>0.191</b></td><td>0.187</td><td>0.141</td></tr>
-        <tr><td class="dim">WebShop — mean score</td><td>0.290</td><td>0.333</td><td>0.325</td><td><b>0.354</b></td></tr>
+        <tr><td class="dim">G&sup2;PO (published)</td><td class="num">100</td><td class="num">95.0 &plusmn; 0.8</td><td>3 seeds</td></tr>
+        <tr><td class="dim">HGPO (published, K=2)</td><td class="num">160</td><td class="num">92.77</td><td>different budget &mdash; not matched</td></tr>
+        <tr><td class="dim">GiGPO (published)</td><td class="num">150</td><td class="num">86.7 &plusmn; 1.7</td><td>different budget &mdash; not matched</td></tr>
+        <tr class="ourrow"><td class="dim"><b>CCPO &mdash; global gate + edge term</b></td><td class="num"><b>100</b></td><td class="num"><b>79.7</b></td><td><b>ours, 1 seed</b> &mdash; <span class="m">ccpo-global-20260907</span></td></tr>
+        <tr><td class="dim">GRPO (published)</td><td class="num">100</td><td class="num">72.8 &plusmn; 3.6</td><td>&mdash;</td></tr>
+        <tr><td class="dim">CCPO &mdash; hard gate, no edge term</td><td class="num">100</td><td class="num">70.3</td><td>ours &mdash; <span class="m">ccpo-long-20260906</span></td></tr>
+        <tr><td class="dim">RLOO (published)</td><td class="num">100</td><td class="num">69.7 &plusmn; 2.5</td><td>&mdash;</td></tr>
+        <tr><td class="dim">PPO with critic (published)</td><td class="num">100</td><td class="num">54.4 &plusmn; 3.1</td><td>&mdash;</td></tr>
       </tbody>
     </table>
   </div>
-  <p class="tbl-cap">One to three seeds per cell; held-out n = 24–32, so SE ≈ 0.10 and no single gap is significant. ALFWorld figures measure transfer <em>within one task type</em> (see the caveat below) and are not comparable to published ALFWorld numbers.</p>
+  <p class="tbl-cap"><b>Only the 100-iteration rows are matched-budget.</b> G&sup2;PO trains 100 iterations, GiGPO 150,
+  HGPO 160 &mdash; three papers, three budgets. G&sup2;PO's table reuses GiGPO's baseline rows verbatim (identical values
+  and standard deviations), so PPO/RLOO/GRPO are quoted at GiGPO's 150. Published figures are 3-seed means; ours is a
+  single run. Neither G&sup2;PO nor GiGPO states which ALFWorld split it reports &mdash; the code default
+  (<span class="m">eval_in_distribution</span>) settles it, and we match it.</p>
+
+  <h3 style="margin-top:26px">Per task type, our best arm at step 100</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Pick</th><th>Look</th><th>Clean</th><th>Heat</th><th>Cool</th><th>Pick2</th><th>All</th></tr></thead>
+      <tbody><tr><td class="num">91.7</td><td class="num">80.0</td><td class="num">76.0</td><td class="num">78.6</td>
+      <td class="num">73.2</td><td class="num">75.0</td><td class="num"><b>79.7</b></td></tr></tbody>
+    </table>
+  </div>
+  <p class="tbl-cap">No dead category, and the compositional types (Cool, Heat, Pick2) are within 7 points of the
+  overall mean &mdash; unlike earlier arms, where they sat at 0.0 for the first 20 iterations.</p>
 
   <div class="callout" style="margin-top:20px">
-    <div class="lbl">The cheap rung beat the expensive one</div>
-    <p><b>Summarised memory on a frozen φ is the only arm that beats plain GRPO</b>, and it does so on the benchmark where the arms differ most. Every <em>learned</em> component has so far failed to earn its cost: learned φ is the worst arm on two of three benchmarks, and the learned affinity — once given a real objective — scores ρ=0.515 against plain Euclidean's ρ=0.514.</p>
-    <p>That is the plan's ablation ladder returning its intended answer: build the cheap rung first, and only pay for the learned one if it wins. Here it does not.</p>
-  </div>
-
-  <div class="callout" style="margin-top:14px">
-    <div class="lbl">Two caveats that bound every ALFWorld number above</div>
-    <p><b>Single task type.</b> Task listing returned <span class="mono">range(n)</span> over a <em>sorted</em> game list, which clusters by type — the first twelve games are all <span class="mono">examine</span>, the easiest of six. Train and eval were disjoint trials <em>within that one type</em>. Cross-type transfer — precisely where "same observation, different meaning" should matter — remains untested. Fixed with stratified sampling; the runs need redoing.</p>
-    <p><b>Held-out peaks then declines.</b> ALFWorld arms peak near iteration 20–25 and fall by up to −0.29 afterwards, so the final checkpoint is the wrong one to keep and the final-iteration table understates every step-level arm. Checkpointing now saves best-on-held-out.</p>
+    <div class="lbl">The gain is G&sup2;PO's edge term, not the context conditioning</div>
+    <p>The 79.7 arm changed <em>two</em> things against the 70.3 arm: the global gate (ours) and
+    <span class="m">ACG_CCPO_EDGE_W=1.0</span>, which restores G&sup2;PO's edge-centric advantage &mdash; a component
+    we had switched off while trying to beat G&sup2;PO, and one their own ablation credits for their margin over GiGPO.</p>
+    <p>A controlled ablation separates them: <span class="m">ccpo-hardedge-20260907</span> holds the edge term on and
+    turns the gate back to exact-match. Because the empirical-Bayes shrinkage collapses to
+    <span class="m">&lambda; = 0.011</span> under that gate, it is really <b>context conditioning ON versus OFF</b>
+    with everything else identical. Over nine evaluations to step 50 the mean difference is
+    <b>&minus;0.01 points</b> (95% CI [&minus;2.8, +2.8]).</p>
+    <p><b>So the context term is doing nothing measurable, even now that it demonstrably runs.</b> The global gate
+    lifted <span class="m">effect_rel</span> from exactly 0.000 &mdash; the estimator being numerically identical to
+    the uniform baseline &mdash; to 0.119, and bought no performance.</p>
   </div>
 </section>
 
@@ -911,103 +952,130 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
 <section>
   <div class="sec-head">
     <div class="eyebrow">05d — training configuration vs published methods (2026-08-29)</div>
-    <h2>Two regimes, one estimator</h2>
-    <p>The 08-27 round deliberately traded absolute performance for an <em>exact</em> policy π (scored categorical over
-    the admissible set) so every probe and diagnostic was measurable. The matched-scale run now in flight adopts the
-    G²PO/GiGPO regime wholesale — free generation with the chain-of-thought inside the RL gradient, at their batch and
-    step budget — with only the advantage estimator swapped. Published configs from the G²PO paper/repo and the
-    verl-agent (GiGPO) <code>run_alfworld.sh</code>.</p>
+    <h2>The shipped configuration</h2>
+    <p>Every knob below is what <span class="m">ccpo-global-20260907</span> actually ran, taken from its
+    <span class="m">config.json</span>. Published columns are from the G&sup2;PO and GiGPO papers' own
+    hyperparameter appendices, not from their example scripts.</p>
   </div>
   <div class="scroll">
     <table>
-      <colgroup><col><col><col><col class="ourcol"><col class="ourcol"></colgroup>
+      <colgroup><col><col><col><col class="ourcol"></colgroup>
       <thead><tr>
-        <th>Dimension</th><th>G²PO (published)</th><th>GiGPO (published)</th>
-        <th class="ourhead">Ours — exact-π study (08-27)</th><th class="ourhead">Ours — matched scale (running)</th>
+        <th>Dimension</th><th>G&sup2;PO (published)</th><th>GiGPO (published)</th><th class="ourhead">Ours &mdash; ccpo-global</th>
       </tr></thead>
       <tbody>
-        <tr><td class="dim">Backbone</td><td>Qwen2.5-1.5B/7B-Instruct</td><td>Qwen2.5-1.5B/7B-Instruct</td><td>Qwen3-1.7B</td><td>Qwen3-1.7B</td></tr>
-        <tr><td class="dim">Policy class</td><td>free generation, ≤512 tok <span class="m">&lt;think&gt;…&lt;action&gt;</span>, CoT trained by RL</td><td>same</td><td>exact categorical over admissible set (mean-token-logprob, top-8); no generation</td><td>free generation, ≤768 tokens (Qwen3 verbosity; native thinking off, verbatim-copy + ≤80-word-reasoning prompt; think tags optional in the parser)</td></tr>
-        <tr><td class="dim">Episodes / update</td><td>128 (16 tasks × G8)</td><td>128 (16 × 8)</td><td>48 (6 × 8); G12 arms 72</td><td>144 (18 × 8; nearest multiple of 6 GPUs)</td></tr>
-        <tr><td class="dim">PPO minibatch / epochs</td><td>256 / 1</td><td>256 / 1</td><td>8 / 1</td><td>240 / 1 (micro 40 per GPU)</td></tr>
-        <tr><td class="dim">Learning rate</td><td>1e-6</td><td>1e-6</td><td>2e-6 constant</td><td>1e-6</td></tr>
-        <tr><td class="dim">KL regularisation</td><td>KL loss 0.01 (low-var)</td><td>KL loss 0.01 (low-var)</td><td>none (clip 0.2 only)</td><td>KL loss 0.01 (low-var)</td></tr>
-        <tr><td class="dim">γ (step discount)</td><td>0.95</td><td>0.95</td><td>0.95</td><td>0.95</td></tr>
-        <tr><td class="dim">Advantage estimator</td><td>episode norm + graph node/edge term</td><td>episode norm + anchor-state step term (mean_std_norm)</td><td>A<sup>EP</sup> + λ<sub>CC</sub>·A<sup>CC</sup> (memory-weighted LOO, MSE-optimal λ*)</td><td>same estimator via <span class="m">algorithm.adv_estimator=ccpo</span> in verl; step term std-normalised per task (family convention)</td></tr>
-        <tr><td class="dim">Invalid-action handling</td><td>penalty 0.1</td><td>penalty 0.1</td><td>impossible by construction (only admissible actions scored)</td><td>penalty 0.1</td></tr>
-        <tr><td class="dim">Training steps</td><td>150–200</td><td>150</td><td>≤100 iters, early stop (patience 25, min 40)</td><td>150</td></tr>
-        <tr><td class="dim">Episode step limit</td><td>50</td><td>50</td><td>50 (30 in the first round)</td><td>50</td></tr>
-        <tr><td class="dim">Eval protocol</td><td>ALFWorld unseen</td><td>ALFWorld unseen every 5 steps</td><td>official held-out every 2 iters (96 sampled + 12 greedy); clean selection: valid_seen → untouched valid_unseen</td><td>unseen (eval_out_of_distribution), 128 episodes every 5 steps, val-before-train</td></tr>
-        <tr><td class="dim">Checkpoints</td><td>—</td><td>save_freq −1 in the example (none)</td><td>best-on-held-out + final</td><td>every 25 steps</td></tr>
-        <tr><td class="dim">Hardware / stack</td><td>8 × A100, verl + vLLM</td><td>8 × A100, verl + vLLM 0.8</td><td>shared 96 GB GPU slots, 2–3 jobs/GPU, plain PyTorch</td><td>6 × RTX PRO 6000 Blackwell, Docker (torch 2.7 cu128, sdpa), FSDP with HF-generate rollouts — vLLM retired on this stack (position_ids/engine forensics, 2026-08-31)</td></tr>
-        <tr><td class="dim">Total episodes</td><td>≈19–26k</td><td>≈19k</td><td>≈3–5k per run</td><td>≈21.6k</td></tr>
+        <tr><td class="dim">Backbone</td><td>Qwen2.5-1.5B-Instruct</td><td>Qwen2.5-1.5B-Instruct</td><td><b>Qwen2.5-1.5B-Instruct</b> &check;</td></tr>
+        <tr><td class="dim">Episodes / update</td><td>16 &times; 8 = 128</td><td>16 &times; 8 = 128</td><td>16 &times; 8 = <b>128</b> &check;</td></tr>
+        <tr><td class="dim">PPO minibatch</td><td>256</td><td>256</td><td><b>256</b> &check;</td></tr>
+        <tr><td class="dim">Learning rate</td><td>1e-6</td><td>1e-6</td><td><b>1e-6</b> constant, no warmup &check;</td></tr>
+        <tr><td class="dim">KL regularisation</td><td>KL loss 0.01 (low-var)</td><td>KL loss 0.01 (low-var)</td><td><b>0.01 low_var_kl</b> &check;</td></tr>
+        <tr><td class="dim">&gamma; (step discount)</td><td>0.95</td><td>0.95</td><td><b>0.95</b> &check;</td></tr>
+        <tr><td class="dim">Prompt / response budget</td><td>2048 / 512</td><td>2048 / 512</td><td><b>2048 / 512</b> &check;</td></tr>
+        <tr><td class="dim">Episode step limit</td><td>50</td><td>50</td><td><b>50</b> &check;</td></tr>
+        <tr><td class="dim">History length</td><td>2</td><td>2</td><td><b>2</b> &check;</td></tr>
+        <tr><td class="dim">Rollout / val temperature</td><td>1.0 / 0.4</td><td>1.0 / 0.4</td><td><b>1.0 / 0.4</b>, do_sample &check;</td></tr>
+        <tr><td class="dim">Invalid-action penalty</td><td>0.1</td><td>0.1</td><td><b>0.1</b> &check;</td></tr>
+        <tr><td class="dim">Reward</td><td>10 success / 0 fail</td><td>10 / 0</td><td><b>10 / 0</b> &check;</td></tr>
+        <tr><td class="dim">Training iterations</td><td>100</td><td>150</td><td><b>100</b> &mdash; matched to G&sup2;PO only</td></tr>
+        <tr><td class="dim">Eval protocol</td><td>128 episodes, every 5 steps</td><td>same</td><td>128 episodes from <span class="m">eval_in_distribution</span>, every 5 steps</td></tr>
+        <tr><td class="dim">Advantage estimator</td><td>A<sup>EP</sup> + node-centric + edge-centric</td>
+            <td>A<sup>EP</sup> + anchor-state step term</td>
+            <td>A<sup>EP</sup> + A<sup>CC</sup> (global gate, &phi;-weighted LOO) + G&sup2;PO edge term</td></tr>
+        <tr><td class="dim">Hardware / stack</td><td>4 &times; H100, verl + vLLM</td><td>2 &times; H100, verl + vLLM</td>
+            <td>4 &times; RTX PRO 6000 Blackwell; torch 2.8.0+cu128, vLLM 0.11.0, ray 2.50.0,
+            transformers 4.57.1; flash-attn 2.8.3 with <span class="m">use_remove_padding=True</span>;
+            vLLM <span class="m">VLLM_ATTENTION_BACKEND=TRITON_ATTN</span> (sm_120)</td></tr>
       </tbody>
     </table>
   </div>
-  <p class="tbl-cap">Deviations of the matched-scale run from G²PO's exact numbers: 144 vs 128 episodes/step and 240 vs 256
-  minibatch (divisibility across 6 GPUs), Qwen3-1.7B vs Qwen2.5-1.5B-Instruct (backbone choice), sdpa attention instead of
-  flash-attn (no Blackwell build); response budget 768 vs 512 and Qwen3 model-card sampling constraints (top-p/top-k) — the backbone's verbosity and degeneration profile required both; HF-generate rollouts instead of vLLM (all nine Qwen3/Blackwell adaptation fixes are logged in RESULTS_0827.md); KL log-ratio clamped ±20 pre-exp (numerics only). The GRPO baseline will run the identical configuration with only the estimator swapped,
-  so the ours-vs-GRPO comparison is internally exact; published G²PO rows are regime context, not claimed parity.</p>
-  <h3 style="margin-top:26px">Compute budget for the matched-scale runs (anchored to ≈17–20 min/step measured on the corrected HF-rollout run, 2026-08-31)</h3>
-  <div class="scroll">
-    <table>
-      <thead><tr>
-        <th>backbone</th><th>benchmark</th><th>total GPU-hours on RTX 6000 Pro (est)</th>
-        <th>training time, 6× RTX 6000 Pro</th><th>training time, 8× RTX 6000 Pro</th><th>training time, 8× H200</th>
-      </tr></thead>
-      <tbody>
-        <tr><td class="dim">Qwen3-1.7B</td><td>ALFWorld</td><td class="num">≈ 335 GPU-h</td>
-            <td class="num"><strong>≈ 56 h (2.3 d)</strong> — measured pace</td><td class="num">≈ 44 h (1.8 d)</td><td class="num"><strong>≈ 14–18 h</strong></td></tr>
-        <tr><td class="dim">Qwen3-8B</td><td>ALFWorld</td><td class="num">≈ 1,200 GPU-h</td>
-            <td class="num">≈ 200 h (8–9 d)</td><td class="num">≈ 160 h (6.5–7 d)</td><td class="num"><strong>≈ 36–50 h (1.5–2 d)</strong></td></tr>
-        <tr><td class="dim">1.7B — one post-training eval (128 unseen episodes)</td><td>ALFWorld</td><td class="num">≈ 3 GPU-h</td>
-            <td class="num">≈ 0.5 h incl. engine spin-up</td><td class="num">≈ 0.4 h</td><td class="num">≈ 10–15 min</td></tr>
-        <tr><td class="dim">8B — one post-training eval</td><td>ALFWorld</td><td class="num">≈ 6 GPU-h</td>
-            <td class="num">≈ 1 h</td><td class="num">≈ 0.8 h</td><td class="num">≈ 20–25 min</td></tr>
-      </tbody>
-    </table>
-  </div>
-  <p class="tbl-cap">Per-run setup (container spin-up, data prep, JIT warmup ≈ 1 h) is included; the one-time stack build is not
-  (done on our box; ≈ 1–2 h fresh on H200, where the standard flash-attn/vLLM stack works natively). 8 vs 6 local cards buys only
-  ≈ 1.27× — the 50-turn env loop and driver-side advantage computation do not parallelise. The RTX 6000 Pro figures carry the
-  Blackwell taxes measured here: Max-Q power cap, sdpa attention without padding-removal (no sm_120 flash-attn build). Rule of
-  thumb for planning: the full publication matrix (1.7B and 8B, ours + GRPO baseline, one benchmark) ≈ 110 h on one 8× H200 node
-  vs ≈ 3 weeks locally; the 1.7B pair is feasible locally (≈ 4.5 d sequential), the 8B pair effectively requires H200-class hardware.</p>
+  <p class="tbl-cap"><b>Remaining deviations, all hardware-forced or bookkeeping:</b>
+  <span class="m">tensor_model_parallel_size=1</span> on 4 GPUs (the model fits on one card; 16 must divide the GPU
+  count, so 6 is impossible); <span class="m">gpu_memory_utilization=0.25</span>; <span class="m">use_dynamic_bsz</span>
+  with token caps (~2.6&times; faster per step, gradient-equivalent);
+  <span class="m">val_batch_size=64</span> vs 128 &mdash; the same 128 episodes, drawn from 64 worker shuffles
+  instead of 128, constrained by the cgroup pid ceiling; and checkpointing best+last, where the reference example
+  saves none. <b>No hyperparameter deviation from either paper remains.</b></p>
 
+  <h3 style="margin-top:26px">CCPO-specific settings in this run</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Flag</th><th>Value</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><span class="m">ACG_CCPO_GATE</span></td><td><b>global</b></td>
+            <td>The whole task is one bucket; <span class="m">exp(&minus;d/&tau;)</span> gates softly. The
+            exact-match gate of GiGPO/G&sup2;PO is the &tau;&rarr;0 limit of this.</td></tr>
+        <tr><td><span class="m">ACG_CCPO_TAU</span></td><td>0.15</td>
+            <td>Kernel width as a multiple of the bucket's median &phi;-distance. Offline optimum is interior:
+            0.02 collapses to exact matching with worse statistics, large &tau; to the task mean.</td></tr>
+        <tr><td><span class="m">ACG_CCPO_PHI</span></td><td>hidden+ctx</td>
+            <td>Reference policy's last-prompt-token hidden state, whitened (top-3 directions removed),
+            concatenated with thermometer-coded {t, n_unique, revisit, progress}.</td></tr>
+        <tr><td><span class="m">ACG_CCPO_TARGET</span></td><td>nextnode</td>
+            <td>G&sup2;PO's group-aggregation successor value V(next(u)), not the return-to-go.</td></tr>
+        <tr><td><span class="m">ACG_CCPO_EDGE_W</span></td><td>1.0</td>
+            <td>G&sup2;PO's edge-centric term V(next) &minus; V(current), standardised per task.</td></tr>
+        <tr><td><span class="m">&lambda;</span></td><td>1.0 (forced)</td>
+            <td>Under a global gate <span class="m">b_obs</span> degenerates to the uniform task mean, which
+            measures <em>worse</em> than the exact-match gate &mdash; so there is nothing to shrink toward and the
+            soft kernel is the gate. <b>This bypasses the uncertainty half of the method, which is therefore
+            untested in this arm.</b></td></tr>
+        <tr><td><span class="m">ACG_COMPACT_BUDGET</span></td><td>0</td>
+            <td>Memory digest off. Reproduces the reference prompt exactly.</td></tr>
+        <tr><td><span class="m">ACG_CCPO_SIM</span></td><td>0.0</td>
+            <td>Similarity gate off &mdash; matching the baselines, whose <span class="m">enable_similarity</span>
+            also defaults to False on ALFWorld.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="tbl-cap">Measured over the run: <span class="m">effect_rel</span> 0.119 (was exactly 0.000 in every
+  prior arm), <span class="m">live_frac</span> 1.000 (nothing uncredited, against ~0.65 usable under the exact gate),
+  <span class="m">n_eff</span> 5.84, 616 buckets/step, <span class="m">r_vs_g2po</span> 0.891,
+  <span class="m">r_vs_gigpo</span> 0.409, <span class="m">phi_rel_corr</span> 0.011.</p>
+
+  <h3 style="margin-top:26px">Measured cost on this stack (4 &times; RTX PRO 6000 Blackwell)</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Phase</th><th>Seconds / step</th><th>Share</th></tr></thead>
+      <tbody>
+        <tr><td class="dim">Rollout generation (vLLM, 128 episodes &times; &le;50 turns)</td><td class="num">190</td><td class="num">47%</td></tr>
+        <tr><td class="dim">Actor update</td><td class="num">131</td><td class="num">32%</td></tr>
+        <tr><td class="dim">Advantage &mdash; incl. the CCPO estimator</td><td class="num">32</td><td class="num">8%</td></tr>
+        <tr><td class="dim">Reference log-prob</td><td class="num">25</td><td class="num">6%</td></tr>
+        <tr><td class="dim">Old log-prob</td><td class="num">24</td><td class="num">6%</td></tr>
+        <tr><td class="dim">Checkpoint save</td><td class="num">18</td><td class="num">4%</td></tr>
+        <tr><td class="dim"><b>Total, plain step</b></td><td class="num"><b>406</b></td><td class="num">&mdash;</td></tr>
+        <tr><td class="dim">Step with validation (every 5th)</td><td class="num">740</td><td class="num">+334 s for 128 eval episodes</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="tbl-cap">A 100-iteration arm is <b>&asymp;11 hours</b> wall-clock on four cards. The estimator itself is 8% of
+  step time under the global gate &mdash; more than the exact-match gate, since every occurrence now compares against
+  all others in its task rather than only exact matches.</p>
 </section>
 
 <section>
   <div class="sec-head">
-    <div class="eyebrow">05e — current configuration and what the runs measured (2026-09-04)</div>
-    <h2>Two components added, four things measured</h2>
-    <p>The matched-scale run has been through two full generations. The first (v5, 75 steps) ran the configuration in
-    §05d unchanged and ended in a <em>generation collapse</em>: response length drifted 54 → 478 tokens, 43% of
-    responses truncated before emitting <span class="m">&lt;action&gt;</span>, and <span class="m">valid_action_ratio</span>
-    fell 1.00 → 0.72. Held-out success nonetheless kept climbing to 0.383 — the policy was still learning while its
-    generation broke down. The second (v6, running) adds two decode- and context-side components that make that collapse
-    structurally impossible. Neither touches the estimator, and both default to off, so <span class="m">ACG_FORCE_BUDGET=0</span>
-    / <span class="m">ACG_COMPACT_BUDGET=0</span> reproduce the §05d protocol exactly.</p>
+    <div class="eyebrow">05e — superseded: the Qwen3-1.7B generation</div>
+    <h2>What the retired runs measured</h2>
+    <p>Two generations of matched-scale runs (v5, v6) were done on <b>Qwen3-1.7B</b> with HF-generate and later
+    vLLM sidecars. <b>Their numbers have been removed from this page</b> — a different backbone, a different
+    stack, and a task listing that returned a single ALFWorld type make them incomparable both to the published
+    literature and to the current runs. Two findings from that generation survive because they were
+    <em>diagnostic</em> rather than performance claims, and both were re-verified on the current stack.</p>
   </div>
-  <div class="scroll">
-    <table>
-      <colgroup><col><col><col class="ourcol"></colgroup>
-      <thead><tr><th>Dimension</th><th>v5 (75 steps, completed)</th><th class="ourhead">v6 (running)</th></tr></thead>
-      <tbody>
-        <tr><td class="dim">Estimator</td><td>ccpo — A<sup>EP</sup> + A<sup>CC</sup></td><td>identical</td></tr>
-        <tr><td class="dim">Backbone / sampling</td><td>Qwen3-1.7B, thinking off, 1.0 / 0.95 / 20</td><td>identical</td></tr>
-        <tr><td class="dim">Episodes per update</td><td>144 (18 tasks × G8; games drawn from ALFWorld's 3,553-game train pool, not a fixed set)</td><td>identical</td></tr>
-        <tr><td class="dim">KL / γ / lr</td><td>0.01 low-var / 0.95 / 1e-6</td><td>identical</td></tr>
-        <tr><td class="dim">Response budget</td><td>768 max, no cap on the think block</td><td><b>budget forcing</b>: think ≤512, then <span class="m">&lt;/think&gt;&lt;action&gt;</span> is injected and a ≤32-token action generated. Responses ≤544; truncation-without-action impossible</td></tr>
-        <tr><td class="dim">Agent memory</td><td>2 verbatim turns (G²PO protocol)</td><td><b>compaction</b>: 2 verbatim turns + a 512-token digest of the full history — action→outcome pairs, deduplicated, failures collapsed via <span class="m">obs<sub>t+1</sub> == obs<sub>t</sub></span> (no domain regex)</td></tr>
-        <tr><td class="dim">Generation stack</td><td colspan="2">vLLM 0.28 + <span class="m">TRITON_ATTN</span> in sidecar containers (one per training GPU), HTTP; trainer keeps torch 2.7 / transformers 4.51. Measured 6.3× over HF-generate: 1104 s → 175 s per step. Automatic fallback to HF on any sidecar failure.</td></tr>
-        <tr><td class="dim">Steps / eval</td><td>75 (stopped on collapse)</td><td>75, eval every 5 on 128 episodes (now <span class="m">valid_seen</span>, matching the reference)</td></tr>
-        <tr><td class="dim">Step time</td><td>18.3 min</td><td>18.7 min (+2–4%: ~218 extra prompt tokens/turn of prefill)</td></tr>
-      </tbody>
-    </table>
+  <div class="callout">
+    <div class="lbl">What carried over</div>
+    <p><b>Generation collapse is real and structural.</b> v5 drifted 54 &rarr; 478 response tokens with 43% of
+    responses truncated before emitting <span class="m">&lt;action&gt;</span>. Budget forcing
+    (<span class="m">ACG_FORCE_BUDGET</span>) makes truncation-without-action impossible. On Qwen2.5-1.5B-Instruct
+    the collapse does not occur — response length sits at 75–95 tokens across 100 iterations and
+    <span class="m">valid_action_ratio</span> stays &ge; 0.999 — so the guard is retained but inactive.</p>
+    <p><b>Revisiting is the long-horizon failure mode.</b> 58.7% of turns revisit a previously seen observation, and
+    failing trajectories revisit 2.68&times; as often as successes (10,365 trajectories). A 2-turn window cannot
+    record where the agent has been. This is what the compaction digest targets, and it is the one component of the
+    original design still untested — <span class="m">ccpo-memory-20260907</span> is running it now as a
+    single-variable change from the 79.7% arm.</p>
   </div>
-  <p class="tbl-cap">Both new components were validated offline before launch. Budget forcing: parseable responses
-  5/8 → 8/8 and maximum length 659 → 313 on a live sidecar. Compaction: digest renders correctly and costs +118 / +187 /
-  +218 tokens per turn at 256 / 384 / 512 budgets, against ~1,265 tokens of measured prompt headroom (p99 783 of a 2,048 cap).</p>
 
   <h3 style="margin-top:26px">What the diagnostics established</h3>
   <div class="scroll">
@@ -1051,23 +1119,29 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
     </table>
   </div>
 
-  <h3 style="margin-top:26px">Eval protocol — a correction</h3>
+  <h3 style="margin-top:26px">Eval protocol — two corrections</h3>
   <div class="narrow" style="display:flex; flex-direction:column; gap:12px">
-    <p style="color:var(--ink-2)">verl maps <span class="m">eval_in_distribution</span> → <span class="m">valid_seen</span> and
-    <span class="m">eval_out_of_distribution</span> → <span class="m">valid_unseen</span>, and defaults to the former.
-    G²PO's <span class="m">run_alfworld.sh</span> never overrides it, so their reported numbers are on the <em>seen</em> split;
-    ours are on <em>unseen</em>. We expected that to explain a large part of the gap to published results — the ALFWorld
-    literature typically shows 10–25 points between the splits.</p>
-    <p style="color:var(--ink-2)"><b>It does not.</b> The v5 best checkpoint scores <b>0.312 on valid_seen</b> against
-    <b>0.320 on valid_unseen</b> — no meaningful gap. Our result is split-insensitive, and the distance to published
-    numbers is real rather than a protocol artefact. What remains different: backbone, training length, and the
-    <span class="m">use_remove_padding</span> + flash-attn stack unavailable on sm_120.</p>
-    <p style="color:var(--ink-2)"><b>Since revised.</b> The runs are now matched to the reference script in full:
-    <span class="m">valid_seen</span> as the headline split (via <span class="m">ACG_EVAL_SPLIT</span>), validation
-    temperature 0.4, <span class="m">top_p</span> 1.0 and <span class="m">top_k</span> unrestricted — we had been running
-    0.7 / 0.8 / 20. Evaluation is sampled by design, and two evaluations of the <em>same</em> checkpoint returned
-    <b>0.094</b> and <b>0.188</b>: a single 128-episode score carries about <b>±0.048</b>, so single points carry
-    almost no information and results are reported as the mean of ≥3 seeds.</p>
+    <p style="color:var(--ink-2)"><b>Split &mdash; settled.</b> verl maps
+    <span class="m">eval_in_distribution</span> &rarr; <span class="m">valid_seen</span> and
+    <span class="m">eval_out_of_distribution</span> &rarr; <span class="m">valid_unseen</span>, defaulting to the
+    former. Neither the G&sup2;PO nor the GiGPO paper states which it reports &mdash; zero occurrences of
+    "seen", "unseen", "in-distribution" or "out-of-distribution" in either &mdash; but neither run script overrides
+    the default, so both are on <span class="m">valid_seen</span>. <b>We now match.</b> (The In-Success /
+    Out-Success split comes from HGPO, a separate re-implementation, which is why HGPO reports GiGPO at 90.16
+    where GiGPO's own paper reports 86.7.) An earlier check found the distinction near-irrelevant here anyway:
+    the same checkpoint scored 0.312 seen against 0.320 unseen.</p>
+    <p style="color:var(--ink-2)"><b>The evaluation set is not fixed &mdash; corrected 2026-09-07.</b> Earlier
+    versions of this page described validation as "128 fixed held-out episodes". That is wrong. ALFWorld's
+    TextWorld backend shuffles the game list per worker seed and <em>iterates</em>:
+    <span class="m">gamefiles = [next(self._gamefiles_iterator) ...]</span>, so <span class="m">reset()</span>
+    advances to the next game and <b>every validation scores a different draw of 128 episodes.</b></p>
+    <p style="color:var(--ink-2)">The consequence is large and it applies to the baselines too, since this is the
+    reference harness's own behaviour. Measured on our 100-iteration arm, a single evaluation carries
+    <b>&plusmn;13 points at 2&sigma;</b> &mdash; roughly three times the &plusmn;0.048 binomial figure quoted
+    previously, because the task draw varies on top of temperature-0.4 sampling. <b>Step-to-step deltas below ~13
+    points carry no information</b>, matched-step comparisons between two arms compare different task sets, and only
+    endpoints or many-evaluation means are worth weighing. This is presumably why every baseline paper reports a
+    3-seed mean; ours is a single draw, and its error bar should be read accordingly.</p>
   </div>
 </section>
 
