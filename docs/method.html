@@ -515,8 +515,8 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
           <text x="158" y="46" font-size="9.5" class="mono">→ 8 cells on</text>
         </g>
         <rect x="8" y="128" width="424" height="30" rx="3" fill="var(--accent-soft)" stroke="var(--accent)"/>
-        <text x="16" y="147" font-size="9.5" class="mono">φ = norm([ whiten(h_last-prompt-tok) ‖ thermo(t, n_uniq, prog) ‖ revisit ])</text>
-        <text x="8" y="178" font-size="10" class="dim">frozen, seeded, never trained — nothing about the grouping can co-adapt with the policy (R1)</text>
+        <text x="16" y="147" font-size="8.6" class="mono">φ = norm([ whiten(h_lastprompt) ‖ thermo(t, n_uniq, prog) ‖ revisit ])</text>
+        <text x="8" y="178" font-size="9.4" class="dim">from the FROZEN reference policy — the grouping cannot co-adapt with the trained policy (R1)</text>
       </svg>
       <div class="cap"><strong>Thermometer coding</strong> makes φ-distance monotone in context difference: t=4 vs t=19
       differ in 6 of 12 cells, t=4 vs t=5 in ≤1 — unlike hashed tags, where step 1 vs 28 looked no farther apart than
@@ -602,9 +602,9 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
         <text x="268" y="114" font-size="10" class="dim">full conditioning (λ→1)</text>
         <rect x="8" y="130" width="424" height="26" rx="3" fill="var(--sunk)"/>
         <text x="16" y="147" font-size="10.5" class="mono">λ_i = τ² / ( τ² + ρ²σ²(1/n_eff − 1/J) )&nbsp;&nbsp;[hard gate only]</text>
-        <text x="8" y="176" font-size="9" class="dim">B = bias prior (0.30 sd, measured) · ρ = metric confidence · n_eff / J = effective / total neighbors</text>
-        <text x="30" y="16" font-size="9.5" class="dim">contexts indistinguishable, or all-identical returns → λ→0: gracefully G²PO</text>
-        <text x="30" y="30" font-size="9.5" class="dim">clear contrast + enough close neighbors → λ→1: trust the conditioning</text>
+        <text x="8" y="176" font-size="9" class="dim">τ² = batch-pooled signal variance (measured ≈ 0) · ρ = metric confidence · n_eff/J = eff./total nbrs</text>
+        <text x="30" y="16" font-size="9.5" class="dim">intended: contexts indistinguishable → λ→0 (gracefully G²PO)</text>
+        <text x="30" y="30" font-size="9.5" class="dim">measured on the hard gate: λ = 0.011 — τ² ≈ 0, no signal to trust</text>
       </svg>
       <div class="cap"><b>Revised 2026-09-07 — this dial is not in the shipped path.</b> Two changes. The MSE form
       <span class="m">(ρB)²/((ρB)²+σ²(1/n_eff−1/J))</span> is superseded by hierarchical empirical Bayes, where τ² is
