@@ -59,6 +59,28 @@ before the action exists.
 
 ## Open — ranked by expected value
 
+**Status board.** Entries below carry results as often as they carry questions; this
+says which is which, so the section can be read without opening every one.
+
+| | what it is | state |
+|---|---|---|
+| **H-AC** | `ccpo-cheapmem`, digest at 192 tok / replace mode | **running** |
+| **H-S / H-X** | epistemic weighting `w_u = J_u/(J_u+c)` — the ONE untested uncertainty variant | **open** |
+| **H-AB** | G2PO on our harness — the only remaining way to attribute 79.7% | **open, declined twice** |
+| H-Z, H-AA, H-V, H-W, H-Y, H-Y' | | resolved, kept here for the reasoning |
+
+**Two cheap unrun checks**, neither needing a training run:
+* eval-only pass on `ccpo-global` step-100 vs step-125/135 checkpoints **on the same
+  draw** — settles the ceiling free of the resume-draw confound
+* a second seed of `ccpo-global` — every number in this file, the headline 79.7%
+  included, rests on a single seed
+
+**Why localstd's negative result does not close the uncertainty question.** `localstd`
+divided A_CC by sigma, damping HIGH-VARIANCE neighbourhoods. H-S weights by reliability,
+damping POORLY-SAMPLED ones. The two disagree precisely where variance and support are
+both high, so -2.08 on the first says nothing about the second.
+
+
 ### [RUNNING] H-AC. `ccpo-cheapmem` — the digest at a twentieth of the cost
 
 H-AA established that the digest's cost is real and its stated mechanism is not. H-Y's
@@ -102,7 +124,7 @@ Continue only on the pre-registered per-type concentration, never on overall suc
 alone.
 
 
-### [!!] H-AB. Our config matches G2PO's published script exactly — the gap is not setup
+### [OPEN — blocked on a decision] H-AB. Our config matches G2PO's published script exactly — the gap is not setup
 
 Diffed `experiments/ccpo-global-20260907/outputs/resolved_config.json` against
 `baselines/G2PO/examples/g2po_trainer/run_alfworld.sh`, the script that produced the
@@ -154,7 +176,7 @@ and is too small to move H-Y's conclusions, but per-type values should not be tr
 exact proportions over 128.
 
 
-### [!] H-AA. The digest's stated mechanism is refuted, paired, at step 15
+### [RESOLVED] H-AA. The digest's stated mechanism is refuted, paired, at step 15
 
 `ccpo-gatedmem` and `ccpo-global` share `env.seed=0`, `train_batch_size=16` and
 `env.rollout.n=8`, so they see the **same training-task sequence** and can be compared
@@ -194,7 +216,7 @@ motivated the arm: whatever the digest does, it is not saving the agent from
 re-deriving state.
 
 
-### [CORRECTION + kill rule, logged before ccpo-gatedmem reports] H-Y. The digest never had a format problem
+### [RESOLVED] H-Y. The digest never had a format problem
 
 I proposed that the deciding diagnostic for the digest arm was whether
 `valid_action_ratio` recovers to >=0.999, reasoning that a recovery with flat success
@@ -245,7 +267,7 @@ the hypotheses.
 Measured cost: 460 s/step, so step 20 is ~2.6 h and step 50 ~6.4 h.
 
 
-### [PRE-REGISTERED, before ccpo-gatedmem reports] H-Y'. Where the 15 points actually are
+### [RESOLVED — prediction held, p=0.067] H-Y'. Where the 15 points actually are
 
 Pooling the nine converged evaluations of `ccpo-global-ext` (steps 105–145) gives
 per-type numbers with 3x less noise than any single draw:
@@ -291,7 +313,7 @@ narrower and more tractable problem than "the method underperforms," and it is t
 result that points at a specific capability rather than at the estimator.
 
 
-### [!] H-Z. **150 steps buys nothing** — the 100-step ceiling, and a warning about best-checkpoint selection
+### [RESOLVED] H-Z. **150 steps buys nothing** — the 100-step ceiling, and a warning about best-checkpoint selection
 
 `ccpo-global-ext-20260908` warm-started the 79.7% arm at step 100 and ran to 145,
 where early stopping fired. Nine evaluations:
@@ -335,7 +357,7 @@ the extension's *internal* trend (−0.14 pts/5 steps over nine of its own evalu
 all on the same replayed sequence) is unaffected by the offset, and it is flat.
 
 
-### [ ] H-X. **"Uncertainty" was never one dial** — aleatoric vs epistemic, and only one is untested
+### [OPEN — untested] H-X. **"Uncertainty" was never one dial** — aleatoric vs epistemic, and only one is untested
 
 Every uncertainty result in this file has conflated two different quantities:
 
@@ -367,7 +389,7 @@ remains small; it is variance reduction on the ~13% of occurrences with J≤3.
 
 ---
 
-### [ ] H-Y. **Uncertainty-gated memory** — spend the digest only where the agent is lost
+### [RESOLVED — ran as ccpo-gatedmem, killed at step 20] H-Y. **Uncertainty-gated memory** — spend the digest only where the agent is lost
 
 The memory arm (H-W) failed with a *diagnosis*, not a verdict: `valid_action_ratio`
 0.9869 against ≥0.999 elsewhere, and it started degraded **at step 1** — before
@@ -402,7 +424,7 @@ decisive stretch (65–100) still ahead, and stopping on t = −1.15 would repea
 step-30 misread.
 
 
-### [~] H-W. The memory digest is **hurting** at 20 steps, with an identified cost mechanism
+### [RESOLVED — superseded by H-AA/H-AC] H-W. The memory digest is **hurting** at 20 steps, with an identified cost mechanism
 
 `ccpo-memory-20260907` — the digest arm, a single config change (`compact_budget`
 0 → 512) from the 79.7% run. Interim at step 20 of 100:
@@ -444,7 +466,7 @@ though n is still too small to call. If the arm is paused this stays unresolved.
 preserves the question for a resume.
 
 
-### [!] H-V. **Coherent standardisation** — RESULT: neutral-to-mildly-harmful, 16 paired evaluations
+### [RESOLVED] H-V. **Coherent standardisation** — RESULT: neutral-to-mildly-harmful, 16 paired evaluations
 
 **The question that produced it** (user, 2026-09-08): *can we standardise using our
 context-conditioned grouping rather than G²PO's?* I had been framing the choice as
@@ -669,7 +691,7 @@ R² 0.00013 — but it is the one remaining channel the current φ cannot see, s
 minutes to measure beats 11 hours to guess.
 
 
-### [ ] H-S. **Uncertainty as a weight on A_CC, not a choice between baselines** — the reframing that survives
+### [OPEN — untested] H-S. **Uncertainty as a weight on A_CC, not a choice between baselines** — the reframing that survives
 
 Every uncertainty result in this file is about **whether to trust φ's neighbourhood
 over the uniform one**. That question is settled and the answer is "don't": τ² ≈ 4e-6,
