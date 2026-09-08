@@ -242,8 +242,23 @@ class AlfWorldEnvironmentManager(EnvironmentManagerBase):
             #
             # "replace" removes the duplication behind that cost: build_digest already
             # summarises the FULL history, the recent window included, so prepending
-            # ships the last `history_length` turns twice. Replacing keeps whole-episode
-            # coverage at roughly the token cost of the window it displaces.
+            # ships the last `history_length` turns twice.
+            #
+            # Replacing is NOT free, and an earlier version of this comment claimed it
+            # was. tests/test_compact_mode.py measures it: the window is ~88 tokens but
+            # a 512-budget digest is ~500, so replace only reclaims the window -- about
+            # a quarter of the overhead. The budget is the real lever. Measured on a
+            # 24-turn episode, against a 466-token baseline prompt, at the stall gate's
+            # 36% firing rate:
+            #
+            #   budget   digest   informative lines   avg overhead   % of base
+            #      128      123        3/15                 +13         2.7%
+            #      192      184        5/15                 +35         7.4%
+            #      256      252        7/15                 +59        12.7%
+            #      512      494       14/15                +146        31.4%
+            #
+            # 512 more than doubles the prompt whenever it fires, which is what the
+            # ccpo-memory and ccpo-gatedmem arms paid.
             #
             # The digest is deduplicated and collapses repeats, so it is not literally
             # "the most recent N observations" the template promises -- but N is set to

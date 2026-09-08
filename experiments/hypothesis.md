@@ -59,6 +59,49 @@ before the action exists.
 
 ## Open — ranked by expected value
 
+### [RUNNING] H-AC. `ccpo-cheapmem` — the digest at a twentieth of the cost
+
+H-AA established that the digest's cost is real and its stated mechanism is not. H-Y's
+per-type split, pre-registered, still put both memory-demanding types at ranks 1 and 2
+of 6 (p = 1/15 = 0.067). So the lever is kept and the cost is cut, rather than the same
+arm being re-run.
+
+Two changes, both measured offline first (`tests/test_compact_mode.py`):
+
+* **`ACG_COMPACT_MODE=replace`.** The digest substitutes the recent window instead of
+  stacking on it. `build_digest` already covers those turns, so `prepend` shipped them
+  twice. **This alone is NOT the fix** -- an earlier version of this entry claimed it
+  was. The window is ~88 tokens against a 512-budget digest's ~500, so replace reclaims
+  only about a quarter of the overhead.
+* **Budget 512 -> 192.** This is the real lever, and the sweep is why:
+
+| budget | digest tok | informative lines | avg overhead | % of base prompt |
+|---|---|---|---|---|
+| 128 | 123 | 3/15 | +13 | 2.7% |
+| **192** | **184** | **5/15** | **+35** | **7.4%** |
+| 256 | 252 | 7/15 | +59 | 12.7% |
+| 512 | 494 | 14/15 | +146 | 31.4% |
+
+512 more than doubles the prompt whenever it fires, which is what `ccpo-memory` and
+`ccpo-gatedmem` both paid. 192 keeps a third of the informative lines at a fifth of the
+cost.
+
+**Isolation.** Diffed against `ccpo-global-20260907`: the only real differences are
+`compact_budget` 0->192, `compact_mode` ->replace, `compact_stall` ->2. (`ccpo_std`,
+`ccpo_std_floor`, `ccpo_step_norm` read as differences only because they are now written
+explicitly at what were already the code defaults -- `task`, 0.25, `mode`.)
+
+**Falsifiable at step 1, before any success number.** The offline sweep predicts
+`prompt_length/mean` ~500 against base 466 and gatedmem's 656. If step 1 lands much
+above ~555, the sweep's model of the cost is wrong and the arm should be stopped
+immediately rather than run for its success rate.
+
+**Kill rule, fixed in advance, same form as H-Y's:** stop at step 20 if train mean over
+steps 10-20 is below 0.130 (base 0.160), or held-out at step 20 is below 15%.
+Continue only on the pre-registered per-type concentration, never on overall success
+alone.
+
+
 ### [!!] H-AB. Our config matches G2PO's published script exactly — the gap is not setup
 
 Diffed `experiments/ccpo-global-20260907/outputs/resolved_config.json` against
