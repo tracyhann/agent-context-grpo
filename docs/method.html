@@ -746,6 +746,120 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
 
 <section>
   <div class="sec-head">
+    <div class="eyebrow">02c-bis — five real pairs from a training batch</div>
+    <h2>What the kernel actually does</h2>
+    <p>Drawn from <span class="m">gate-probe-20260907</span>: 823,771 cross-trajectory pairs inside one batch, φ =
+    hashed bag(observation) ⊕ thermometer context, weight <span class="m">w = exp(−d/τ)</span> with
+    <span class="m">τ = 0.15 × the task's median φ-distance</span>. Actions are <em>inferred</em> from the successor
+    observation — they are not plumbed into the estimator. Deterministic hash (<span class="m">_seed_of</span>), so
+    these pairs are reproducible.</p>
+  </div>
+
+  <p style="margin:0 0 14px;font-size:13.5px;color:#5c5c57">The weight distribution is itself the first finding:
+  <b>median cross-pair weight 1.25e-03, p99 only 0.187.</b> At τ=0.15 the kernel is sharp — the overwhelming majority
+  of a task contributes essentially nothing, and each baseline rests on a handful of near-twins.</p>
+
+  <div class="scroll">
+    <table>
+      <colgroup><col style="width:15%"><col style="width:42.5%"><col style="width:42.5%"></colgroup>
+      <thead><tr><th>1 · agreeing twins</th><th>traj <span class="m">544d00c1</span></th><th>traj <span class="m">ff26679f</span></th></tr></thead>
+      <tbody>
+        <tr><td class="dim">obs</td><td colspan="2"><em>You clean the cup 2 using the sinkbasin 1.</em> &mdash; identical</td></tr>
+        <tr><td class="dim">context</td><td>t=3, n_uniq=4, rev=0, prog=1.00</td><td>identical</td></tr>
+        <tr><td class="dim">action</td><td>go to sidetable 1</td><td>go to sinkbasin 1</td></tr>
+        <tr><td class="dim">V(next)</td><td class="num">7.438</td><td class="num">7.174</td></tr>
+        <tr><td class="dim"><b>d / w</b></td><td colspan="2" class="num"><b>0.0000 / 1.0000</b></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="tbl-cap">Same situation, same history, different next move &mdash; both land in high-value nodes. Distance
+  is exactly zero, so each carries full weight in the other's baseline. <b>The estimator working as intended.</b></p>
+
+  <div class="scroll" style="margin-top:18px">
+    <table>
+      <colgroup><col style="width:15%"><col style="width:42.5%"><col style="width:42.5%"></colgroup>
+      <thead><tr><th>2 · conflated</th><th>traj <span class="m">2cbec48b</span></th><th>traj <span class="m">79df0fc0</span></th></tr></thead>
+      <tbody>
+        <tr><td class="dim">task</td><td colspan="2"><em>find two toiletpaper and put them in toilet</em></td></tr>
+        <tr><td class="dim">obs</td><td colspan="2">opening room description, 16 objects &mdash; identical</td></tr>
+        <tr><td class="dim">context</td><td>t=0, n_uniq=1, rev=0, prog=1.00</td><td>identical</td></tr>
+        <tr><td class="dim">action</td><td><b>pick up the toiletpaper 3 from the dresser 1</b></td><td><b>go to drawer 1</b></td></tr>
+        <tr><td class="dim">V(next)</td><td class="num"><b>3.494</b></td><td class="num"><b>0.000</b></td></tr>
+        <tr><td class="dim"><b>d / w</b></td><td colspan="2" class="num"><b>0.0000 / 1.0000</b></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="tbl-cap"><b>The clearest statement of the method's limit.</b> Turn zero: same room, same task, nothing has
+  happened, so φ-distance is <em>necessarily</em> 0 and the weight is maximal. One agent grabs a toiletpaper and scores
+  3.494; the other opens a drawer and never recovers. <b>No context feature can separate these, because there is no
+  context yet</b> &mdash; the entire difference is the action, which happens <em>after</em> φ is computed.</p>
+
+  <div class="scroll" style="margin-top:18px">
+    <table>
+      <colgroup><col style="width:15%"><col style="width:42.5%"><col style="width:42.5%"></colgroup>
+      <thead><tr><th>3 · separated by context</th><th>traj <span class="m">d07e2ad1</span></th><th>traj <span class="m">0e4a1a30</span></th></tr></thead>
+      <tbody>
+        <tr><td class="dim">obs</td><td colspan="2"><em>countertop 1 … egg 3, egg 1, houseplant 1, spatula 1, spoon 1, tomato 1</em> &mdash; <b>byte-identical</b></td></tr>
+        <tr><td class="dim">context</td><td>t=0, n_uniq=1, rev=0, <b>prog=1.00</b></td><td>t=52, n_uniq=12, rev=1, <b>prog=0.23</b></td></tr>
+        <tr><td class="dim">action</td><td>go to coffeemachine 1</td><td>go to microwave 1</td></tr>
+        <tr><td class="dim">V(next)</td><td class="num">1.009</td><td class="num">1.955</td></tr>
+        <tr><td class="dim"><b>d / w</b></td><td colspan="2" class="num"><b>0.8738 / 0.0006</b></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="tbl-cap"><b>The one place the mechanism does something the baselines cannot.</b> Identical screens,
+  opposite situations &mdash; one just arrived, the other is 52 turns in and circling. Context drives the weight to
+  0.0006. <b>GiGPO and G²PO pool these two at equal weight</b>, since the observation matches.</p>
+
+  <div class="scroll" style="margin-top:18px">
+    <table>
+      <colgroup><col style="width:15%"><col style="width:42.5%"><col style="width:42.5%"></colgroup>
+      <thead><tr><th>4 · merged across observations</th><th>traj <span class="m">f4ab755a</span></th><th>traj <span class="m">c89b8e5d</span></th></tr></thead>
+      <tbody>
+        <tr><td class="dim">obs</td><td>diningtable … <b>cup 2</b>, fork 1, …</td><td>diningtable … <b>cup 2, cup 1</b>, fork 1, …</td></tr>
+        <tr><td class="dim">context</td><td>t=2, n_uniq=3, rev=0, prog=1.00</td><td>identical</td></tr>
+        <tr><td class="dim">action</td><td>pick up the cup 1 from the diningtable 1</td><td>(unclear from obs)</td></tr>
+        <tr><td class="dim">V(next)</td><td class="num">7.296</td><td class="num">6.473</td></tr>
+        <tr><td class="dim"><b>d / w</b></td><td colspan="2" class="num"><b>0.0258 / 0.8147</b></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="tbl-cap"><b>One object differs</b> &mdash; <span class="m">cup 1</span> present in one listing, absent in
+  the other. Under the hard gate that single token puts them in separate buckets and each loses a comparator; the
+  kernel keeps them at 81%. This is what lifts <span class="m">live_frac</span> from ~0.65 to 1.000.</p>
+
+  <div class="scroll" style="margin-top:18px">
+    <table>
+      <colgroup><col style="width:15%"><col style="width:42.5%"><col style="width:42.5%"></colgroup>
+      <thead><tr><th>5 · both dead nodes</th><th>traj <span class="m">2cbec48b</span></th><th>traj <span class="m">14f01fc5</span></th></tr></thead>
+      <tbody>
+        <tr><td class="dim">obs</td><td colspan="2"><em>You arrive at toilet 1. On the toilet 1, you see a soapbar 3.</em> &mdash; identical</td></tr>
+        <tr><td class="dim">context</td><td>t=14, n_uniq=8, rev=1, prog=0.53</td><td>t=13, n_uniq=8, rev=1, prog=0.57</td></tr>
+        <tr><td class="dim">action</td><td>go to shelf 2</td><td>go to shelf 2</td></tr>
+        <tr><td class="dim">V(next)</td><td class="num"><b>0.000</b></td><td class="num"><b>0.000</b></td></tr>
+        <tr><td class="dim"><b>d / w</b></td><td colspan="2" class="num"><b>0.0000 / 1.0000</b></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="tbl-cap">Both circling, both taking the same action, both moving into nodes no successful trajectory ever
+  reached. Perfect weight, and <b>zero gradient information</b> &mdash; target minus baseline is 0 either way. With
+  <b>50.8% of all targets exactly zero</b>, a large share of the estimator's work looks like this, and it is where the
+  σ floor in the coherent-standardisation variant earns its place.</p>
+
+  <div class="callout" style="margin-top:20px">
+    <div class="lbl">What the five together say</div>
+    <p>Examples 1, 3 and 4 are the mechanism doing exactly what it was designed to do: pooling genuine twins, splitting
+    an observation match that shares no situation, and merging across a one-token difference the hard gate would have
+    discarded.</p>
+    <p>Examples 2 and 5 are why it does not translate into performance. In 2 the discriminating information
+    <em>does not exist yet</em> at the moment φ is computed; in 5 there is nothing to discriminate. Together they are
+    the qualitative face of H-H's measurement — only ~12% of within-bucket return variance is attributable to how a
+    trajectory arrived, because on ALFWorld what happens next is dominated by the action chosen now.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
     <div class="eyebrow">02d — the shipped estimator, 2026-09-06</div>
     <h2>What actually runs, and what is only an option</h2>
   </div>
