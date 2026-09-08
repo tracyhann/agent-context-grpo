@@ -59,6 +59,50 @@ before the action exists.
 
 ## Open — ranked by expected value
 
+### [!] H-Z. **150 steps buys nothing** — the 100-step ceiling, and a warning about best-checkpoint selection
+
+`ccpo-global-ext-20260908` warm-started the 79.7% arm at step 100 and ran to 145,
+where early stopping fired. Nine evaluations:
+
+```
+85.9  79.7  77.3  75.8  78.1  78.9  84.4  71.1  85.9
+
+mean 79.69   sd 4.97   range 71.1 – 85.9
+step-100 baseline        79.69
+difference               −0.00
+trend across 50 steps    −0.14 pts/5 steps
+```
+
+**The mean over 50 additional steps equals the step-100 value to two decimals.** The
+curve had already converged; the apparent headroom at step 100 (a fitted tail slope of
++2.19 pts/5 steps) was noise in the last few evaluations, not a trend.
+
+**Consequence for the GiGPO comparison.** GiGPO reports 86.7 at *its* 150-iteration
+protocol. We now have a 150-step number and it is ~80. **The 7-point gap is not a
+training-length gap** — it is method or harness, and H-O already located it outside
+the estimator.
+
+### The best-checkpoint trap, stated plainly
+
+`best.json` records **85.9% at step 105**, and it would be tempting to quote that.
+It should not be quoted. With sd ≈ 4.97 over 9 draws, the expected maximum sits about
+1.5 sd above the mean — **79.69 + 7.5 ≈ 87**. We observed 85.9.
+
+**The "best checkpoint" is the luckiest draw, not a better policy.** Selecting the max
+of a noisy series is selecting noise, and it is systematically biased upward by roughly
+1.5 sd whenever the evaluation is this variable.
+
+This matters beyond this run: **every `stepN-best` checkpoint in this project is
+selected the same way.** Report the mean over evaluations, or re-evaluate the chosen
+checkpoint on a fresh draw — never the selecting maximum.
+
+**Caveat that does not change the conclusion.** This run predates the
+validation-draw alignment fix, so its evaluations replay the *early* draw sequence.
+That biases the comparison against the step-100 number in an unknown direction — but
+the extension's *internal* trend (−0.14 pts/5 steps over nine of its own evaluations,
+all on the same replayed sequence) is unaffected by the offset, and it is flat.
+
+
 ### [ ] H-X. **"Uncertainty" was never one dial** — aleatoric vs epistemic, and only one is untested
 
 Every uncertainty result in this file has conflated two different quantities:

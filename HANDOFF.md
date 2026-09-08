@@ -10,6 +10,7 @@ running process.
 | **`ccpo-global-20260907`** | 100 | **79.7%** | **best result. the comparator for everything.** |
 | `ccpo-long-20260906` | 100 | 70.3% | hard gate, no edge term |
 | `ccpo-localstd-20260908` | 80 (stopped) | ~59% @75 | coherent standardisation, H-V |
+| `ccpo-global-ext-20260908` | 145 | **79.7% mean** | 150-step probe: +0.00 over step 100 |
 | `ccpo-hardedge-20260907` | 50 (paused) | 41.4% | CCPO ON/OFF ablation |
 | `ccpo-memory-20260907` | 22 (stopped) | 9.4% @20 | digest, H-W |
 
@@ -27,6 +28,13 @@ bucket is *worse* than uniform, and this ablation.
 
 **2. The 79.7% came from G²PO's edge term, not from CCPO.** `edge_w` had defaulted to
 0.0 while we were trying to beat G²PO. Turning it on coincided with 70.3 → 79.7.
+
+## Do not quote a `stepN-best` number
+
+Best-checkpoint selection takes the maximum of a noisy series and is biased upward by
+~1.5 sd. `ccpo-global-ext` shows it cleanly: mean 79.69, sd 4.97, and `best.json` reads
+85.9 — almost exactly the expected maximum of 9 draws. Report the mean over
+evaluations, or re-evaluate on a fresh draw.
 
 ## Two measurement corrections that change how to read everything
 
