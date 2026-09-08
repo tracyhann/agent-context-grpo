@@ -118,6 +118,22 @@ explicitly at what were already the code defaults -- `task`, 0.25, `mode`.)
 above ~555, the sweep's model of the cost is wrong and the arm should be stopped
 immediately rather than run for its success rate.
 
+**RESULT: 544 at step 1 — passes the threshold, but the point prediction was 2.2x off,
+and the reason matters.** Predicted +35 overhead, measured +78. The cost identity is
+`overhead = P(fire) x (digest - window) = P(fire) x (184 - 88) = P(fire) x 96`, so +78
+implies the gate firing on **~81%** of turns, not the 36% the sweep assumed. That 36%
+was measured on a TRAINED policy; at step 1 the policy is untrained, stalls constantly,
+and trips the >=2-turn gate far more often. **The cost model is sound; it was fed a
+firing rate from the wrong regime.**
+
+Follow-on prediction, falsifiable across the run: as training reduces stalling,
+`prompt_length/mean` should DECLINE toward +35. `ccpo-gatedmem` is the control -- its
+prompt length stayed flat at 648-695 across all 20 steps, because at a 512 budget the
+digest dominates however often it fires.
+
+Cost reduction actually achieved so far: **+78 against gatedmem's +190, i.e. 2.4x, not
+the 5.5x claimed above.**
+
 **Kill rule, fixed in advance, same form as H-Y's:** stop at step 20 if train mean over
 steps 10-20 is below 0.130 (base 0.160), or held-out at step 20 is below 15%.
 Continue only on the pre-registered per-type concentration, never on overall success
