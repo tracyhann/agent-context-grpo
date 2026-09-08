@@ -59,6 +59,67 @@ before the action exists.
 
 ## Open — ranked by expected value
 
+### [ ] H-V. **Coherent standardisation — use OUR grouping for the scale too.** Best-supported open idea
+
+**The question that produced it** (user, 2026-09-08): *can we standardise using our
+context-conditioned grouping rather than G²PO's?* I had been framing the choice as
+"our grouping vs theirs" for *membership*, and treating the scale as a separate
+decision between per-task and per-node. The real option is to use the kernel for
+**both** jobs.
+
+We already compute a φ-weighted *mean* over the soft neighbourhood. The φ-weighted
+*variance* over the same neighbourhood was simply never computed:
+
+```
+b_u = Σ w_uv · target_v / Σ w_uv                          (have)
+σ_u = sqrt( Σ w_uv (target_v − b_u)² / Σ w_uv )           (missing)
+A_CC = (target_u − b_u) / σ_u
+```
+
+**Measured** (`gate-probe-20260907`, n=6,912, soft global neighbourhoods, τ=0.15),
+split-half reliability of the step advantage:
+
+| scale | reliability |
+|---|---|
+| unstandardised | 0.8299 |
+| task-level sd (**what we ship now**) | 0.8446 |
+| per-node sd (**G²PO's choice**) | 0.8968 |
+| **CONTROL: σ shuffled within task** | 0.8860 |
+| **φ-weighted local σ** | **0.9711** |
+
+**The shuffle control was run first this time**, after H-U's reliability claim turned
+out to be an artifact. Give every occurrence someone else's σ — same distribution of
+scales, no information about *which* occurrence it belongs to — and reliability is
+0.886. The real σ reaches 0.971. So **≈0.085 of the gain is σ being the right scale
+for that occurrence**, not merely dividing by a varying number. That is exactly the
+test H-U failed.
+
+It also beats G²PO's per-node scale by 0.074: **the kernel is a better scale estimator
+than the observation node.**
+
+**Why this is coherent rather than opportunistic.** G²PO standardises within a hard
+node because a hard node is all they have. We *deleted* the node (H-M) and then fell
+back to per-task scale — which the table shows is the worst of the three options. The
+kernel that decides membership should also decide scale; anything else is a mismatch
+between the two halves of the estimator.
+
+**Caveats, recorded before implementation:**
+
+* σ has **p10 = 0.000** — degenerate neighbourhoods (all-identical targets) would
+  divide by ~0. A floor is required, and its value is a real hyperparameter.
+* Measured with **bag-of-words φ** on one checkpoint, not the hidden-state φ we run.
+* Split-half reliability is a proxy for gradient quality, not a success rate. It is
+  a better proxy than anything else available offline, but H-J and H-U are both
+  reminders that a proxy can move without the policy following.
+* The trainer's existing per-task standardisation must be **disabled** when this is
+  on, or the advantage is standardised twice.
+
+**Rank: above H-U and above the remaining φ work.** Unlike every φ hypothesis it is
+not bounded by H-H's ceiling — it changes the *scale* of the credit, not the quality
+of the grouping — and unlike H-U it has an intrinsic criterion that survives its own
+control.
+
+
 ### [ ] H-U. **Standardisation level — per task (ours) vs per node (G²PO).** The largest measured deviation
 
 H-O cleared the LOO exclusion (0.009), φ (0.011) and the gate (0.012) and left ~0.09
