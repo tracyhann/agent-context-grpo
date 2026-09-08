@@ -59,6 +59,57 @@ before the action exists.
 
 ## Open — ranked by expected value
 
+### [CORRECTION + kill rule, logged before ccpo-gatedmem reports] H-Y. The digest never had a format problem
+
+I proposed that the deciding diagnostic for the digest arm was whether
+`valid_action_ratio` recovers to >=0.999, reasoning that a recovery with flat success
+would isolate the digest's *content* as unhelpful rather than its *cost*. **That test
+was already passed by the arm it was meant to explain, and I had not checked.**
+
+| step | base (79.7% arm) | ccpo-memory (failed) |
+|---|---|---|
+| 1 | 0.8431 | 0.7864 |
+| 5 | 0.9986 | 0.9977 |
+| 10 | 0.9992 | 0.9995 |
+| 22 | 0.9991 | **0.9997** |
+
+Both arms start near 0.81 (untrained policy) and both are at 0.999 by step 5. The
+failed arm ends *above* base. There was never a format-compliance failure to recover
+from, so the diagnostic could not discriminate anything.
+
+**Where the harm actually is.** On TRAINING episodes, not just held-out draws:
+
+```
+train success, steps 10-22:   base 0.160   memory 0.108   (-0.053)
+memory behind at 18 of 22 individual steps
+```
+
+It learns slower, full stop. The one clear difference is prompt budget: 745-806 tokens
+against base's ~470.
+
+**Bearing on `ccpo-gatedmem`.** The stall gate cuts step-1 prompt length to 656 (base
+466, ungated 774) -- roughly a third of the overhead removed, so about two thirds of the
+suspected cost remains. Against that, the gate is not merely a smaller digest but a
+*conditional* one: it fires only after >=2 turns with no new observation, i.e. only when
+the agent is looping, whereas the failed arm showed a digest even when the current
+observation sufficed. That is a mechanistic difference and is the only reason to expect
+a different outcome. Prior stays at 30%.
+
+**Kill rule, fixed now so it cannot be fitted to the result.** Stop the arm at step 20 if
+either holds:
+
+1. train success over steps 10-20 is below base's 0.160 by more than 0.03 (i.e. it
+   reproduces the failed arm's deficit rather than closing it), **or**
+2. held-out at step 20 is below 15% (base: 21.1%).
+
+Continue to 50 only if the step-20 per-type split shows the pre-registered concentration
+on `pick_two_obj_and_place` / `look_at_obj_in_light` (H-Y'). Overall success alone is not
+sufficient grounds to continue -- at n=128 its SE is ~3.6 points, which cannot separate
+the hypotheses.
+
+Measured cost: 460 s/step, so step 20 is ~2.6 h and step 50 ~6.4 h.
+
+
 ### [PRE-REGISTERED, before ccpo-gatedmem reports] H-Y'. Where the 15 points actually are
 
 Pooling the nine converged evaluations of `ccpo-global-ext` (steps 105–145) gives
