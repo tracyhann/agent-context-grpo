@@ -56,6 +56,18 @@ _GATE = os.environ.get("ACG_CCPO_GATE", "hard").lower()
 # mean. The offline optimum is an interior one, which is the whole argument for a
 # soft global neighbourhood over a hard local one.
 _TAU_ENV = os.environ.get("ACG_CCPO_TAU")
+# Scale of the step credit. "task" divides by the per-task sd in the trainer (the
+# shipped default, and the WORST of the three options measured). "local" divides by
+# the phi-weighted sd over the SAME soft neighbourhood that produced the baseline --
+# so the kernel decides membership and scale coherently instead of one of each.
+# Measured split-half reliability (gate-probe-20260907, n=6,912): unstandardised
+# 0.8299, task 0.8446, G2PO's per-node 0.8968, shuffled-sigma control 0.8860,
+# phi-weighted local 0.9711.
+_STD_MODE = os.environ.get("ACG_CCPO_STD", "task").lower()
+# Floor on sigma. A neighbourhood whose targets are all identical gives sigma 0
+# (measured p10 = 0.000), which would divide by ~nothing. Expressed as a fraction of
+# the batch-level target sd so it carries no units.
+_STD_FLOOR = float(os.environ.get("ACG_CCPO_STD_FLOOR", "0.25"))
 
 # Affinity metric. "hidden" uses the frozen REFERENCE policy's last-prompt-token
 # hidden state (supplied by the trainer as phi_feats), whitened batch-wide;
@@ -658,12 +670,18 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
                 # and is the entire estimator wherever lambda=0.
                 J = float(len(per))
                 oth = [idx[b] for b in other]
+                # phi-weighted sd over the SAME neighbourhood and the SAME weights
+                # that produced b_loo. Uses b_loo as the centre so the mean and the
+                # scale are consistent with one another.
+                _wv = w / max(w.sum(), 1e-12)
+                _sig = float(np.sqrt(max((_wv * (TGT[oth] - b_loo) ** 2).sum(), 0.0)))
                 s2 = float(np.var(TGT[oth])) if len(oth) > 1 else 0.0
                 var_gain = max(1.0 / max(ne, 1e-9) - 1.0 / max(J, 1e-9), 0.0)
                 b_obs = float(TGT[oth].mean())                # Record the occurrence; the shrinkage weight is applied below,
                 # because "eb_pooled" needs the whole batch before it can choose one.
                 _rec.append(dict(i=i, lvl=lvl, bhash=_bhash, b_loo=b_loo, b_obs=b_obs,
-                                 s2=s2, ne=ne, J=J, var_gain=var_gain, rho=rho_l))
+                                 s2=s2, ne=ne, J=J, var_gain=var_gain, rho=rho_l,
+                                 sig=_sig))
                 assigned[i] = True
                 level_of[i] = lvl
 
@@ -704,6 +722,9 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
         # two or three trajectories of a single bucket.
         lam_pooled = _lam_pooled_obs
 
+    _tgt_sd = float(np.std(TGT)) if len(TGT) > 1 else 1.0
+    if _tgt_sd < 1e-9:
+        _tgt_sd = 1.0
     for _r in _rec:
         i, b_loo, b_obs = _r["i"], _r["b_loo"], _r["b_obs"]
         s2, var_gain, rho_l = _r["s2"], _r["var_gain"], _r["rho"]
@@ -752,6 +773,11 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
             lam = 0.0 if abs(_d) < 1e-12 else float(1.0 - _vd1 / (_d * _d))
         lam = min(1.0, max(0.0, lam))
         adv[i] = TGT[i] - (lam * b_loo + (1 - lam) * b_obs)
+        if _STD_MODE == "local":
+            # Coherent standardisation: the kernel that chose the neighbourhood also
+            # sets the scale. The floor keeps a degenerate all-identical
+            # neighbourhood from exploding the credit.
+            adv[i] = adv[i] / max(_r["sig"], _STD_FLOOR * _tgt_sd)
         lam_all.append(lam)
         neff_all.append(_r["ne"])
         # effect: how far our credit departs from the uniform baseline. If this is

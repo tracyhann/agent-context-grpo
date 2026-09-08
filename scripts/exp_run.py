@@ -166,6 +166,13 @@ DEFAULTS = {
     # hard gate -- see H-M in experiments/hypothesis.md.
     "ccpo_gate": "hard",
     "ccpo_tau": 1.0,
+    # "task" = divide the step credit by the per-task sd in the trainer (default).
+    # "local" = divide by the phi-weighted sd over the same soft neighbourhood that
+    # produced the baseline. Set ccpo_step_norm=none alongside it or the advantage is
+    # standardised twice. See H-V in experiments/hypothesis.md.
+    "ccpo_std": "task",
+    "ccpo_std_floor": 0.25,
+    "ccpo_step_norm": "mode",
 
     # supporting components, both off = stock protocol
     "compact_budget": 0,
@@ -187,6 +194,8 @@ ENV_KEYS = {
     "ccpo_sim_backoff": "ACG_CCPO_SIM_BACKOFF",
     "ccpo_backoff_rho": "ACG_CCPO_BACKOFF_RHO", "ccpo_edge_w": "ACG_CCPO_EDGE_W",
     "ccpo_gate": "ACG_CCPO_GATE", "ccpo_tau": "ACG_CCPO_TAU",
+    "ccpo_std": "ACG_CCPO_STD", "ccpo_std_floor": "ACG_CCPO_STD_FLOOR",
+    "ccpo_step_norm": "ACG_CCPO_STEP_NORM",
     "compact_budget": "ACG_COMPACT_BUDGET", "force_budget": "ACG_FORCE_BUDGET",
     "force_tail": "ACG_FORCE_TAIL",
     "early_stop_patience": "ACG_EARLY_STOP_PATIENCE",

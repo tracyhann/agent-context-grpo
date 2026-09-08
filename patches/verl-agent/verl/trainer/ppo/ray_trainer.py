@@ -395,7 +395,11 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
         #                    step term, so the two are already commensurate
         # 'std' reproduces the previous always-standardise behaviour and 'none'
         # disables scaling entirely; both are kept for ablation.
-        _sn = kwargs.get('ccpo_step_norm', 'mode')
+        # 'none' is required alongside ACG_CCPO_STD=local, or the step credit is
+        # standardised twice -- once by the phi-weighted local sigma inside the
+        # estimator and again per task here. The env var is the operative path;
+        # kwargs remains for callers that set it directly.
+        _sn = os.environ.get('ACG_CCPO_STEP_NORM') or kwargs.get('ccpo_step_norm', 'mode')
         _do_std = (_sn == 'std') or (_sn == 'mode' and not _remove_std)
         if _do_std:
             # Live rows come from the estimator's own mask. Testing
