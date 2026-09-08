@@ -59,6 +59,56 @@ before the action exists.
 
 ## Open — ranked by expected value
 
+### [!] H-T. Memory **summaries** in φ — refuted offline; memory **content** still open
+
+Asked how to get memory into φ so it conditions the soft weighting. Two routes.
+
+**Route A — summaries derived from the observation sequence alone (no plumbing).**
+`derive_context()` already walks each trajectory in order, so it can compute
+`null_frac` (share of past actions that left the observation unchanged), `stall`
+(steps since anything new) and `revisit_count` for free.
+
+Well-distributed — 59% of occurrences have non-zero `null_frac`, `stall` p90 = 6 —
+but they predict nothing new:
+
+| target | existing ctx R² | + memory feats | Δ |
+|---|---|---|---|
+| return-to-go | 0.2144 | 0.2158 | **+0.0013** |
+| nextnode | 0.1681 | 0.1715 | **+0.0034** |
+
+**Cause: collinearity with what ctx already has.**
+
+```
+corr(revisit_count, progress) = −0.615
+corr(stall,         progress) = −0.572
+corr(null_frac,     progress) = −0.467
+```
+
+`progress = n_unique/(t+1)` is *already* a stall detector. **Refuted** — do not add
+observation-derived memory summaries to φ; they restate `progress`.
+
+**Route B — the digest's content. Untested, and the only channel carrying anything
+new.** What the digest has that the observation sequence does not is the **actions**:
+which things were tried and which failed. `"open cabinet 3 → no effect (×3)"` is not
+recoverable from observations.
+
+Implementation sketch: carry the digest as a `non_tensor_batch` field the way
+`anchor_obs` travels; hash it into a bag plus two scalars (distinct failed actions,
+distinct successful ones via `state_signature`); concatenate under a new
+`ACG_CCPO_PHI=hidden+ctx+mem` with its own weight so it stays a single-flag ablation.
+
+This would also **fix the H-R confound**: memory currently reaches φ only
+incidentally, because the digest sits in the prompt the hidden state is computed
+over. Explicit featurisation makes it a deliberate, ablatable channel.
+
+**Test before building** — the deciding measurement is whether *action* history
+predicts the target beyond ctx, i.e. the same regression above with digest features.
+Needs the digest added to `ACG_CCPO_GDUMP` (two lines) and a 15-minute 2-step probe.
+**Prior: also small**, given Route A returned +0.003 and φ's measured relevance is
+R² 0.00013 — but it is the one remaining channel the current φ cannot see, so 15
+minutes to measure beats 11 hours to guess.
+
+
 ### [ ] H-S. **Uncertainty as a weight on A_CC, not a choice between baselines** — the reframing that survives
 
 Every uncertainty result in this file is about **whether to trust φ's neighbourhood
