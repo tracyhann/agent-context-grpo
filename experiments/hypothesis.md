@@ -59,6 +59,46 @@ before the action exists.
 
 ## Open — ranked by expected value
 
+### [!] H-AA. The digest's stated mechanism is refuted, paired, at step 15
+
+`ccpo-gatedmem` and `ccpo-global` share `env.seed=0`, `train_batch_size=16` and
+`env.rollout.n=8`, so they see the **same training-task sequence** and can be compared
+step-by-step as paired samples. Over the 15 matched steps so far (exact sign test):
+
+| metric | mean diff | gatedmem higher | p |
+|---|---|---|---|
+| `response_length/mean` | **+6.32 tok** | **15/15** | 6.1e-5 |
+| `prompt_length/mean` | +194.3 tok | 15/15 | 6.1e-5 |
+| `actor/kl_loss` | **-0.009** | **0/15** | 6.1e-5 |
+| `episode/success_rate` | -0.024 | 4/15 | 0.12 |
+
+**The response-length result refutes the digest's justification.** `compact.py` motivates
+the digest as going "in the prompt, so the agent stops re-deriving state inside
+`<think>`" -- which predicts SHORTER responses. Responses are longer, at every single
+step, by ~8%. The digest does not replace the agent's own re-derivation; it is read
+*in addition to* it. So it costs ~194 prompt tokens and ~6 response tokens, and buys no
+reduction anywhere. **The premise in the module docstring is wrong as written and should
+be corrected rather than restated.**
+
+**Lower KL at 15 of 15 steps is the learning-rate signature.** The digest arm stays
+closer to the reference policy at every step. Less divergence from reference is less
+policy movement per step, which is exactly the slower-learning pattern the ungated arm
+showed (train 0.108 vs 0.160 over steps 10-22). It suggests the digest suppresses the
+update rather than corrupting it -- consistent with the ungated arm eventually reaching
+0.9997 valid-action ratio while still trailing on success.
+
+**What is NOT yet established.** Success rate is -0.024 at 4/15, p=0.12 -- the direction
+matches the ungated arm but it does not clear significance, and held-out is within noise
+at every evaluation so far (step 5 -0.8+/-7.4, step 10 +0.0+/-7.8, step 15 -3.9+/-9.0).
+No instability: grad norm 0.890 vs base 1.700, clipfrac 0.003, and
+`prompt_length/clip_ratio` is 0.000, so nothing is being truncated.
+
+**This does not by itself trigger the kill rule**, which keys on the steps 10-20 train
+mean and the step-20 held-out per-type split. But it removes the mechanism that
+motivated the arm: whatever the digest does, it is not saving the agent from
+re-deriving state.
+
+
 ### [CORRECTION + kill rule, logged before ccpo-gatedmem reports] H-Y. The digest never had a format problem
 
 I proposed that the deciding diagnostic for the digest arm was whether
