@@ -77,15 +77,28 @@ G²PO calls `step_norm_reward(..., step_group_uids, ...)` — standardising `A_N
 
 That single change accounts for essentially the whole residual gap.
 
-**Is per-node better?** On split-half reliability of the step advantage
-(n=232,929): unstandardised 0.8128, per task 0.8749, **per node 0.9770**. The
-small-node worry — standardising a 2-occurrence node forces ±1 regardless of
-magnitude — is empirically minor: such nodes are 15.7% of *nodes* but only **2.1% of
-occurrences** (median node holds 6, p90 29).
+**Is per-node better? On reliability, NO — the first measurement was an artifact.**
 
-**Caveat, unresolved:** both halves are standardised within the *same* node, which
-could inflate their agreement mechanically. I do not think that explains a 0.10 gap
-but I have not ruled it out, and 0.977 should not be quoted as established until it is.
+I first reported split-half reliability of 0.9770 per node against 0.8749 per task,
+and flagged as an unresolved caveat that both halves were standardised by their *own*
+statistics, which can induce agreement mechanically. **It did.** Controlling for it —
+scaling both halves by an independent quantity, the node's target spread:
+
+| | reliability |
+|---|---|
+| unstandardised | 0.8128 |
+| per-node, each half scaled by itself | 0.9770 ← **artifact** |
+| **per-node, artifact-free** | **0.8544** |
+| **per-task, artifact-free** | **0.8502** |
+
+**The real gap is +0.004, not +0.10.** Per-node standardisation is *not*
+demonstrably more reliable. (The small-node worry is separately minor: nodes with ≤2
+occurrences are 15.7% of nodes but 2.1% of occurrences.)
+
+**What survives is only the correlation result** — per-node makes our advantage
+0.927-agreeing with G²PO instead of 0.836. That is real, but it is an argument of the
+form *"be more like the method that scores 95.0"*, not evidence that per-node is
+intrinsically better. Circumstantial, and much weaker than this entry first claimed.
 
 **The structural point, and it corrects a claim I made in conversation.** I called
 this "a one-line change". It is not, for the shipped configuration: **under the global
@@ -108,10 +121,17 @@ That separation is coherent and arguably the right design, but it is a real chan
 variance-reduction property G²PO's own ablation credits to their group-aggregation
 component. Per-task lets high-variance nodes dominate the gradient.
 
-**Rank: above the memory work and above H-S.** It is the single largest measured
-deviation from a method scoring 95.0 where we score 79.7, and unlike every φ
-hypothesis it is not bounded by H-H's ceiling — it changes the scale of the credit,
-not the quality of the grouping.
+**Rank: DOWNGRADED after the artifact control.** It remains the single largest
+measured deviation from G²PO and is not bounded by H-H's ceiling — but with the
+reliability evidence withdrawn, the case is purely "match the winner". That no longer
+clearly outranks finishing the memory arm, which tests the one component of the
+original design never cleanly evaluated.
+
+**Do not pause a running arm for this.** I recommended exactly that on the strength of
+the 0.977 figure, before running the control that refuted it. Before this earns GPU
+time it needs an *intrinsic* criterion — some test that per-node standardisation is
+better on its own terms rather than by resemblance to G²PO. If no such test exists
+offline, it is a bet, and should be run only after memory resolves and labelled as one.
 
 
 ### [!] H-T. Memory **summaries** in φ — refuted offline; memory **content** still open
