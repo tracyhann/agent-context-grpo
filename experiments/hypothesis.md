@@ -59,6 +59,73 @@ before the action exists.
 
 ## Open — ranked by expected value
 
+### [ ] H-X. **"Uncertainty" was never one dial** — aleatoric vs epistemic, and only one is untested
+
+Every uncertainty result in this file has conflated two different quantities:
+
+| | asks | where it enters | measured |
+|---|---|---|---|
+| **aleatoric** — σ | how much do outcomes vary *here*? | `ccpo-localstd` divides A_CC by σ | **−2.08 paired, trending harmful** |
+| **epistemic** — n_eff, J | how well do I *know* the mean? | H-S weights A_CC by reliability | **untested** |
+
+`ccpo-localstd` divides by the neighbourhood's spread, so it **damps high-variance
+neighbourhoods** — plausibly the states that most discriminate good actions from bad.
+That is a coherent mechanism for a mildly harmful result rather than a neutral one.
+
+H-S weights by *reliability* (`w_u = J_u/(J_u+c)`), damping **poorly-sampled**
+neighbourhoods instead — a different target, measured at 1.36× reliability difference
+between J≤3 and J≥6. **The two rules disagree exactly where variance is high AND
+support is high**: localstd shrinks those, H-S keeps them.
+
+**So `localstd` trending negative does not refute H-S.** What it refutes is the
+framing carried through most of this session — that uncertainty is a single dial that
+either helps or does not.
+
+**What to abandon:** uncertainty about *whether to trust φ's neighbourhood*. Settled
+four ways — τ² ≈ 4e-6, λ = 0.011 whenever free, H-Q showing φ-weighting inside a
+bucket is actively worse than uniform, and the on/off ablation at −0.01. There is
+nothing to be uncertain about because there is no signal.
+
+**What may still be worth one arm:** epistemic weighting (H-S). Predicted effect
+remains small; it is variance reduction on the ~13% of occurrences with J≤3.
+
+---
+
+### [ ] H-Y. **Uncertainty-gated memory** — spend the digest only where the agent is lost
+
+The memory arm (H-W) failed with a *diagnosis*, not a verdict: `valid_action_ratio`
+0.9869 against ≥0.999 elsewhere, and it started degraded **at step 1** — before
+training could adapt — so the ~300-token digest was costing output format from the
+first rollout. **The digest's value was never disproven; its cost was identified.**
+
+That cost is paid every turn while the benefit only exists when the agent is
+repeating itself. Measured on `gate-probe-20260907`:
+
+| gate | fires on | mean V(next) there |
+|---|---|---|
+| always (what H-W ran) | 100.0% | 2.896 |
+| `revisit_count > 0` | 54.3% | 2.306 |
+| **`stall ≥ 2`** | **36.0%** | **1.964** |
+| `stall ≥ 5` | 14.4% | 1.330 |
+
+Gating on `stall ≥ 2` cuts exposure to ~a third, and the turns it selects have **mean
+V(next) 1.96 against 2.90 overall** — it fires precisely on the turns going badly,
+which is the population the digest exists to rescue. The untouched 64% keep the
+reference protocol exactly.
+
+`stall` is already computed in `derive_context()` (steps since the last new
+observation) and needs no plumbing. Implementation is a condition on the
+`ACG_COMPACT_BUDGET` block in `env_manager.py`.
+
+**Why this ranks above H-S:** it fixes a defect we measured rather than adding a
+mechanism, and it has a measured targeting signal. H-S has a real quantity but a
+predicted effect too small for one arm to resolve against a paired sd of 5.2.
+
+**Both held** until `ccpo-localstd` finishes — it is at step 45 with the comparator's
+decisive stretch (65–100) still ahead, and stopping on t = −1.15 would repeat the
+step-30 misread.
+
+
 ### [~] H-W. The memory digest is **hurting** at 20 steps, with an identified cost mechanism
 
 `ccpo-memory-20260907` — the digest arm, a single config change (`compact_budget`
