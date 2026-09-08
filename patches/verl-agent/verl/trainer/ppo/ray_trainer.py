@@ -1139,6 +1139,41 @@ class RayPPOTrainer:
         # load checkpoint before doing anything
         self._load_checkpoint()
 
+        # ---- align the validation draw after a resume ----------------------
+        # A checkpoint stores only the actor and the train dataloader; it holds NO
+        # environment state, and make_envs() runs before this point. The ALFWorld
+        # validation workers each shuffle the game list with their own seed and
+        # ITERATE, so a resumed run would replay the sequence from the beginning and
+        # evaluate different games than a fresh run reaches at the same step.
+        #
+        # Measured before this fix (detrended residual correlation of held-out
+        # series, which isolates the shared draw from the shared learning curve):
+        #   fresh vs fresh      +0.67 .. +0.77   (p 0.006 - 0.083)
+        #   fresh vs RESUMED    +0.235            (p 0.371)
+        # i.e. resumed runs were not comparable to fresh ones at matched steps.
+        #
+        # Fix: burn the draws the fresh run would already have consumed. A fresh run
+        # reaching step N has validated floor(N / test_freq) times, each iterating
+        # len(val_dataloader) batches, one env reset per batch.
+        _align = os.environ.get("ACG_ALIGN_VAL_ON_RESUME", "1") != "0"
+        if _align and self.global_steps > 0 and self.val_envs is not None:
+            _tf = int(self.config.trainer.test_freq or 0)
+            if _tf > 0:
+                _burn = (self.global_steps // _tf) * max(len(self.val_dataloader), 1)
+                print(f"[acg] resumed at step {self.global_steps}; advancing the "
+                      f"validation draw by {_burn} resets so it matches a fresh run",
+                      flush=True)
+                for _b in range(_burn):
+                    try:
+                        self.val_envs.reset(None)
+                    except TypeError:
+                        self.val_envs.reset()
+                    except Exception as _e:
+                        print(f"[acg] validation-draw alignment stopped at {_b}/{_burn}: {_e}",
+                              flush=True)
+                        break
+                print(f"[acg] validation draw aligned ({_burn} resets)", flush=True)
+
         # perform validation before training
         # currently, we only support validation using the reward_function.
         if self.val_reward_fn is not None and self.config.trainer.get("val_before_train", True):

@@ -48,7 +48,25 @@ scripts/exp_run.py --name ccpo-long --arm ccpo --set total_epochs=100 \
   --set resume_from=experiments/<prev>/outputs/checkpoints/global_step_20
 ```
 
-runs steps 21-100. Two things make this safe here and would not generalise:
+runs steps 21-100.
+
+**Validation-draw alignment (added 2026-09-08).** A checkpoint stores the actor and
+the train dataloader but **no environment state**, and `make_envs()` runs before
+`_load_checkpoint()`. Without a fix, a resumed run rebuilds its ALFWorld validation
+workers with fresh iterators and replays the game sequence from the start, so it
+evaluates *different games* than a fresh run reaches at the same step. Measured by
+detrended residual correlation of the held-out series (which isolates the shared draw
+from the shared learning curve): fresh-vs-fresh **+0.67 to +0.77** (p 0.006-0.083),
+fresh-vs-resumed **+0.235** (p 0.371).
+
+The trainer now burns `floor(step / test_freq) x len(val_dataloader)` env resets on
+resume, so the draw matches a fresh run at every step. Disable with
+`ACG_ALIGN_VAL_ON_RESUME=0` only if you want the old behaviour for a reproduction.
+**`ccpo-long-20260906` and `ccpo-global-ext-20260908` predate the fix and are offset
+from the fresh runs** — do not compare them at matched steps without re-evaluating
+both checkpoints on the same draw.
+
+Two further things make warm-starting safe here and would not generalise:
 `warmup_style=constant` with zero warmup, so changing `total_training_steps` does
 not move the LR under the resumed optimiser; and `del_local_ckpt_after_load=False`,
 so the source checkpoint survives. Every other key must match the run that produced
