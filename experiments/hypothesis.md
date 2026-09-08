@@ -59,6 +59,48 @@ before the action exists.
 
 ## Open — ranked by expected value
 
+### [~] H-W. The memory digest is **hurting** at 20 steps, with an identified cost mechanism
+
+`ccpo-memory-20260907` — the digest arm, a single config change (`compact_budget`
+0 → 512) from the 79.7% run. Interim at step 20 of 100:
+
+| step | memory | no-memory | delta |
+|---|---|---|---|
+| 5 | 8.6 | 10.2 | −1.6 |
+| 10 | 8.6 | 10.9 | −2.3 |
+| 15 | 12.5 | 17.2 | −4.7 |
+| 20 | **9.4** | **21.1** | **−11.7** |
+
+**Four for four, widening monotonically, mean −5.08.** More telling than the gap is
+the *internal* trend: memory **+0.62 pts/5 steps** against the comparator's **+3.90**.
+The memory arm has gone 8.6 → 9.4 across 20 steps while the comparator doubled. It is
+not merely behind — it is barely learning.
+
+This is qualitatively different from the first three readings, which I correctly
+declined to read as signal. Four consecutive negatives with a monotone widening *and*
+a flat internal trend is a pattern; three noisy points were not.
+
+**Identified cost mechanism:** `valid_action_ratio` is **0.9869**, against ≥0.999 in
+every other arm — roughly 1.3% of actions failing to parse. Consistent with the
+~300-token digest (prompt 796 vs ~496) crowding the prompt and degrading output
+format. **The digest is costing action validity, not just tokens.** That is a
+concrete, fixable defect rather than a verdict on the idea: a shorter budget, or
+placing the digest after the observation rather than before it, would test whether
+the format cost is separable from the memory content.
+
+**Not refuted.** 20 steps is short, the comparator's own curve was flat until step 15,
+and the digest could still pay off over a longer horizon. But it is the
+weakest-performing arm at this stage, it has a diagnosable defect, and it is occupying
+GPUs that H-V — the best-supported open idea — is waiting on.
+
+**H-R note.** `phi_rel_corr` is +0.0067 here against +0.0113 in the no-memory arm.
+Consistent with the digest changing φ's neighbourhoods as H-R predicted it might,
+though n is still too small to call. If the arm is paused this stays unresolved.
+
+**Recommendation: pause at the step-20 checkpoint and pivot to H-V.** `step20-best`
+preserves the question for a resume.
+
+
 ### [ ] H-V. **Coherent standardisation — use OUR grouping for the scale too.** Best-supported open idea
 
 **The question that produced it** (user, 2026-09-08): *can we standardise using our
