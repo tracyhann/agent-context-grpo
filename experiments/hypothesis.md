@@ -59,6 +59,58 @@ before the action exists.
 
 ## Open — ranked by expected value
 
+### [!!] H-AB. Our config matches G2PO's published script exactly — the gap is not setup
+
+Diffed `experiments/ccpo-global-20260907/outputs/resolved_config.json` against
+`baselines/G2PO/examples/g2po_trainer/run_alfworld.sh`, the script that produced the
+95.0 number. **Every substantive hyperparameter is identical:**
+
+```
+lr 1e-6              kl_loss_coef 0.01        kl_loss_type low_var_kl
+gamma 0.95           use_kl_in_reward False   use_invalid_action_penalty True (coef 0.1)
+max_steps 50         group_size 8             train_batch_size 16
+max_prompt_length 2048   max_response_length 512
+val temperature 0.4  val do_sample True       test_freq 5
+ppo_mini_batch_size 256  ppo_micro_batch_size_per_gpu 32
+eval split: eval_in_distribution (both)
+```
+
+The 16 "differing" keys are paths, run names, logger, `n_gpus_per_node` (8 vs 4),
+`tensor_model_parallel_size`, `gpu_memory_utilization`, and the estimator itself.
+
+**`data.val_batch_size` 128 vs our 64 is not a real difference.** `test.parquet` holds
+128 rows in both; ours is chunked into 2 batches and both are evaluated
+(`val/success_rate` = 51/64 = 102/128 exactly). Same 128 tasks, same split, same
+sampling temperature. **Our held-out numbers are directly comparable to the published
+ones, and n really is 128.**
+
+**What this closes.** The 15-point gap to G2PO is now excluded from: configuration,
+evaluation protocol, evaluation split, training length (H-Z), context conditioning
+(H-H/H-Q/ablation), memory (H-Y/H-AA), and the advantage estimator itself in the sense
+H-O measured (r ~ 0.90 with G2PO's). Those were the candidates.
+
+**What remains, and it is now the whole question.** Either (i) something in our harness
+outside these config keys differs from the G2PO checkout -- prompt template, thinking
+format, action parsing, reward shaping -- or (ii) the published 95.0 does not reproduce
+on this hardware/stack. Both are answered by exactly one experiment: **run
+`algorithm.adv_estimator=g2po` on OUR harness at these settings.**
+
+That experiment has been declined twice, on the reasoning that baseline numbers are
+already known. That reasoning was sound when method tuning still had untried levers.
+It no longer holds: every lever has been tried and the config is now proven identical,
+so a G2PO arm is no longer a baseline-reproduction exercise -- it is the only remaining
+way to attribute our 79.7. If G2PO scores ~80 here, 79.7 is competitive and the gap is
+environmental. If it scores ~95, the gap is in code we can diff line by line, since both
+trees are on disk.
+
+**Note on the per-type numbers.** Per-type rates are aggregated as a MEAN OF THE TWO
+BATCH-LEVEL RATES, not as a pooled proportion (e.g. pick_clean 0.759524 = mean of 13/21
+and 9/10). When the two batches hold different numbers of a type, that unweighted mean
+is a slightly biased estimate of the pooled rate. It does not affect the overall number
+and is too small to move H-Y's conclusions, but per-type values should not be treated as
+exact proportions over 128.
+
+
 ### [!] H-AA. The digest's stated mechanism is refuted, paired, at step 15
 
 `ccpo-gatedmem` and `ccpo-global` share `env.seed=0`, `train_batch_size=16` and

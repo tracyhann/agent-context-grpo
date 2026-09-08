@@ -229,6 +229,26 @@ class AlfWorldEnvironmentManager(EnvironmentManagerBase):
             # carry mean V(next) 1.96 against 2.90 overall: it selects exactly the
             # population the digest exists to rescue. 0 (default) = never gate.
             _cs = int(os.environ.get("ACG_COMPACT_STALL", "0"))
+            # ACG_COMPACT_MODE decides whether the digest is ADDED to the recent
+            # window or REPLACES it.
+            #
+            # "prepend" (default) is what ccpo-memory and ccpo-gatedmem ran, kept so
+            # both stay reproducible. It is also measurably wasteful: paired against
+            # the no-digest arm on a shared seed over 15 steps, it cost +194 prompt
+            # tokens AND +6 response tokens, at 15/15 steps each (sign test p=6e-5).
+            # The digest was justified as letting the agent stop re-deriving state
+            # inside <think>, which predicts SHORTER responses; they got longer, so
+            # the digest is read in ADDITION to the re-derivation, not instead of it.
+            #
+            # "replace" removes the duplication behind that cost: build_digest already
+            # summarises the FULL history, the recent window included, so prepending
+            # ships the last `history_length` turns twice. Replacing keeps whole-episode
+            # coverage at roughly the token cost of the window it displaces.
+            #
+            # The digest is deduplicated and collapses repeats, so it is not literally
+            # "the most recent N observations" the template promises -- but N is set to
+            # the full step count below, which is nearer the truth than claiming 2.
+            _cm = (os.environ.get("ACG_COMPACT_MODE") or "prepend").strip().lower()
             if _cb > 0:
                 for _i in range(len(memory_contexts)):
                     if _cs > 0 and _stall_len(self.memory[_i]) < _cs:
@@ -239,7 +259,11 @@ class AlfWorldEnvironmentManager(EnvironmentManagerBase):
                     except Exception:
                         _d = ""
                     if _d:
-                        memory_contexts[_i] = _d + "\n" + memory_contexts[_i]
+                        if _cm == "replace":
+                            memory_contexts[_i] = _d
+                            valid_lens[_i] = len(self.memory[_i])
+                        else:
+                            memory_contexts[_i] = _d + "\n" + memory_contexts[_i]
             
         for i in range(len(text_obs)):
             # exclude 'help' in admissible_actions[i]
