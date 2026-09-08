@@ -168,7 +168,7 @@ though n is still too small to call. If the arm is paused this stays unresolved.
 preserves the question for a resume.
 
 
-### [ ] H-V. **Coherent standardisation — use OUR grouping for the scale too.** Best-supported open idea
+### [!] H-V. **Coherent standardisation** — RESULT: neutral-to-mildly-harmful, 16 paired evaluations
 
 **The question that produced it** (user, 2026-09-08): *can we standardise using our
 context-conditioned grouping rather than G²PO's?* I had been framing the choice as
@@ -223,7 +223,46 @@ between the two halves of the estimator.
 * The trainer's existing per-task standardisation must be **disabled** when this is
   on, or the advantage is standardised twice.
 
-**Rank: above H-U and above the remaining φ work.** Unlike every φ hypothesis it is
+---
+
+## RESULT — `ccpo-localstd-20260908`, stopped at step 80
+
+| step | localstd | task-std | delta |
+|---|---|---|---|
+| 5 | 18.0 | 10.2 | +7.8 |
+| 30 | 19.5 | 30.5 | −10.9 |
+| 50 | 51.6 | 50.0 | +1.6 |
+| 65 | 47.7 | 47.7 | +0.0 |
+| 70 | 57.0 | 63.3 | −6.2 |
+| 75 | 59.4 | 68.0 | −8.6 |
+| **80** | **64.1** | **71.9** | **−7.8** |
+
+```
+PAIRED  mean −2.34   sd 5.29   SE 1.32   t = −1.77   n = 16
+        95% CI [−4.94, +0.25]
+```
+
+**Not formally significant, but the CI now excludes anything better than +0.25**, and
+the last three evaluations are all substantially negative in exactly the stretch where
+the comparator accelerated (65 → 100 took it from 47.7 to 79.7).
+
+**Plausible mechanism.** Dividing by the neighbourhood's spread damps precisely the
+**high-disagreement** states — the ones where sibling trajectories most disagree about
+what happens next, which is where the discriminating signal lives. That cost grows as
+the policy improves enough for those states to be informative, which matches the
+deltas being near zero early and consistently negative after step 65.
+
+**This is the fourth proxy to improve offline without the policy following** — after
+ICC (H-J), per-node reliability (H-U, itself an artifact), and grouping relevance
+(H-1). Split-half reliability rewards *consistency*; policy learning apparently does
+not reward the same thing. **Reliability is not a safe proxy for gradient quality on
+this benchmark**, and that is now established four times over.
+
+**What survives:** the aleatoric/epistemic distinction (H-X). This arm tested
+dividing by σ. H-S — weighting by sample-size reliability — remains untested and is a
+different quantity.
+
+**Rank: superseded by the result above. Previously: above H-U and above the remaining φ work.** Unlike every φ hypothesis it is
 not bounded by H-H's ceiling — it changes the *scale* of the credit, not the quality
 of the grouping — and unlike H-U it has an intrinsic criterion that survives its own
 control.
