@@ -1708,6 +1708,48 @@ self-corrected to 0.996 within three steps — RL fixed the format unaided.
 
 ## Measurement notes — things that will mislead you
 
+### A RESUMED run restarts its evaluation draw — resumed series are OFFSET (2026-09-08)
+
+The checkpoint contains only `actor/` and `data.pt`. **No environment state.** And
+`make_envs()` runs at `main_ppo.py:71`, *before* `_load_checkpoint()` at
+`ray_trainer.py:1140`. So a resumed run rebuilds its validation environments with
+fresh per-seed iterators and **replays the game sequence from the beginning.**
+
+Detrended residual correlation (quadratic trend removed, so this tests the shared
+*draw* rather than the shared learning curve):
+
+| pair | n | residual corr | perm p |
+|---|---|---|---|
+| `global` vs `hardedge` (both fresh) | 10 | +0.667 | 0.083 |
+| `global` vs `localstd` (both fresh) | 16 | +0.669 | **0.008** |
+| `hardedge` vs `localstd` (both fresh) | 10 | +0.773 | **0.006** |
+| `global` vs `long` (**long RESUMED**) | 16 | +0.235 | 0.371 |
+
+**Fresh runs share the draw. Resumed runs do not.**
+
+**Affected runs:** `ccpo-long-20260906` (resumed at step 20 — its whole series from
+step 25 is offset) and `ccpo-global-ext-20260908` (resumed at 100 — its step-105
+evaluation uses the games the original saw at **step 5**).
+
+**Consequence for the extension's "saturation" reading:** comparing
+`ccpo-global-ext` numbers (early draws) against `ccpo-global`'s step-100 number (late
+draw) is **not the same measurement**. The flat readings may still be real, but that
+comparison is confounded by whatever difficulty difference exists between draws.
+**Do not quote a ceiling from it** until the step-100 and step-125 checkpoints are
+evaluated on the *same* draw — a short eval-only job.
+
+### And a correction to how the pairing claim was first justified
+
+The original note claimed shared draws on the strength of **raw** correlations
+(+0.946 etc.). That statistic was confounded: both arms climb from ~10% to ~80%, and
+that alone produces high correlation regardless of the draw. The **detrended residual**
+above is the correct test. It happens to agree for fresh runs — but the first
+justification was wrong, and the resumed case is exactly where raw correlation misleads
+(+0.929 raw, +0.235 detrended).
+
+### Other notes
+
+
 ### Arms SHARE their evaluation draw — matched-step comparisons are PAIRED (2026-09-08)
 
 Validation environments are built with `seed = env.seed + 1000`, identically in every

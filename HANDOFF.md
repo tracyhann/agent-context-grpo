@@ -35,6 +35,13 @@ bucket is *worse* than uniform, and this ablation.
   (corr +0.946 between arms). Matched-step comparisons are therefore **paired**, with
   a delta sd of ~5.3 — *not* the ±13 single-evaluation band. Use the paired sd for
   between-arm claims, ±13 only for one arm's own trajectory.
+* **A RESUMED run restarts its evaluation draw.** Checkpoints hold no env state and
+  `make_envs()` runs before `_load_checkpoint()`, so a resumed run replays the game
+  sequence from the start. Detrended residual correlation: fresh-vs-fresh +0.67 to
+  +0.77 (p<0.01), fresh-vs-resumed +0.235 (p=0.37). **`ccpo-long` and
+  `ccpo-global-ext` are offset from the fresh runs**, so their numbers are not
+  directly comparable at matched steps. Settle any such comparison by re-evaluating
+  both checkpoints on the same draw.
 * **The evaluation set is not fixed.** TextWorld shuffles per worker seed and
   iterates, so every validation draws different games. There is no held-out set held
   constant across steps.
