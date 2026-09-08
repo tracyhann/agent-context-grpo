@@ -59,6 +59,52 @@ before the action exists.
 
 ## Open — ranked by expected value
 
+### [PRE-REGISTERED, before ccpo-gatedmem reports] H-Y'. Where the 15 points actually are
+
+Pooling the nine converged evaluations of `ccpo-global-ext` (steps 105–145) gives
+per-type numbers with 3x less noise than any single draw:
+
+| task type | mean | sd | SE | shortfall vs 95 |
+|---|---|---|---|---|
+| look_at_obj_in_light | 65.6 | 20.4 | 6.8 | −29.4 |
+| **pick_two_obj_and_place** | **69.6** | 6.4 | **2.1** | −25.4 |
+| pick_cool_then_place_in_recep | 78.2 | 7.7 | 2.6 | −16.8 |
+| pick_clean_then_place_in_recep | 80.4 | 7.7 | 2.6 | −14.6 |
+| pick_heat_then_place_in_recep | 87.1 | 8.5 | 2.8 | −7.9 |
+| pick_and_place | 87.6 | 7.9 | 2.6 | −7.4 |
+| OVERALL | 79.7 | 4.7 | 1.6 | −15.3 |
+
+**The gap is not spread evenly.** Two types are already near 87 and account for almost
+none of it. `pick_two_obj_and_place` at 69.6 with SE 2.1 is the tightest and most
+trustworthy deficit; `look_at_obj_in_light` is lower still but its SE of 6.8 makes it
+suggestive rather than established.
+
+**Why this is a prediction and not a post-hoc read.** Those two types are precisely the
+ones whose failure mode is *forgetting what you already did*: two-object placement needs
+to know which instance has already been moved, and lamp-search needs to know which
+receptacles have already been opened. Everything else is a single fetch-and-transform
+where the current observation suffices — which is also why context conditioning measured
+null on the pooled set (H-H, H-Q, the ON/OFF ablation).
+
+**Registered before `ccpo-gatedmem` reports:**
+
+* If the digest works through the mechanism claimed, the gain must be
+  **concentrated in `pick_two_obj_and_place` and `look_at_obj_in_light`**, and roughly
+  absent on `pick_and_place`/`pick_heat`, which have little room and no memory demand.
+* A *uniform* lift across all six types would falsify the mechanism even if the overall
+  number improves — that pattern means the digest is acting as generic prompt
+  scaffolding, not as memory.
+* A drop on the two already-strong types with a rise on the two weak ones is the
+  **cost** signature: the digest is buying memory by spending prompt budget.
+* Overall success is the *weakest* of these readouts. Judge the arm on the per-type
+  pattern, and only on types where SE is small enough to carry a claim.
+
+**This also reframes the target.** Reaching 95 overall does not require +15 everywhere;
+it requires closing ~25 points on two types while holding the other four. That is a
+narrower and more tractable problem than "the method underperforms," and it is the first
+result that points at a specific capability rather than at the estimator.
+
+
 ### [!] H-Z. **150 steps buys nothing** — the 100-step ceiling, and a warning about best-checkpoint selection
 
 `ccpo-global-ext-20260908` warm-started the 79.7% arm at step 100 and ran to 145,
