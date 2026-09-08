@@ -93,6 +93,8 @@ section{padding-top:60px}
 .rung.ours{background:var(--accent-soft)}
 .rung .who{font-weight:600; font-size:.95rem; display:flex; flex-direction:column; gap:2px}
 .rung .who span{font-weight:400; font-size:.74rem; color:var(--ink-3); font-family:"IBM Plex Mono",monospace}
+.rung .who span a{color:inherit; text-decoration:none; border-bottom:1px dotted var(--rule-2)}
+.rung .who span a:hover{color:var(--accent); border-bottom-color:var(--accent)}
 .rung.ours .who{color:var(--accent)}
 .key{font-family:"IBM Plex Mono",monospace; font-size:.9rem; color:var(--ink);
      background:var(--sunk); border:1px solid var(--rule); border-radius:3px; padding:7px 11px; display:inline-block}
@@ -239,17 +241,17 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
 
   <div class="ladder">
     <div class="rung">
-      <div class="who">GRPO<span>2402.03300</span></div>
+      <div class="who">GRPO<span><a href="https://arxiv.org/abs/2402.03300" target="_blank" rel="noopener">arXiv:2402.03300</a></span></div>
       <div><span class="key">x₀ &nbsp;→&nbsp; group</span></div>
       <div class="note">Same task. One flat group per prompt; no notion of a step.</div>
     </div>
     <div class="rung">
-      <div class="who">GiGPO<span>2505.10978</span></div>
+      <div class="who">GiGPO<span><a href="https://arxiv.org/abs/2505.10978" target="_blank" rel="noopener">arXiv:2505.10978</a></span></div>
       <div><span class="key">s_t &nbsp;→&nbsp; group</span></div>
       <div class="note">Same current state, matched exactly. Anchor states bucket steps inside the rollout group.</div>
     </div>
     <div class="rung">
-      <div class="who">HGPO<span>2602.22817</span></div>
+      <div class="who">HGPO<span><a href="https://arxiv.org/abs/2602.22817" target="_blank" rel="noopener">arXiv:2602.22817</a></span></div>
       <div><span class="key">(s_{t−k}, …, s_t) &nbsp;→&nbsp; group</span></div>
       <div class="note">Same exact k-step history, <b>at every depth at once</b>: each step joins K+1 groups
       (k=0…K) and their advantages are combined with adaptive weights w_k. Already a weighted blend over grouping
@@ -257,7 +259,7 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
       level demands an <em>exact</em> suffix match.</div>
     </div>
     <div class="rung">
-      <div class="who">G²PO<span>2606.22995</span></div>
+      <div class="who">G²PO<span><a href="https://arxiv.org/abs/2606.22995" target="_blank" rel="noopener">arXiv:2606.22995</a></span></div>
       <div><span class="key">o_t &nbsp;→&nbsp; graph node</span></div>
       <div class="note">Same observation. Occurrences become nodes in an observation-transition graph.</div>
     </div>
