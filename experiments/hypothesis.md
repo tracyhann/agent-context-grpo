@@ -2022,6 +2022,38 @@ self-corrected to 0.996 within three steps — RL fixed the format unaided.
 
 ## Measurement notes — things that will mislead you
 
+### The binding constraint is the pid budget, not the GPU count
+
+The container now shows **6 GPUs**, two of them idle. **That does not mean two arms can
+run.** Measured 2026-09-08:
+
+```
+cgroup pids.max                       8192
+one 4-GPU training arm alone         ~7700   (94%)
++ a second Ray cluster                8133   (99%)  -> second run dies
+```
+
+The second run died **silently immediately after "Started a local Ray instance"** --
+no traceback, no error, one line then nothing. That is the signature to recognise: a
+silent death right after Ray init is pid exhaustion, not a config or CUDA fault.
+
+**Check `cat /sys/fs/cgroup/pids.current` BEFORE launching anything alongside a running
+arm.** With ~400 pids of headroom, nothing else fits: not a second training arm, not an
+eval-only pass, not a 2-GPU probe. The env workers dominate the count (128 envs), so
+the footprint barely depends on how many GPUs a run is given.
+
+Consequence for planning: **more GPUs did not buy concurrency.** Extra GPUs can only
+make a single arm faster (or allow a wider batch), and multiple seeds must be run
+SEQUENTIALLY. Any plan that assumes "8 GPUs means two 4-GPU arms" is wrong on this box
+unless the per-run pid footprint is cut first.
+
+### Killing by pattern matches your own shell
+
+`pgrep -f evalck` / `pkill -f <pattern>` match the inline bash command that CONTAINS the
+pattern -- i.e. the shell running the kill. This has now caused two incidents. Kill by
+PID read from `train.pid`, and check `$$` before killing anything a pattern returned.
+
+
 ### A RESUMED run restarts its evaluation draw — resumed series are OFFSET (2026-09-08)
 
 The checkpoint contains only `actor/` and `data.pt`. **No environment state.** And

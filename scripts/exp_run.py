@@ -126,6 +126,11 @@ DEFAULTS = {
     # runs 100 further steps. Every other knob must match the run that produced
     # the checkpoint or the warm start is not a continuation of anything.
     "resume_from": "",
+    # Evaluate resume_from and exit. Pair with align_val_on_resume=0.
+    "val_only": 0,
+    # 0 disables the resume validation-draw alignment; required when comparing
+    # checkpoints saved at different steps on one common draw.
+    "align_val_on_resume": 1,
 
     # Dump raw grouping inputs for offline gate analysis (large; diagnostic arms only).
     "gdump": False,
@@ -206,7 +211,8 @@ ENV_KEYS = {
     "ccpo_std": "ACG_CCPO_STD", "ccpo_std_floor": "ACG_CCPO_STD_FLOOR",
     "ccpo_step_norm": "ACG_CCPO_STEP_NORM",
     "compact_budget": "ACG_COMPACT_BUDGET", "compact_stall": "ACG_COMPACT_STALL",
-    "compact_mode": "ACG_COMPACT_MODE", "force_budget": "ACG_FORCE_BUDGET",
+    "compact_mode": "ACG_COMPACT_MODE",
+    "align_val_on_resume": "ACG_ALIGN_VAL_ON_RESUME", "force_budget": "ACG_FORCE_BUDGET",
     "force_tail": "ACG_FORCE_TAIL",
     "early_stop_patience": "ACG_EARLY_STOP_PATIENCE",
     "early_stop_min_steps": "ACG_EARLY_STOP_MIN_STEPS",
@@ -328,8 +334,18 @@ def build_command(cfg, exp_dir):
         f"trainer.default_local_dir={ckpt}",
         f"trainer.test_freq={cfg['test_freq']}",
         f"trainer.total_epochs={cfg['total_epochs']}",
-        "trainer.val_before_train=False",
+        f"trainer.val_before_train={bool(cfg.get('val_only'))}",
     ]
+    if cfg.get("val_only"):
+        # Evaluate a checkpoint and exit -- no training. Used to re-score a
+        # `stepN-best` on a FRESH draw, since best-checkpoint selection takes the
+        # max of a noisy series and is biased upward by ~1.5 sd (H-Z).
+        #
+        # ACG_ALIGN_VAL_ON_RESUME must be 0 for these runs. The alignment burn
+        # advances the validation draw by global_steps/test_freq resets, so
+        # checkpoints saved at different steps would each be scored on a DIFFERENT
+        # draw -- reintroducing exactly the confound the comparison exists to remove.
+        args.append("trainer.val_only=True")
     if cfg.get("resume_from"):
         args += [
             "trainer.resume_mode=resume_path",
