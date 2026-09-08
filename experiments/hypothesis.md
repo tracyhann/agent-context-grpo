@@ -59,6 +59,61 @@ before the action exists.
 
 ## Open — ranked by expected value
 
+### [ ] H-U. **Standardisation level — per task (ours) vs per node (G²PO).** The largest measured deviation
+
+H-O cleared the LOO exclusion (0.009), φ (0.011) and the gate (0.012) and left ~0.09
+of the divergence from G²PO unexplained. **This is it.**
+
+G²PO calls `step_norm_reward(..., step_group_uids, ...)` — standardising `A_NC`
+**within each node**. We standardise **per task** (`ray_trainer.py:414`, looping over
+`uid`). Measured on the hard-gate dump (264,058 samples, bucket = observation node):
+
+| standardisation of our step advantage | corr with the G²PO reference |
+|---|---|
+| raw | 0.8372 |
+| **per TASK (ours)** | 0.8364 |
+| **per NODE (G²PO)** | **0.9272** |
+| | **+0.0908** |
+
+That single change accounts for essentially the whole residual gap.
+
+**Is per-node better?** On split-half reliability of the step advantage
+(n=232,929): unstandardised 0.8128, per task 0.8749, **per node 0.9770**. The
+small-node worry — standardising a 2-occurrence node forces ±1 regardless of
+magnitude — is empirically minor: such nodes are 15.7% of *nodes* but only **2.1% of
+occurrences** (median node holds 6, p90 29).
+
+**Caveat, unresolved:** both halves are standardised within the *same* node, which
+could inflate their agreement mechanically. I do not think that explains a 0.10 gap
+but I have not ruled it out, and 0.977 should not be quoted as established until it is.
+
+**The structural point, and it corrects a claim I made in conversation.** I called
+this "a one-line change". It is not, for the shipped configuration: **under the global
+gate there is no node.** `bucket = (task_uid,)` — deleting the node and replacing
+membership with `exp(−d/τ)` is the entire point of that gate. So per-task
+standardisation was never a *choice*; it is a **consequence** of having no nodes left
+to standardise within.
+
+Adopting G²PO's level therefore means reintroducing observation nodes as a **second,
+parallel grouping used only for scale**, alongside the kernel that decides the
+baseline:
+
+* **nodes → the scale** of the credit signal (every state contributes zero-mean,
+  unit-variance, so a wide-spread node cannot swamp a narrow one);
+* **kernel → the membership** of the baseline.
+
+That separation is coherent and arguably the right design, but it is a real change.
+
+**Why it may matter beyond correlation.** Per-node standardisation is precisely the
+variance-reduction property G²PO's own ablation credits to their group-aggregation
+component. Per-task lets high-variance nodes dominate the gradient.
+
+**Rank: above the memory work and above H-S.** It is the single largest measured
+deviation from a method scoring 95.0 where we score 79.7, and unlike every φ
+hypothesis it is not bounded by H-H's ceiling — it changes the scale of the credit,
+not the quality of the grouping.
+
+
 ### [!] H-T. Memory **summaries** in φ — refuted offline; memory **content** still open
 
 Asked how to get memory into φ so it conditions the soft weighting. Two routes.
