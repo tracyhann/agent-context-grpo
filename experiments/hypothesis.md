@@ -1602,6 +1602,54 @@ self-corrected to 0.996 within three steps — RL fixed the format unaided.
 
 ## Measurement notes — things that will mislead you
 
+### Arms SHARE their evaluation draw — matched-step comparisons are PAIRED (2026-09-08)
+
+Validation environments are built with `seed = env.seed + 1000`, identically in every
+run (`env_manager.py:665`). Each worker shuffles the game list with its own seed and
+iterates in lockstep, so **at step *k* every arm evaluates the same 128 games.**
+
+Measured correlation between arms' held-out series at matched steps:
+
+| pair | evaluations | corr |
+|---|---|---|
+| `global` vs `hardedge` | 10 | **+0.946** |
+| `localstd` vs `global` | 8 | **+0.810** |
+| `global` vs `memory` | 4 | +0.482 |
+
+Both `localstd` and `global` dropping from 35.9 to ~22 at step 40 is not coincidence —
+it is the same task draw being hard for both.
+
+**This corrects a mistake I made throughout the session.** I repeatedly quoted a
+**±13-point** band and used it to dismiss between-arm differences. That figure is
+correct for *one arm's* evaluation-to-evaluation movement (the task set genuinely
+changes between steps, per the note below). It is **wrong for comparing two arms at
+the same step**, because the shared draw cancels.
+
+```
+localstd vs global, 8 PAIRED evaluations
+  mean delta  −1.27
+  sd of delta   5.21      <- not 13
+  SE            1.84
+  95% CI    [−4.88, +2.34]
+```
+
+The paired CI is roughly **three times tighter** than the unpaired band implies.
+
+**Consequences for earlier readings:**
+
+* The `localstd` step-30 delta of −11.0 was a genuinely large deviation (≈2 sd), not
+  routine noise. Its reversion at step 35 is what made it uninformative, not its size.
+* The CCPO on/off ablation's mean of **−0.01 over nine paired evaluations** is a
+  *tighter* null than presented — the CI there is roughly ±2.8, not ±13.
+* Several "both readings are inside the noise band" dismissals were too generous.
+
+**Rule:** use the **paired delta sd** for between-arm comparisons at matched steps,
+and the ±13 single-evaluation band only for judging one arm's own trajectory. Compute
+the delta sd from the arms being compared rather than assuming either figure.
+
+### Other notes
+
+
 ### Ad-hoc offline φ used Python's salted `hash()` — findings reproduce, examples did not
 
 Several offline analyses (H-Q, H-T, H-V, the gate probe) rebuilt a bag-of-words φ with
