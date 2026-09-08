@@ -176,6 +176,10 @@ DEFAULTS = {
 
     # supporting components, both off = stock protocol
     "compact_budget": 0,
+    # Gate the digest on the agent being stuck: inject it only when `stall` (turns
+    # since the last NEW observation) reaches this. 0 = never gate, i.e. every turn,
+    # which is what ccpo-memory-20260907 ran and what cost it action validity.
+    "compact_stall": 0,
     "force_budget": 0,
     "force_tail": 32,
 }
@@ -196,7 +200,7 @@ ENV_KEYS = {
     "ccpo_gate": "ACG_CCPO_GATE", "ccpo_tau": "ACG_CCPO_TAU",
     "ccpo_std": "ACG_CCPO_STD", "ccpo_std_floor": "ACG_CCPO_STD_FLOOR",
     "ccpo_step_norm": "ACG_CCPO_STEP_NORM",
-    "compact_budget": "ACG_COMPACT_BUDGET", "force_budget": "ACG_FORCE_BUDGET",
+    "compact_budget": "ACG_COMPACT_BUDGET", "compact_stall": "ACG_COMPACT_STALL", "force_budget": "ACG_FORCE_BUDGET",
     "force_tail": "ACG_FORCE_TAIL",
     "early_stop_patience": "ACG_EARLY_STOP_PATIENCE",
     "early_stop_min_steps": "ACG_EARLY_STOP_MIN_STEPS",

@@ -23,6 +23,25 @@ from agent_system.environments.prompts import *
 from agent_system.environments.base import EnvironmentManagerBase, to_numpy
 from agent_system.memory import SimpleMemory, SearchMemory
 from agent_system.memory.compact import build_digest
+
+def _stall_len(records, obs_key="text_obs"):
+    """Turns since this trajectory last reached a NEW observation.
+
+    The same quantity `derive_context` calls `stall`, computed here from the
+    episode memory. 0 means the last step found somewhere new; large values mean
+    the agent is circling, which is the condition the digest is meant to break.
+    """
+    try:
+        seen, last_new = set(), 0
+        for pos, r in enumerate(records):
+            o = str(r.get(obs_key, ""))
+            if o not in seen:
+                seen.add(o)
+                last_new = pos
+        return (len(records) - 1 - last_new) if records else 0
+    except Exception:
+        return 0
+
 from omegaconf import OmegaConf
 
 def parse_gamefile(infos):
@@ -200,8 +219,20 @@ class AlfWorldEnvironmentManager(EnvironmentManagerBase):
             # successes -- the 2-turn window cannot tell them where they have been.
             # ACG_COMPACT_BUDGET=0 (default) reproduces the G2PO protocol exactly.
             _cb = int(os.environ.get("ACG_COMPACT_BUDGET", "0"))
+            # ACG_COMPACT_STALL gates the digest on the agent being STUCK, instead of
+            # paying its cost every turn. Measured: the ungated arm
+            # (ccpo-memory-20260907) ran valid_action_ratio 0.9869 against >=0.999
+            # everywhere else, and was already degraded at step 1 -- before training
+            # could adapt -- so the ~300-token digest costs output format on every
+            # turn while only helping on the turns where the agent is repeating
+            # itself. Gating on stall >= 2 fires on 36% of turns, and those turns
+            # carry mean V(next) 1.96 against 2.90 overall: it selects exactly the
+            # population the digest exists to rescue. 0 (default) = never gate.
+            _cs = int(os.environ.get("ACG_COMPACT_STALL", "0"))
             if _cb > 0:
                 for _i in range(len(memory_contexts)):
+                    if _cs > 0 and _stall_len(self.memory[_i]) < _cs:
+                        continue                      # not stuck -> reference prompt
                     try:
                         _d = build_digest(self.memory[_i], budget_tokens=_cb,
                                           obs_key="text_obs", action_key="action")
