@@ -1602,6 +1602,39 @@ self-corrected to 0.996 within three steps — RL fixed the format unaided.
 
 ## Measurement notes — things that will mislead you
 
+### Ad-hoc offline φ used Python's salted `hash()` — findings reproduce, examples did not
+
+Several offline analyses (H-Q, H-T, H-V, the gate probe) rebuilt a bag-of-words φ with
+a local helper using Python's built-in `hash()`. **That is salted per process**, so the
+hashed projection differed between runs. The production code does not have this bug —
+`FrozenPhi._bag` uses `_seed_of` (sha1).
+
+**Impact on the recorded numbers: none that matters.** H-V re-run with the production
+hash under `PYTHONHASHSEED=0`:
+
+| | deterministic | salted |
+|---|---|---|
+| unstandardised | 0.8300 | 0.8299 |
+| task-level sd | 0.8446 | 0.8446 |
+| per-node sd (G²PO) | 0.8979 | 0.8968 |
+| CONTROL σ shuffled | 0.8814 | 0.8860 |
+| **φ-weighted local σ** | **0.9712** | 0.9711 |
+
+Every figure within 0.005. A 1024-bin hashed bag is a random projection either way and
+the salt only permutes which words collide, so aggregate statistics over thousands of
+samples are stable.
+
+**What it did change: which individual pairs surface.** Two runs of the same
+"show me representative neighbours" query returned different pairs, because the
+ranking by φ-distance is salt-dependent even when its distribution is not.
+
+**Rule:** any offline analysis that inspects *specific* occurrences — worked examples,
+qualitative pairs, anything quoted individually — must use `_seed_of`, not `hash()`,
+or it cannot be reproduced. Aggregate statistics tolerate the salt; examples do not.
+
+### Other notes
+
+
 ### The three baseline papers use THREE DIFFERENT training budgets — corrected 2026-09-07
 
 | paper | ALFWorld budget | headline (Qwen2.5-1.5B) | source |
