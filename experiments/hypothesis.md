@@ -59,6 +59,67 @@ before the action exists.
 
 ## Open — ranked by expected value
 
+### [ ] H-S. **Uncertainty as a weight on A_CC, not a choice between baselines** — the reframing that survives
+
+Every uncertainty result in this file is about **whether to trust φ's neighbourhood
+over the uniform one**. That question is settled and the answer is "don't": τ² ≈ 4e-6,
+λ = 0.011 whenever it is free to choose, and H-Q showed φ-weighting inside a bucket
+is actively worse than uniform. There is nothing to be uncertain *about*, so the dial
+has nothing to arbitrate.
+
+**A different uncertainty is large, measurable, and untouched:** how precisely
+*this occurrence's* baseline is estimated at all.
+
+**Measurement** (`gate-probe-20260907`, 6,912 occurrences). Split each occurrence's
+reference trajectories in half, compute A_CC from each half, correlate:
+
+| J (distinct ref. trajectories) | n | corr(A₁,A₂) | Spearman-Brown reliability |
+|---|---|---|---|
+| 2 | 336 | 0.522 | 0.686 |
+| 3 | 441 | 0.681 | 0.810 |
+| 4 | 421 | 0.762 | 0.865 |
+| 5 | 573 | 0.771 | 0.871 |
+| 6 | 913 | 0.810 | 0.895 |
+| 7 | 3266 | 0.839 | 0.912 |
+
+**Monotone in support, 1.36× between J≤3 and J≥6, and 13.1% of occurrences sit in
+the unreliable region.** This has nothing to do with φ — it is arithmetic about
+sample size, which is why it is not blocked by any of the nulls above.
+
+**The proposal.** Uncertainty modulates the step term's *weight*, not the choice
+between two baselines:
+
+```
+current:   A = A_EP + w · A_CC        w = 1 for every occurrence
+proposed:  A = A_EP + w_u · A_CC      w_u = J_u / (J_u + c)   ~ reliability
+```
+
+This is the classical correction for a noisy regressor: an unreliable estimate should
+contribute in proportion to its reliability or it injects variance into the gradient
+without carrying signal. Same bias-variance logic the method was built on, aimed at a
+quantity that actually varies.
+
+**Why it should survive where λ did not.** λ required φ to be informative. This
+requires only that a baseline from 2 trajectories is noisier than one from 7, which
+is arithmetic and is measured at 1.36×.
+
+**Predicted upside, stated before testing: small.** The affected 13% would be
+down-weighted ~25%, so this is variance reduction on a minority of occurrences, not
+new signal. **A single training arm almost certainly cannot resolve it** against
+±13-point evaluation noise — so this should be settled *offline*, not with GPU time.
+
+**Offline test** (no training run): on the existing dump, compare uniform vs
+reliability weighting on (a) the variance of A_CC, and (b) its correlation with the
+target. The proposal wins if variance falls while correlation holds. If correlation
+falls proportionally, the weighting is removing signal along with noise and should be
+dropped.
+
+**Relation to H-N.** H-N proposed shrinking toward the *hard-gate* baseline instead of
+the uniform task mean — still a choice-between-baselines framing. H-S supersedes it as
+the more promising use of uncertainty, because it does not depend on either baseline
+being better than the other.
+
+
 ### [~] H-R. The memory arm moves **two** channels, not one — caveat recorded before its result
 
 `ccpo-memory-20260907` is a single *config* change from the 79.7% arm
