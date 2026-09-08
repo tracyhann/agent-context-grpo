@@ -59,6 +59,37 @@ before the action exists.
 
 ## Open — ranked by expected value
 
+### [~] H-R. The memory arm moves **two** channels, not one — caveat recorded before its result
+
+`ccpo-memory-20260907` is a single *config* change from the 79.7% arm
+(`compact_budget` 0 → 512). It is **not** a single *causal* change.
+
+The digest is prepended to `memory_contexts`, so it enters the **prompt**
+(`env_manager.py:203`). φ's observation half is the reference policy's hidden state
+at position `seqlen − response_length − 1` — the **last prompt token**
+(`dp_actor.py:262`). So the digest is inside the sequence the hidden state is
+computed over, and turning memory on changes:
+
+1. **what the policy conditions on** — the intended test; and
+2. **what φ sees**, hence which occurrences are neighbours — unintended.
+
+The *context scalars* are unaffected: `derive_context()` builds
+`{t, n_unique, revisit, progress}` from the observation sequence alone and never
+reads the digest. Only the hidden half is coupled.
+
+**Consequence.** If this arm beats 79.7%, the gain is not attributable to the policy
+channel without a third arm — digest in the prompt, φ computed from a digest-free
+prompt — which needs a second forward pass and does not currently exist.
+
+**Prediction on record (from prior nulls, not from measurement):** the φ channel
+contributes ~nothing, because `phi_rel_corr` is 0.011 with implied R² 0.00013 and
+τ² ≈ 4e-6 across 100 steps. Any effect should be the policy channel. If the arm wins
+*and* `phi_rel_corr` is unchanged, that reading is supported; if `phi_rel_corr` moves
+materially, it is not, and the third arm becomes necessary.
+
+This should have been flagged at launch rather than after the fact.
+
+
 ### [!] H-Q. Hard gate **with** context conditioning (λ=1) — the missing cell, REFUTED offline
 
 The two arms confound gate with λ: `ccpo-global` is global gate + λ=1 (conditioning
