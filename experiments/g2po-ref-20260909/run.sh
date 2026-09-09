@@ -23,8 +23,16 @@
 #   4. 2 GPUs, tensor_model_parallel_size=1 (theirs: 8 GPUs, TP=2). train_batch_size 16
 #      divides 2, so this is valid; TP and GPU count change gradient accumulation, not
 #      the objective.
-#   5. gpu_memory_utilization left at their 0.6 -- the chosen cards have ~97 GB free
-#      each, so nothing is taken from the other tenant on GPUs 0/1/2/4.
+#   5. gpu_memory_utilization 0.6 -> 0.3. THEIR 0.6 IS TUNED FOR 8 GPUs AT TP=2, where
+#      each rank carries a quarter of what it carries here on 2 GPUs. Run at 0.6 the
+#      first attempt allocated ~99 GB on a ~96 GB card (perf/max_memory_allocated_gb
+#      98.8 mean / 99.4 peak, against 39.5 for our 4-GPU arms) and died at step ~37 with
+#      `CUDA Error: out of memory` inside vLLM's cumem wake_up -- it sleeps and wakes the
+#      KV pool every step, so sitting at 99% of the card is a coin flip each time.
+#      This sizes the KV cache, not the result.
+#   6. save_freq -1 -> 20. Theirs writes NO checkpoints, which meant the OOM at step 37
+#      destroyed 7 hours with nothing to resume from. 20 gives resume points at a cost of
+#      ~50 GB (verl keeps the last two); disk has 283 GB free.
 #   6. RAY_* thread caps and single-thread BLAS, as in our arms: this box has a pid
 #      budget and Ray's defaults exhaust it.
 #
@@ -82,7 +90,7 @@ env -i \
     actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu=32 \
     actor_rollout_ref.rollout.tensor_model_parallel_size=1 \
     actor_rollout_ref.rollout.name=vllm \
-    actor_rollout_ref.rollout.gpu_memory_utilization=0.6 \
+    actor_rollout_ref.rollout.gpu_memory_utilization=0.3 \
     actor_rollout_ref.rollout.enable_chunked_prefill=False \
     actor_rollout_ref.rollout.enforce_eager=False \
     actor_rollout_ref.rollout.free_cache_engine=False \
@@ -107,7 +115,7 @@ env -i \
     trainer.experiment_name=g2po-ref-20260909 \
     trainer.n_gpus_per_node="$NG" \
     trainer.nnodes=1 \
-    trainer.save_freq=-1 \
+    trainer.save_freq=20 \
     trainer.test_freq=5 \
     trainer.total_epochs=100 \
     trainer.val_before_train=False \

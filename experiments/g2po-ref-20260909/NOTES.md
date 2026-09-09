@@ -75,3 +75,29 @@ allocating; a healthy run shows ~4 MiB for several minutes. Watch the
 `Training Progress` bar in `train.log` instead.
 
 **Measured cost: ~652 s/step on 2 GPUs -> ~17.4 h for 100 steps.**
+
+
+## Attempt 1 died at step 37: CUDA OOM, and the warning was in the data from step 1
+
+`perf/max_memory_allocated_gb` read **98.8 GB mean / 99.4 peak on a ~95.6 GB card** for
+the entire run, against 39.5 for our 4-GPU arms. vLLM sleeps and wakes its KV pool every
+step; at 99% of the card each wake is a coin flip, and one failed inside
+`cumem_allocator.wake_up`.
+
+**Cause:** `gpu_memory_utilization=0.6` was copied from their script *because* it was
+theirs -- but theirs runs 8 GPUs at TP=2, where a rank carries a quarter of what it does
+here on 2 GPUs. Fidelity to a value is not fidelity to a configuration.
+
+I had already seen the 97.8-vs-39.2 figure in a ranked metric comparison and dismissed
+it as "expected from GPU count". It was the failure, visible six hours early.
+
+**Two fixes, both deviations from their script, both documented in `run.sh`:**
+
+* `gpu_memory_utilization` 0.6 -> **0.3**. Sizes the KV cache, not the result.
+* `save_freq` -1 -> **20**. Theirs writes no checkpoints, so the OOM destroyed 7 hours
+  with nothing to resume from. ~50 GB against 283 GB free.
+
+**Attempt 1's data is preserved** as `metrics_attempt1_oom.jsonl` / `train_attempt1_oom.log`
+-- 7 evaluations, steps 5-35, showing a stable ~10-15 point lead over our arm. That
+result stands on its own; the restart is to see whether G2PO reaches its published 95.0
+by step 100.
