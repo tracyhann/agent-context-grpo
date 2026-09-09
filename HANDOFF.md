@@ -176,11 +176,32 @@ ready to run (needs pid headroom — see top).
    **Kill rule:** run to 50 unless held-out at step 20 is below ~11% (2 SE under base's
    21.1%). Then judge at 50 vs base's 50.0%, at 100 vs 79.7%.
 
-   **To resume after the rebuild:**
+   **H-AE — a SECOND anchor difference, found after the arm launched.** G²PO also
+   folds the admissible-action list *into* the anchor, so its node identity is
+   observation-text + admissible-actions; ours is observation text alone
+   (`key = (task, str(anchor_obs[i]))`, core_ccpo.py:409). This tree already carries
+   that list as `aff` — added 2026-09-03 because "42.8% of observations map to >1
+   admissible set" — but `aff` only ever reaches the diagnostic CSV (core_ccpo.py:795).
+   **We measured the ambiguity, built the disambiguator, and never grouped with it.**
+   On our own number that leaves 42.8% of observations conflated, a larger population
+   than the repair touches. Implemented as `ACG_ANCHOR_AFF`.
+
+   **So the relaunch needs BOTH flags** — `ccpo-anchor-20260909` ran `obs_repair=1`
+   alone, which is only half of G²PO's anchor. Ablate the halves later, and only if the
+   pair moves the number.
+
+   **Run `/workspace/.venv/bin/python tests/test_obs_repair.py` first** (5 s, no GPU).
+   It checks ours against a literal transcription of G²PO's loop AND drives the real
+   `AlfWorldEnvironmentManager.reset/step` against a stub env — added after my first
+   version of this change parsed cleanly but would have raised `NameError` eight
+   minutes into a GPU run.
+
+   **To relaunch after the rebuild (fresh, not resumed — the stopped arm never reached
+   its first checkpoint at step 5):**
    ```
-   python3 scripts/exp_run.py --name ccpo-anchor2 --arm ccpo \
-     --set resume_from=experiments/ccpo-anchor-20260909/outputs/checkpoints/global_step_N \
-     --set total_epochs=100 --set obs_repair=1 --set ccpo_gate=global \
+   python3 scripts/exp_run.py --name ccpo-anchor --arm ccpo \
+     --set gpus=0,1,2,3 --set obs_repair=1 --set anchor_aff=1 \
+     --set total_epochs=100 --set compact_budget=0 --set ccpo_gate=global \
      --set ccpo_phi=hidden+ctx --set ccpo_edge_w=1.0 --set ccpo_rho=0.59 \
      --set ccpo_tau=0.15 --set ccpo_target=nextnode --set ccpo_shrink=eb \
      --set ccpo_whiten=3 --set early_stop_min_steps=40 --set early_stop_patience=8
