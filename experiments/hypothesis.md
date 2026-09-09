@@ -2330,6 +2330,46 @@ self-corrected to 0.996 within three steps — RL fixed the format unaided.
 
 ## Measurement notes — things that will mislead you
 
+### `eval_in_distribution` is much closer to training than its name suggests
+
+Checked 2026-09-09 after the question "is G2PO's 95% train/test leakage?".
+
+**Not leakage.** `train` and `valid_seen` are different directories, and:
+
+```
+shared trial ids for an overlapping config      0
+identical initial_state.pddl hashes             0   (400 train sampled vs all 251 valid_seen)
+```
+
+**But the split is close by construction.** 240 of `valid_seen`'s 242 top-level
+directory names also appear in `train`. Those names encode
+`task-object-receptacle-scene`, so an eval game is a **different trial of the same task
+configuration, in the same room, with the same objects** as a training game. Example:
+`look_at_obj_in_light-AlarmClock-None-DeskLamp-323` has two trials under `train` and a
+third, different one under `valid_seen`.
+
+That is ALFWorld's own design -- `valid_unseen` holds 85 novel scenes against
+`valid_seen`'s 242 overlapping ones -- and `eval_in_distribution` maps to `valid_seen`
+(`config_tw.yaml`: `eval_id_data_path: $ALFWORLD_DATA/json_2.1.1/valid_seen`).
+
+**Also worth knowing: the parquets are placeholders.** `examples/data_preprocess/prepare.py`
+carries the upstream note "We do NOT use the data in 'hiyouga/geometry3k', instead we
+only use it to indicate the modality and the data size." The rows set batch sizes; every
+actual game comes from the environment. So train/test parquet overlap is not a
+meaningful question, and regenerating the parquets only redraws sizes -- which is
+nevertheless why the G2PO reference arm skips that step, to avoid disturbing anything.
+
+**What follows:**
+
+1. **This does NOT explain the 15-point gap.** We use the identical split -- it is the
+   code default both trees inherit, verified in H-AB. Both 95.0 and 79.7 are valid_seen
+   numbers.
+2. **It DOES inflate the absolute level.** 95% on seen scenes is not general ALFWorld
+   competence, and neither would ours be. Any writeup should say *which* split.
+3. **Every published baseline shares it**, so the ranking is fair even though the level
+   is optimistic. Do not "correct" for it in a comparison; do disclose it.
+
+
 ### The binding constraint is the pid budget, not the GPU count
 
 The container now shows **6 GPUs**, two of them idle. **That does not mean two arms can
