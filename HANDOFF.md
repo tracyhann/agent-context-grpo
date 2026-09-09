@@ -12,12 +12,19 @@ Measured with one 4-GPU arm running:
 |---|---|---|---|
 | pids | 7,738 | ~15,500 | **8,192** |
 | cgroup memory | 105 GiB anon | ~210 GiB | 256 GiB (fits, tight) |
-| **host RAM** | 105 GiB | ~210 GiB | **61 GB available** |
+| **host RAM** | 105 GiB | ~210 GiB | **224 GB available** (was 61 — see below) |
 
-Raise `--pids-limit` to 32768, but **host RAM is the binding constraint**: 755 GB total
-with only ~61 GB free, and ~500 GB is allocated outside this container and invisible
-from inside it (`free` reports host-wide; `ps` shows only our processes). A second arm
-needs ~105 GiB anon and would OOM before it hit any pid limit.
+**UPDATE 2026-09-09: host RAM freed up.** It was 61 GB available; something outside this
+container released ~160 GB and it is now **224 GB**. Two arms need ~210 GiB anon, so
+host RAM is **no longer the blocker** — `pids.max=8192` now is, and that is exactly what
+the rebuild fixes.
+
+So a rebuild with `--pids-limit 32768` should genuinely deliver two concurrent 4-GPU
+arms. Also consider raising the cgroup `memory.max` from 256 GiB to ~384 GiB: two arms
+at ~210 GiB fits, but with little margin.
+
+Recheck `free -g` and `/sys/fs/cgroup/pids.current` before relying on this — the 224 GB
+belongs to the host and is not ours to assume.
 
 GPUs 4–5 are genuinely idle (4 MiB), so nobody else is training — but someone may hold
 that RAM, which bears on the "do not interfere with other users" instruction.
