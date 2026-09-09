@@ -76,6 +76,24 @@ step   G2PO   ours   diff   (ours reaches G2PO's value at step)
 Windowed over steps 1-25: train +3.6, held-out +9.8. On this trajectory it passes our
 FINAL 79.7 somewhere around step 45-55.
 
+**CORRECTION at step 30: the gap is ~10 points and STABLE, not widening.**
+
+```
+diffs:  +0.0  +10.2  +10.1  +7.8  +21.1  +10.1
+excluding step 5: mean +11.9, sd 5.3, MEDIAN +10.1
+step 25's +21.1 is 1.8 sd above the mean -- an excursion
+```
+
+I called step 25 "widening" and extrapolated that G2PO would pass our final 79.7 by step
+45-55. **Withdrawn.** The curves show +21.1 was OUR stall, not their spike: ours sat flat
+at 21.1 across steps 20 and 25 before jumping to 30.5, while theirs actually dipped
+42.2 -> 40.6. One point does not make a trend, and I built an extrapolation on it.
+
+**The train gap is genuinely growing, though**: +0.3, +2.0, +3.6, +5.0 over successive
+windows, against a held-out gap of +9.9. So the earlier reading -- that this was purely
+an evaluation-temperature sharpening effect, since train was level -- is **half wrong**.
+G2PO is learning faster *and* its advantage roughly doubles at T=0.4. Both are real.
+
 **This is no longer "the published number transfers". It is "CCPO is materially worse
 than G2PO on identical hardware, data, protocol and evaluation draw."** The comparison
 is paired (same seed, same 128 games) and every configuration key was verified identical
