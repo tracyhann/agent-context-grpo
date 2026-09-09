@@ -129,6 +129,32 @@ ready to run (needs pid headroom — see top).
 
 ## Open, ranked
 
+0. **H-AD — G²PO repairs the grouping anchor; we never did. THE BEST LEAD.**
+   The full harness diff against the G²PO checkout is now done and yields **exactly one
+   substantive difference**: `prompts/alfworld.py` is byte-identical, `rollout_loop.py`
+   differs only in `enable_thinking=False` (verified a no-op on Qwen2.5 — the chat
+   template never references it, rendered prompt byte-identical), and `env_manager.py`
+   contains an anchor repair we lack. `git log -S` shows it was never in our tree, and
+   GiGPO's original lacks it too, so it is a G²PO contribution.
+
+   It rewrites **`anchor`**, not the prompt — and `anchor` feeds `anchor_obs` into
+   `ccpo_step_advantage`/`derive_context` as the state identity for node grouping.
+   Two repairs: **(B)** a failed action no longer advances the anchor (without it every
+   failure batch-wide collapses to the single anchor `"Nothing happens."`), and
+   **(A)** observations after heat/cool/clean/turn-on are concatenated with their
+   predecessor, since ALFWorld does not restate those results.
+
+   Caveat recorded honestly: per-type deficits do **not** support (A) — pattern-affected
+   types average 77.8 vs unaffected 78.6. (B) is untested by that comparison and is the
+   more plausible half.
+
+   Implemented behind **`ACG_OBS_REPAIR`** (default 0). `tests/test_obs_repair.py`
+   transcribes G²PO's loop literally; ours matches **9/9 steps**.
+
+   **Run this first:** `ccpo-global` + `--set obs_repair=1`, 100 steps, everything else
+   identical to the 79.7% configuration. Single-flag ablation against the best result,
+   adopting a mechanism from the implementation that produced 95.0.
+
 1. **H-AB — G²PO on our harness.** *Declined twice by the user*, so not run. It is now
    the only remaining way to attribute our 79.7%, because the config is proven
    identical. If G²PO scores ~80 here, our method is competitive and 95.0 does not
