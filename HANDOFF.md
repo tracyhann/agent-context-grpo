@@ -51,6 +51,24 @@ raising only the pid limit clears the first wall and OOMs at the second.
 217. Two arms need ~210 GiB anon. **Check `free -g` immediately before launching the
 second arm; under ~230 GB available, run them serially instead.**
 
+**Asymmetric split (4 GPUs + 2 GPUs) costs almost the same.** A 2-GPU arm is NOT half a
+4-GPU arm: the 128 env workers dominate and are identical either way; only the per-GPU
+`WorkerDict` processes scale (~10.5 GB RSS each).
+
+| | 4-GPU arm | 2-GPU arm | total |
+|---|---|---|---|
+| pids | **7,738** (measured) | ~6,500-7,000 (est) | ~14,300-14,700 |
+| anon RAM | **105 GiB** (measured) | ~90 GiB (est) | ~195 GiB |
+| cgroup mem incl. cache | **130 GiB** (measured) | ~115 GiB (est) | ~245 GiB |
+
+Same budget as the symmetric case: `--pids-limit 32768 --memory 384g`. The 4-GPU
+figures are measured; **the 2-GPU figures are estimates** -- no clean 2-GPU run was ever
+obtained (the eval attempt died on the pid cap before stabilising), so treat them
+as +/-15%.
+
+`train_batch_size=16` divides 2 cleanly, so a 2-GPU arm stays comparable (gradient
+accumulation changes, the math does not); expect ~25 h for 100 steps against ~13 h.
+
 Cheaper alternative if the host will not cooperate: the 128 env workers dominate both
 pids and RAM and that footprint barely depends on GPU count, so halving them roughly
 halves both — at the cost of a smaller rollout batch, which breaks comparability with
