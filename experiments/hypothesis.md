@@ -135,6 +135,45 @@ aff-only would have had resolution at a singleton cost.)
 **Clean ablation confirmed:** step-1 `success_rate` is identical to base at 0.0547, so
 the rollouts are the same and only credit assignment differs.
 
+### STEP-30 — 6/6 negative, but the right question is LAG vs CEILING
+
+```
+paired diff:  5:-0.8  10:-2.3  15:-3.1  20:-5.5  25:-9.4  30:-10.2
+sign test 6/6 negative -> p = 0.031
+```
+
+The direction is now established. But the raw gap conflates two very different failures,
+and the fix is to ask **which base step reached each anchor value**:
+
+| anchor step | value | base step at that level | lag |
+|---|---|---|---|
+| 5 | 9.4 | 5 | 0 |
+| 10 | 8.6 | 5 | 5 |
+| 15 | 14.1 | 15 | 0 |
+| 20 | 15.6 | 15 | 5 |
+| 25 | 11.7 | 15 | 10 |
+| 30 | 20.3 | 20 | 10 |
+
+**The arm is ~10 steps behind, and the lag is growing slowly.** That is a materially
+different diagnosis from "capped lower":
+
+* **constant lag ~10** -> the arm is merely slower and would land near base's step-90
+  value (~75) at step 100. Bad but not a refutation of the mechanism.
+* **growing lag** -> a genuine ceiling. Extrapolating the current rate (10 steps of lag
+  per 30) puts step 100 at base's step-67 level, near 50.
+
+**Step-50 test, fixed now.** Base at 50 is 50.0; its step-40 value is 22.7.
+
+* anchor@50 **>= ~40** -> lag shrinking or small; the mechanism is not harmful
+* anchor@50 **~23** -> constant ~10-step lag; slower, not capped
+* anchor@50 **< ~20** -> lag growing; **refuted**, and the conclusion is that
+  credit-assignment structure is not where the remaining points live on this task
+
+**Caveat that keeps this honest:** base's own curve has a step-to-step sd of 7.9 and
+contains drops of -14.8 and -13.3 that it recovered from, and base's step-40 value (22.7)
+is itself one of those dips. Read step 50 against the local trend, not a single base
+point.
+
 ### STEP-20 RESULT — passes the kill rule, but 4/4 negative
 
 ```
