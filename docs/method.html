@@ -205,10 +205,15 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
         <div class="v">Significant</div>
         <div class="n">η² excess over permutation null, p = 0.008 / 0.013. Bias 0.26–0.36 sd.</div>
       </div>
+      <div class="st crit">
+        <div class="k">SUMMARISED MEMORY</div>
+        <div class="v">Refuted, 3 arms</div>
+        <div class="n">All three digest variants finished below base (16.4 / 15.6 / 9.4 vs 21.1 @20). Its stated mechanism is refuted: responses got <em>longer</em> at 15/15 paired steps.</div>
+      </div>
       <div class="st ok">
-        <div class="k">WHAT WORKS</div>
-        <div class="v">Summarised memory</div>
-        <div class="n">Frozen φ + memory is the only arm beating plain GRPO on held-out ALFWorld (0.625 vs 0.604; peak 0.917).</div>
+        <div class="k">WHAT SURVIVED</div>
+        <div class="v">A harness gap</div>
+        <div class="n">G²PO repairs the grouping anchor; we never did. 42.8% of observations conflated. Nodes 758→1172 once fixed. Under test.</div>
       </div>
       <div class="st warn">
         <div class="k">LEARNED COMPONENTS</div>
@@ -225,7 +230,7 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
       <span>ALFWorld</span>
       <span>Qwen2.5-1.5B-Instruct</span>
       <span>79.7% held-out @ 100 iters</span>
-      <span>2026-09-07</span>
+      <span>2026-09-09</span>
     </div>
   </div>
 </header>
@@ -1102,10 +1107,13 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
         <tr><td class="dim">HGPO (published, K=2)</td><td class="num">160</td><td class="num">92.77</td><td>different budget &mdash; not matched</td></tr>
         <tr><td class="dim">GiGPO (published)</td><td class="num">150</td><td class="num">86.7 &plusmn; 1.7</td><td>different budget &mdash; not matched</td></tr>
         <tr class="ourrow"><td class="dim"><b>CCPO &mdash; global gate + edge term</b></td><td class="num"><b>100</b></td><td class="num"><b>79.7</b></td><td><b>ours, 1 seed</b> &mdash; <span class="m">ccpo-global-20260907</span></td></tr>
+        <tr><td class="dim">CCPO &mdash; same arm extended to 145</td><td class="num">145</td><td class="num">79.7</td><td>mean of 9 evals &mdash; <b>+0.00 over step 100</b>; <span class="m">ccpo-global-ext-20260908</span></td></tr>
         <tr><td class="dim">GRPO (published)</td><td class="num">100</td><td class="num">72.8 &plusmn; 3.6</td><td>&mdash;</td></tr>
         <tr><td class="dim">CCPO &mdash; hard gate, no edge term</td><td class="num">100</td><td class="num">70.3</td><td>ours &mdash; <span class="m">ccpo-long-20260906</span></td></tr>
         <tr><td class="dim">RLOO (published)</td><td class="num">100</td><td class="num">69.7 &plusmn; 2.5</td><td>&mdash;</td></tr>
+        <tr><td class="dim">CCPO &mdash; local &sigma; standardisation</td><td class="num">80</td><td class="num">64.1</td><td>refuted &mdash; <span class="m">ccpo-localstd-20260908</span></td></tr>
         <tr><td class="dim">PPO with critic (published)</td><td class="num">100</td><td class="num">54.4 &plusmn; 3.1</td><td>&mdash;</td></tr>
+        <tr><td class="dim">CCPO &mdash; context conditioning OFF</td><td class="num">50</td><td class="num">41.4</td><td>the ON/OFF ablation &mdash; <span class="m">ccpo-hardedge-20260907</span></td></tr>
       </tbody>
     </table>
   </div>
@@ -1114,6 +1122,28 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
   and standard deviations), so PPO/RLOO/GRPO are quoted at GiGPO's 150. Published figures are 3-seed means; ours is a
   single run. Neither G&sup2;PO nor GiGPO states which ALFWorld split it reports &mdash; the code default
   (<span class="m">eval_in_distribution</span>) settles it, and we match it.</p>
+
+  <h3 style="margin-top:26px">The memory digest: three arms, all stopped early</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Arm</th><th>Digest</th><th>Prompt cost</th><th>Held-out @20</th><th>Train mean 10&ndash;20</th></tr></thead>
+      <tbody>
+        <tr><td class="dim">base &mdash; no digest</td><td>&mdash;</td><td class="num">&mdash;</td><td class="num">21.1</td><td class="num">0.160</td></tr>
+        <tr><td class="dim"><span class="m">ccpo-cheapmem</span></td><td>192 tok, replaces window, fires on stall</td><td class="num">+80</td><td class="num">16.4</td><td class="num">0.148</td></tr>
+        <tr><td class="dim"><span class="m">ccpo-gatedmem</span></td><td>512 tok, prepended, fires on stall</td><td class="num">+190</td><td class="num">15.6</td><td class="num">0.107</td></tr>
+        <tr><td class="dim"><span class="m">ccpo-memory</span></td><td>512 tok, prepended, every turn</td><td class="num">+310</td><td class="num">9.4</td><td class="num">0.108</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="tbl-cap"><b>The cost was fixable; the benefit was never there.</b> Cutting the budget 512&rarr;192 and
+  making the digest <em>replace</em> the recent-turn window instead of stacking on it recovered essentially all of
+  the training-side drag (0.107&rarr;0.148 against base's 0.160). Held-out still trailed base. Fixing the cost of an
+  intervention that does not help returns you to baseline; it does not move you forward.</p>
+  <p class="tbl-cap">The digest's stated mechanism is also <b>refuted</b>. It was justified as letting the agent stop
+  re-deriving state inside <span class="m">&lt;think&gt;</span>, which predicts <em>shorter</em> responses. Paired
+  against the no-digest arm on a shared seed over 15 steps, responses were <b>longer at 15 of 15 steps</b>
+  (+6.3 tokens, sign test p=6&times;10<sup>&minus;5</sup>), and KL was <b>lower at 15 of 15</b> &mdash; the digest
+  suppresses the policy update rather than replacing the agent's own reasoning.</p>
 
   <h3 style="margin-top:26px">Per task type, our best arm at step 100</h3>
   <div class="scroll">
@@ -1124,7 +1154,45 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
     </table>
   </div>
   <p class="tbl-cap">No dead category, and the compositional types (Cool, Heat, Pick2) are within 7 points of the
-  overall mean &mdash; unlike earlier arms, where they sat at 0.0 for the first 20 iterations.</p>
+  overall mean &mdash; unlike earlier arms, where they sat at 0.0 for the first 20 iterations.
+  <b>But a single draw puts only ~20 episodes in each type</b>, so each cell above carries an SE near 10 points and
+  none of the between-type ordering survives it.</p>
+
+  <h3 style="margin-top:26px">Per task type, pooled over nine converged evaluations</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Task type</th><th>Mean</th><th>SE</th><th>Shortfall vs 95</th></tr></thead>
+      <tbody>
+        <tr><td class="dim">look_at_obj_in_light</td><td class="num">65.6</td><td class="num">6.8</td><td class="num">&minus;29.4</td></tr>
+        <tr><td class="dim"><b>pick_two_obj_and_place</b></td><td class="num"><b>69.6</b></td><td class="num"><b>2.1</b></td><td class="num">&minus;25.4</td></tr>
+        <tr><td class="dim">pick_cool_then_place</td><td class="num">78.2</td><td class="num">2.6</td><td class="num">&minus;16.8</td></tr>
+        <tr><td class="dim">pick_clean_then_place</td><td class="num">80.4</td><td class="num">2.6</td><td class="num">&minus;14.6</td></tr>
+        <tr><td class="dim">pick_heat_then_place</td><td class="num">87.1</td><td class="num">2.8</td><td class="num">&minus;7.9</td></tr>
+        <tr><td class="dim">pick_and_place</td><td class="num">87.6</td><td class="num">2.6</td><td class="num">&minus;7.4</td></tr>
+        <tr class="ourrow"><td class="dim"><b>overall</b></td><td class="num"><b>79.7</b></td><td class="num"><b>1.6</b></td><td class="num">&minus;15.3</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="tbl-cap">Pooling the extension run's nine converged evaluations cuts the per-type noise threefold.
+  <b>The 15-point gap is not spread evenly.</b> Two types are already near 87 and contribute almost none of it;
+  the deficit sits in <span class="m">pick_two_obj_and_place</span> (tightest SE, so the most trustworthy) and
+  <span class="m">look_at_obj_in_light</span>. Reaching 95 overall means closing ~25 points on two types while
+  holding the other four &mdash; a narrower problem than &ldquo;the method underperforms&rdquo;.
+  <em>Caveat:</em> per-type rates are a mean of the two batch-level rates, not a pooled proportion, so they are not
+  exact proportions over 128.</p>
+
+  <div class="callout" style="margin-top:20px">
+    <div class="lbl">Two negative results that close off the obvious explanations</div>
+    <p><b>More training buys nothing.</b> <span class="m">ccpo-global-ext</span> warm-started the 79.7 arm at step 100
+    and ran to 145. Nine evaluations: mean <b>79.69</b>, sd 4.97, internal trend &minus;0.14 points per 5 steps. The
+    mean over 50 additional steps equals the step-100 value to two decimals. GiGPO's 86.7 is a <em>150-iteration</em>
+    number and we now have one at ~80, so the gap is not a training-length gap.</p>
+    <p><b>Do not quote a <span class="m">stepN-best</span> number.</b> That run's <span class="m">best.json</span>
+    reads <b>85.9</b>, and it would be tempting. Selecting the maximum of a noisy series selects noise: with sd&nbsp;4.97
+    over 9 draws the expected maximum sits about 1.5&nbsp;sd above the mean, i.e. 79.7&nbsp;+&nbsp;7.5&nbsp;&asymp;&nbsp;87.
+    We observed 85.9. The &ldquo;best checkpoint&rdquo; is the luckiest draw, not a better policy &mdash; report the mean
+    over evaluations, or re-evaluate the chosen checkpoint on a fresh draw.</p>
+  </div>
 
   <div class="callout" style="margin-top:20px">
     <div class="lbl">The gain is G&sup2;PO's edge term, not the context conditioning</div>
@@ -1143,8 +1211,108 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
 </section>
 
 <section>
-    <div class="eyebrow">05c — 2026-08-29 diagnostic: where the term is actually live</div>
+  <div class="sec-head">
+    <div class="eyebrow">05b-bis — 2026-09-09: what the 15 points are actually made of</div>
+    <h2>G&sup2;PO repairs the grouping anchor. We never did.</h2>
+    <p>Every candidate explanation for the gap was eliminated one at a time. What survived was not in the
+    estimator at all &mdash; it was in the harness, and it was findable by reading code rather than by training.</p>
+  </div>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Candidate explanation</th><th>Verdict</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td class="dim">Training configuration</td><td>excluded</td><td>every substantive key identical to G&sup2;PO's published <span class="m">run_alfworld.sh</span> &mdash; lr, KL coef and type, &gamma;, invalid-action penalty, batch and group sizes, prompt/response lengths, val temperature, test frequency</td></tr>
+        <tr><td class="dim">Evaluation protocol / split</td><td>excluded</td><td>same 128 <span class="m">eval_in_distribution</span> tasks; our <span class="m">val_batch_size</span> 64 vs their 128 is chunking only (51/64 = 102/128 exactly)</td></tr>
+        <tr><td class="dim">Training length</td><td>excluded</td><td>145 steps gives +0.00 over 100</td></tr>
+        <tr><td class="dim">Context conditioning</td><td>excluded</td><td>ON vs OFF ablation: &minus;0.01 points</td></tr>
+        <tr><td class="dim">Memory / compaction</td><td>excluded</td><td>three arms, all below base; mechanism refuted</td></tr>
+        <tr><td class="dim">The estimator</td><td>excluded</td><td>r &asymp; 0.90 with G&sup2;PO's advantage &mdash; <em>and</em> our port of their algorithm verified faithful line by line, including the &gamma;<sup>1</sup>-at-terminal exponent and the unbiased (n&minus;1) standard deviation</td></tr>
+        <tr class="ourrow"><td class="dim"><b>The anchor used for grouping</b></td><td><b>survives</b></td><td><b>two mechanisms G&sup2;PO has that this tree never had</b></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p style="margin:16px 0 0">Diffing our harness against the G&sup2;PO checkout: the ALFWorld prompt template is
+  <b>byte-identical</b>; <span class="m">rollout_loop.py</span> differs only by an <span class="m">enable_thinking</span>
+  flag that is a verified no-op on Qwen2.5 (the chat template never references it; rendered prompts are byte-identical);
+  <span class="m">memory.py</span> differs only by a function with <b>zero call sites</b> in their own tree. What is left
+  sits in <span class="m">env_manager.py</span>:</p>
+
+  <pre style="margin:12px 0;padding:12px 14px;background:#f6f5f2;border-left:3px solid #8a8578;overflow-x:auto;font-size:12.5px;line-height:1.55"><code>PATTERNS = ["You heat", "You cool", "You clean", "You turn on"]
+
+text_obs[i] += f"\nAdmissible actions:\n {reformatted_admissible_actions}\n"   # (A)
+if not text_obs[i].startswith("Nothing happens"):                                # (B)
+    self.history_obs[i].append(text_obs[i])
+is_invisible_obs = len(self.history_obs[i]) &gt;= 2 and any(
+    self.history_obs[i][-2].startswith(p) for p in PATTERNS)                     # (C)
+text_obs[i] = " ".join(self.history_obs[i][-2:]) if is_invisible_obs else self.history_obs[i][-1]</code></pre>
+
+  <p><b>This is not a prompt change.</b> The prompt is built before this block and is untouched. What it rewrites is
+  <span class="m">anchor</span> &mdash; which in our tree feeds <span class="m">anchor_obs</span> into the estimator as
+  the <b>state identity used for node grouping</b>. A wrong anchor means occurrences in genuinely different states
+  share a baseline.</p>
+
+  <div class="callout">
+    <div class="lbl">(B) &mdash; a failed action must not advance the anchor</div>
+    <p>Without it our anchor becomes the literal string <span class="m">"Nothing happens."</span> on every failed
+    action, so unrelated failed states anywhere in the batch collapse onto <em>one</em> node. With it, a failure at
+    state S carries S's last real observation and joins S's own node.</p>
+  </div>
+  <div class="callout">
+    <div class="lbl">(C) &mdash; invisible-state actions must be carried forward</div>
+    <p>ALFWorld does not restate the result of heat / cool / clean / turn-on in the next observation, so
+    &ldquo;egg heated&rdquo; and &ldquo;egg not heated&rdquo; carry <em>identical</em> anchor text. Concatenating the
+    previous observation preserves the distinction.</p>
+    <p style="color:var(--ink-2)"><b>Honest check that undercuts this half:</b> the obvious test is whether our
+    per-type deficits fall on the four pattern-affected types. They do not &mdash; those four average 77.8 against
+    the two unaffected types' 78.6. (B) is untested by that comparison and is the more plausible mechanism.</p>
+  </div>
+  <div class="callout">
+    <div class="lbl">(A) &mdash; the disambiguator we built and never used</div>
+    <p>G&sup2;PO folds the admissible-action list <em>into</em> the anchor, so its node identity is observation text
+    <b>plus</b> admissible actions. Ours is the observation text alone.</p>
+    <p>This tree already carries that list, as the <span class="m">aff</span> field, added because <b>42.8% of
+    observations map to more than one admissible set</b>. It is threaded all the way into the estimator &mdash; and
+    used at exactly one place, to write a column into a diagnostic CSV. <b>We measured the ambiguity, built the
+    disambiguator, and then grouped without it.</b></p>
+  </div>
+
+  <h3 style="margin-top:26px">What the two mechanisms do to the grouping, measured at step 1</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>&nbsp;</th><th>base (79.7 arm)</th><th>+ (B)&thinsp;(C) repair</th><th>+ (A) admissible</th></tr></thead>
+      <tbody>
+        <tr><td class="dim">nodes</td><td class="num">758</td><td class="num">797</td><td class="num"><b>1172</b></td></tr>
+        <tr><td class="dim">singleton fraction</td><td class="num">0.335</td><td class="num">0.227</td><td class="num"><b>0.291</b></td></tr>
+        <tr><td class="dim">step-1 success</td><td class="num">0.0547</td><td class="num">0.0547</td><td class="num">0.0547</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="tbl-cap"><b>(A) is the dominant mechanism</b>, adding +375 nodes against the repair's +39 &mdash; node
+  count rises 55% over base. That figure cross-checks: 758&nbsp;&times;&nbsp;0.428&nbsp;&asymp;&nbsp;324 extra nodes if
+  each ambiguous observation splits in two, and we observe +375. The grouping change matches an ambiguity rate
+  measured a week earlier by unrelated means.</p>
+  <p class="tbl-cap">The two mechanisms pull singletons in <em>opposite</em> directions &mdash; finer nodes create
+  singletons, the failure repair removes them &mdash; and the net (0.291) stays <b>below base's 0.335</b>. So the pair
+  gives 55% more state resolution <em>and</em> fewer occurrences lacking a leave-one-out baseline, which neither flag
+  achieves alone. Identical step-1 success confirms a clean ablation: rollouts unchanged, only credit assignment
+  differs.</p>
+  <p class="tbl-cap" style="border-left:3px solid #c8a24a;padding-left:10px"><b>Not yet an accuracy claim.</b>
+  Better-looking grouping has already failed to become better accuracy once here: the hard-gate comparison moved
+  <span class="m">effect_rel</span> a hundredfold and moved held-out success by &minus;0.01 points. The arm carrying
+  both flags (<span class="m">ccpo-anchor-20260909</span>) is running now and is judged at steps 20 / 50 / 100
+  against base's 21.1 / 50.0 / 79.7 &mdash; not on these numbers.</p>
+</section>
+
+<section>
+    <div class="eyebrow">05c — SUPERSEDED (2026-08-29 diagnostic, Qwen3-1.7B)</div>
     <h2>The context term is inert on sparse ALFWorld at 1.7B</h2>
+    <p style="margin:0 0 14px;padding:10px 12px;border-left:3px solid #c8a24a;background:#fbf7ec;font-size:13.5px;line-height:1.6">
+    <b>Kept for its reasoning, not its numbers.</b> Everything below was measured on Qwen3-1.7B on the retired stack.
+    The conclusion was re-established on the current stack by a cleaner route &mdash; the ON/OFF ablation at
+    &minus;0.01 points &mdash; so the table is history. Note also that under the shipped global gate &lambda; is
+    forced to 1 by construction, so the &lambda; mechanism this section analyses no longer runs.</p>
     <p>λ<sub>u</sub> is the MSE-optimal shrinkage toward the observation-only baseline; it is driven to 0 whenever the
     <em>other</em> trajectories in a bucket have identical returns (s²=0), because then conditioning has no bias to remove.
     Measured per iteration over the 08-27 runs:</p>
@@ -1168,6 +1336,15 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
   <div class="sec-head">
     <div class="eyebrow">05d — training configuration vs published methods (2026-08-29)</div>
     <h2>The shipped configuration</h2>
+    <p style="margin:0 0 14px;padding:10px 12px;border-left:3px solid #4a7c59;background:#f0f5f1;font-size:13.5px;line-height:1.6">
+    <b>Verified against the source, 2026-09-09.</b> This configuration was diffed key-by-key against
+    <span class="m">baselines/G2PO/examples/g2po_trainer/run_alfworld.sh</span> &mdash; the script that produced the
+    published 95.0. <b>Every substantive hyperparameter is identical</b>: lr 1e&minus;6, <span class="m">kl_loss_coef</span>
+    0.01 with <span class="m">low_var_kl</span>, &gamma; 0.95, <span class="m">use_invalid_action_penalty</span> at 0.1,
+    <span class="m">max_steps</span> 50, group 8, train batch 16, prompt 2048 / response 512, val temperature 0.4,
+    <span class="m">test_freq</span> 5, mini/micro batch sizes, and the <span class="m">eval_in_distribution</span> split.
+    The keys that differ are paths, run names, logger, GPU count, tensor-parallel size and memory utilisation.
+    <b>Our held-out numbers are therefore directly comparable to the published ones.</b></p>
     <p>Every knob below is what <span class="m">ccpo-global-20260907</span> actually ran, taken from its
     <span class="m">config.json</span>. Published columns are from the G&sup2;PO and GiGPO papers' own
     hyperparameter appendices, not from their example scripts.</p>
@@ -1285,11 +1462,17 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
     (<span class="m">ACG_FORCE_BUDGET</span>) makes truncation-without-action impossible. On Qwen2.5-1.5B-Instruct
     the collapse does not occur — response length sits at 75–95 tokens across 100 iterations and
     <span class="m">valid_action_ratio</span> stays &ge; 0.999 — so the guard is retained but inactive.</p>
-    <p><b>Revisiting is the long-horizon failure mode.</b> 58.7% of turns revisit a previously seen observation, and
-    failing trajectories revisit 2.68&times; as often as successes (10,365 trajectories). A 2-turn window cannot
-    record where the agent has been. This is what the compaction digest targets, and it is the one component of the
-    original design still untested — <span class="m">ccpo-memory-20260907</span> is running it now as a
-    single-variable change from the 79.7% arm.</p>
+    <p><b>Revisiting is the long-horizon failure mode &mdash; but the digest is not the fix.</b> 58.7% of turns
+    revisit a previously seen observation, and failing trajectories revisit 2.68&times; as often as successes
+    (10,365 trajectories). A 2-turn window cannot record where the agent has been, and the compaction digest was
+    built to target exactly that. <b>Three arms have now tested it and all three finished below base</b> (see 05b).
+    The diagnosis stands; the remedy does not follow from it. What the digest actually did was lengthen responses at
+    15 of 15 paired steps and lower KL at 15 of 15 &mdash; added cost on both ends, and a suppressed policy update,
+    rather than the promised substitute for re-deriving state.</p>
+    <p style="color:var(--ink-2)"><b>The revisiting diagnosis may point somewhere else entirely.</b> An agent that
+    cannot tell it has been somewhere before is also an agent whose <em>anchor</em> cannot tell those visits apart
+    &mdash; which is the grouping defect identified in 05b-bis, not a prompt-context defect. The same measurement
+    supports both readings; only one of them has survived a training run so far, and it is not this one.</p>
   </div>
 
   <h3 style="margin-top:26px">What the diagnostics established</h3>
@@ -1363,23 +1546,42 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
 <section>
   <div class="sec-head">
     <div class="eyebrow">06 — where it stands</div>
-    <h2>Is the expensive run justified?</h2>
+    <h2>Where the 15 points went</h2>
   </div>
   <div class="narrow" style="display:flex; flex-direction:column; gap:15px">
-    <p><b>Partly — and the answer is narrower than the original idea.</b></p>
-    <p style="color:var(--ink-2)">Two things are established. The target effect is real: within-bucket credit heterogeneity is significant on two of three benchmarks, worth a quarter to a third of a standard deviation of baseline bias — though modest at 3–5% excess explained variance. And the probe-stationarity fix works, replicated three times.</p>
-    <p style="color:var(--ink-2)">The blocker is the central hypothesis itself. Across two environments, four φ variants and four arms, no correlation between the predictive proxy and the credit oracle survives a null-representation control. That is not a refutation — four separate measurement defects had to be fixed before the question could even be asked, and the first clean attempt is underpowered at 15–22 usable pairs.</p>
-    <p style="color:var(--ink-2)">The training runs answer it in one direction: <b>a context key carrying summarised memory beats plain GRPO on held-out ALFWorld</b> (0.625 vs 0.604, peak 0.917 vs 0.667), while every learned component under-performs the frozen version it was meant to improve. So the defensible claim is the narrow one — memory-bearing context helps — not the original one about learned predictive equivalence.</p>
-    <p style="color:var(--ink-2)">The blocking experiment is now the stratified ALFWorld rerun: every number above was measured inside a single task type, and cross-type transfer is exactly the regime the method is designed for. Until that lands, treat the ALFWorld column as within-type transfer and nothing more.</p>
-    <p><strong>Update — 2026-08-29.</strong> The corrected 50-step round with clean-protocol adjudication has since moved
-    the picture: WebShop is a statistical tie on the 488 untouched test goals (greedy 0.301 GRPO / 0.296 ours / 0.290
-    ours+cc-norm, gaps ≤ 1 SE); ALFWorld splits by seed (seed 0: ours 0.27 in-training vs GRPO 0.066 clean; seed 1 leans
-    GRPO); ScienceWorld leans GRPO. The §05c diagnostic explains the pattern — the context term is structurally inert on
-    sparse ALFWorld at this success level — and probes showed think-then-score lifts ALFWorld base success 2.4× while
-    hurting the other envs. On that basis all six GPUs were redirected (user directive) to the §05d matched-scale run:
-    our estimator inside verl-agent with free generation and the chain-of-thought trained by the RL gradient, in Docker
-    on the Blackwell cards, 150 steps; the GRPO baseline follows in the identical configuration. That run — not the
-    stratified rerun — is now the blocking experiment.</p>
+    <p><b>The central hypothesis of this method did not survive contact with ALFWorld.</b> Context-conditioned
+    grouping &mdash; the idea the whole page is built around &mdash; measures as inert here, four independent ways:
+    the ON/OFF ablation at &minus;0.01 points, <span class="m">phi_rel_corr</span> 0.011 (R&sup2; 0.00013), an ICC
+    ceiling of 6.1%, and &phi;-weighting inside a bucket scoring <em>worse</em> than uniform. The 79.7 that this
+    method reaches came from restoring G&sup2;PO's edge term, which we had switched off.</p>
+
+    <p style="color:var(--ink-2)"><b>Three further ideas of our own were tried and all three failed.</b> Local
+    &sigma; standardisation (64.1, refuted). Longer training (145 steps, +0.00). The memory digest, in three
+    variants, each below base &mdash; and with its stated mechanism refuted by paired measurement rather than merely
+    unsupported.</p>
+
+    <p style="color:var(--ink-2)"><b>What made the difference was reading the reference implementation, not
+    theorising.</b> Every explanation for the 15-point gap was eliminated in turn &mdash; configuration, evaluation
+    protocol, split, training length, context conditioning, memory, and the estimator itself (r&nbsp;&asymp;&nbsp;0.90
+    with G&sup2;PO's advantage, with our port of their algorithm then verified faithful line by line). What survived
+    was two mechanisms in G&sup2;PO's environment manager that this tree never had, both acting on the anchor that
+    defines node identity: failures collapsing onto a single shared anchor, and 42.8% of observations conflated
+    because the admissible-action list we already compute was never put into the key.</p>
+
+    <p style="color:var(--ink-2)">Neither is an idea. Both are code that exists in the implementation that produced
+    95.0 and did not exist in ours. That is a less flattering answer than a new estimator, and a more likely one.</p>
+
+    <p><b>What is not yet known.</b> Whether those two mechanisms close the gap. The arm carrying both
+    (<span class="m">ccpo-anchor-20260909</span>) is running as a single-variable change from the 79.7 arm; step-1
+    diagnostics confirm the grouping changed as predicted (nodes 758&rarr;1172, singletons 0.335&rarr;0.291,
+    rollouts identical). <b>Structural improvement has already failed to become accuracy once here</b> &mdash; the
+    hard-gate comparison moved <span class="m">effect_rel</span> a hundredfold for &minus;0.01 points &mdash; so the
+    arm is judged on held-out success at steps 20 / 50 / 100 against 21.1 / 50.0 / 79.7, and on nothing else.</p>
+
+    <p><b>Standing caveats.</b> Every number on this page is a <em>single seed</em>, including the headline 79.7;
+    the paired between-arm sd is ~5.3 points. Published rows are 3-seed means. And no
+    <span class="m">stepN-best</span> figure should be quoted from this project &mdash; best-checkpoint selection is
+    biased upward by roughly 1.5&nbsp;sd, which on these runs is about 7 points.</p>
   </div>
 </section>
 
