@@ -59,6 +59,41 @@ before the action exists.
 
 ## Open — ranked by expected value
 
+### [!!!] H-AI. The accidental replicate: G2PO's own run-to-run spread is ~10 points
+
+The OOM restart produced something we had never had -- **a same-config, same-seed
+replicate of the same method.** Attempt 2 differs from attempt 1 only in
+`gpu_memory_utilization` (0.6 -> 0.3) and `save_freq` (-1 -> 20). Neither touches the
+objective; the first changes vLLM's KV-cache size, hence batching, hence sampling order.
+
+```
+step   G2PO a1   G2PO a2   ours     a1-a2   a2-ours
+   5      10.2      12.5   10.2      -2.3      +2.3
+  10      21.1      11.7   10.9      +9.4      +0.8
+```
+
+**At step 10 the two G2PO runs differ by 9.4 points, and attempt 2 is level with our
+arm.**
+
+**This undercuts H-AH.** The "+10 to +15 point G2PO lead" measured over seven
+evaluations is the same magnitude as G2PO's own nondeterministic spread. With one run per
+method I cannot separate "G2PO is better" from "attempt 1 drew well".
+
+**What survives.** G2PO does *run* on our stack and reaches ~50 by step 35 in at least
+one run -- the reproduction question is answered. What is NOT established is the size, or
+even the existence, of a method gap.
+
+**What this vindicates.** The caveat attached to every arm this session -- *seed variance
+has never been measured* -- was the right one, and it has now bitten the headline result
+rather than a side finding. The estimated between-arm paired sd of ~5.3 was, if anything,
+optimistic.
+
+**What it changes about what to run next.** `--arm g2po` was queued to locate the gap
+between estimator and harness. **That is premature: there may be no gap to locate.** The
+first requirement is now replicates -- at minimum a second CCPO run at identical config,
+so both methods have a spread rather than a point. Without that, no comparison on this
+task means anything at ~10 points.
+
 ### [!!! RUNNING — decisive] H-AH. G2PO reproduces on our stack and is BEATING us outright
 
 **Update at step 25: the gap is widening, not constant.**
