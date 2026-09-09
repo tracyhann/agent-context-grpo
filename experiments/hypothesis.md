@@ -59,6 +59,48 @@ before the action exists.
 
 ## Open — ranked by expected value
 
+### [SETTLED — negative, and it strengthens H-AD/H-AE] H-AF. Our G2PO port is faithful
+
+Before attributing the gap to the harness, the alternative had to be excluded: that we
+mis-ported G2PO's algorithm. `core_ccpo.py` vendors two pieces of their code, and a
+silent error in either would explain a great deal. Checked line by line against
+`baselines/G2PO/g2po/core_g2po.py`.
+
+**`g2po_node_values` vs `compute_group_aggregation_values`:**
+
+| detail | G2PO | ours | |
+|---|---|---|---|
+| node key | `obs2idx` reset per task -> (task, anchor) | `(task, str(anchor_obs[i]))` | match |
+| discount | `0.95 ** (len(traj) - step_count)` | `gamma ** (T - t)`, t 0-indexed | match |
+| terminal exponent | last step gets **gamma^1**, not gamma^0 | same | match |
+| aggregation | sum / len(members) | `acc[key] / cnt[key]` | match |
+| terminals | -1 -> SUCCESS_REWARD, -2 -> 0 | `_TERM_OK`/`_TERM_BAD` | match |
+
+The gamma^1-at-terminal detail is the off-by-one that would have been easiest to get
+wrong and hardest to notice. It is right.
+
+**`g2po_step_advantage` vs `compute_step_level_advantage`:**
+
+| detail | G2PO | ours | |
+|---|---|---|---|
+| comp 1 std | `torch.std` = **unbiased, n-1** | `v.std(ddof=1)` | match |
+| singleton nodes | skipped, left at 0 | `if len(ids) < 2: continue` | match |
+| invalid penalty | comp 1 only, on successor value | `v_pen` in comp 1 only | match |
+| comp 2 gain | **unpenalised** `next - current` | `v_raw - V(NODE)` | match |
+| comp 2 scope | standardised across the task | same | match |
+
+`torch.std` defaulting to n-1 while `np.std` defaults to n is the other trap here, and
+the port uses `ddof=1`. The only divergence is a `len < 2` guard our comp 2 adds and
+theirs lacks -- immaterial, since a task carries 8 rollouts x many steps.
+
+**Why a negative result matters here.** H-O concluded that our advantage correlates
+~0.90 with G2PO's and therefore the estimator is not the gap. **That conclusion rests
+entirely on `g2po_step_advantage` being a faithful reference** -- a broken reference
+would have made the correlation meaningless in either direction. It is faithful, so H-O
+stands, and with the estimator, config (H-AB), eval protocol, training length (H-Z),
+context conditioning and memory all excluded, the two anchor differences (H-AD, H-AE)
+are what remains.
+
 ### [!!] H-AE. `aff` was built to fix anchor ambiguity and never wired into the grouping
 
 Continuing the harness diff past the three files of H-AD, across the whole
