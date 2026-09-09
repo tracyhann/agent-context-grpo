@@ -50,3 +50,28 @@ mini/micro batch sizes, `save_freq=-1`, total_epochs.
 
 Same 128 `eval_in_distribution` tasks, same T=0.4 sampling, same `test_freq=5`, same
 backbone. Directly comparable to `ccpo-global-20260907` (79.7) and to the published 95.0.
+
+
+## Operational notes discovered at launch (2026-09-09)
+
+Three things bit on the way up; all are in `run.sh` now.
+
+1. **`docker/fa_stub` must NOT be on `PYTHONPATH`.** The real flash-attn (2.8.3.post1)
+   is installed and its `unpad_input` is pure PyTorch, so their
+   `use_remove_padding=True` works on sm_120. Putting the stub first shadows the real
+   package and every call raises. Our own arms never load the stub. **This means NO
+   deviation from their config was needed** -- `use_remove_padding` stays `True`.
+2. **`HOME` must be a real, writable home** (`/home/claude`). `env -i` clears it, and
+   `HOME=/root` makes every Ray worker log `bash: /root/.bashrc: Permission denied`.
+   Cosmetic, but the noise looks like a failure.
+3. **Their metrics do not reach `train.log`.** verl's console backend `print()`s inside
+   the TaskRunner ray actor; Ray forwards only the tqdm bar (stderr) to the driver. The
+   metrics land in `/tmp/ray_g2po/ray/session_latest/logs/worker-*.out`.
+   `scripts/g2po_metrics.sh` mirrors that file into `outputs/worker_metrics.log` (it is
+   volatile) and parses it into `metrics.jsonl`.
+
+**Do not judge liveness from GPU memory.** Startup loads 494 games and the model before
+allocating; a healthy run shows ~4 MiB for several minutes. Watch the
+`Training Progress` bar in `train.log` instead.
+
+**Measured cost: ~652 s/step on 2 GPUs -> ~17.4 h for 100 steps.**

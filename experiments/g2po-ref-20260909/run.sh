@@ -10,6 +10,9 @@
 #
 #   1. VLLM_ATTENTION_BACKEND: XFORMERS -> TRITON_ATTN. XFORMERS has no sm_120 kernel;
 #      Blackwell requires Triton. Same backend our arms use, so this is not a handicap.
+#      NOTE: docker/fa_stub must NOT be on PYTHONPATH. The real flash_attn (2.8.3.post1)
+#      is installed and its unpad_input is pure PyTorch, so use_remove_padding=True works
+#      on sm_120; the stub shadows it and raises. Our own arms never load the stub.
 #   2. data paths -> /workspace/envdata/verl_data/text. Their script REGENERATES the
 #      parquets via examples.data_preprocess.prepare; that step is DELIBERATELY SKIPPED.
 #      Regenerating could draw a different validation set and destroy comparability with
@@ -41,7 +44,7 @@ env -i \
   HOME=/home/claude \
   MKL_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 \
   PATH=/usr/local/cuda/bin:/usr/bin:/bin \
-  PYTHONPATH=/workspace/baselines/G2PO:/workspace/docker/fa_stub \
+  PYTHONPATH=/workspace/baselines/G2PO \
   RAYON_NUM_THREADS=1 \
   RAY_TMPDIR=/tmp/ray_g2po \
   RAY_event_stats=0 RAY_num_grpc_internal_threads=1 RAY_num_prestart_python_workers=4 \
