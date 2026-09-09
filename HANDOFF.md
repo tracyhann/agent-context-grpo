@@ -43,7 +43,7 @@ alongside a running arm.
 | `ccpo-hardedge-20260907` | 50 (paused) | 41.4% | CCPO ON/OFF ablation |
 | `ccpo-gatedmem-20260908` | 20 (killed) | 15.6% @20 | stall-gated digest, H-Y |
 | `ccpo-memory-20260907` | 22 (stopped) | 9.4% @20 | ungated digest, H-W |
-| `ccpo-cheapmem-20260908` | **RUNNING** | 17.2% @5 | digest at 192 tok / replace mode, H-AC |
+| `ccpo-cheapmem-20260908` | 20 (stopped) | 16.4% @20 | digest at 192 tok / replace; cost fixed, mechanism null, H-AC |
 
 Published at the same protocol (Qwen2.5-1.5B, ALFWorld, 100 iters, 3 seeds):
 **G²PO 95.0**, GiGPO 86.7 (at *150* iters), HGPO 92.77 (at 160), GRPO 72.8, RLOO 69.7,
