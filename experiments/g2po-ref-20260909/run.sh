@@ -116,6 +116,9 @@ env -i \
     trainer.n_gpus_per_node="$NG" \
     trainer.nnodes=1 \
     trainer.save_freq=20 \
+    `# NOTE: their default_local_dir is RELATIVE, and this script cds into` \
+    `# baselines/G2PO, so checkpoints land inside the reference checkout.` \
+    `# Pass trainer.default_local_dir explicitly on any future run.` \
     trainer.test_freq=5 \
     trainer.total_epochs=100 \
     trainer.val_before_train=False \

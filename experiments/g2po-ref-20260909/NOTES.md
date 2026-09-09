@@ -101,3 +101,24 @@ it as "expected from GPU count". It was the failure, visible six hours early.
 -- 7 evaluations, steps 5-35, showing a stable ~10-15 point lead over our arm. That
 result stands on its own; the restart is to see whether G2PO reaches its published 95.0
 by step 100.
+
+
+## Checkpoint location (attempt 2)
+
+`save_freq=20` works, but their `default_local_dir` is **relative**
+(`checkpoints/${trainer.project_name}/${trainer.experiment_name}`) and `run.sh` does
+`cd /workspace/baselines/G2PO`, so checkpoints land at
+
+    baselines/G2PO/checkpoints/g2po_reference/g2po-ref-20260909/global_step_N
+
+i.e. **inside the reference checkout**, not the experiment directory.
+`outputs/checkpoints` here is a symlink to that path so the run stays self-describing.
+
+Not a correctness problem, and `baselines/*/` is gitignored so nothing can be committed
+by accident. Not worth restarting a healthy run to fix. **For any future run of their
+tree, pass `trainer.default_local_dir` explicitly.**
+
+Resume from a checkpoint if this attempt also dies:
+
+    trainer.resume_mode=resume_path \
+    trainer.resume_from_path=/workspace/baselines/G2PO/checkpoints/g2po_reference/g2po-ref-20260909/global_step_N
