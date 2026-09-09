@@ -26,6 +26,36 @@ at ~210 GiB fits, but with little margin.
 Recheck `free -g` and `/sys/fs/cgroup/pids.current` before relying on this — the 224 GB
 belongs to the host and is not ours to assume.
 
+### Recommended container limits for TWO concurrent 4-GPU arms
+
+Measured, not estimated: one arm peaked at **7,738 pids** and **130 GiB**
+(105 anon + 25 file cache); a second Ray cluster pushed pids to **8,133** against the
+8,192 cap and died silently one line after `Started a local Ray instance`.
+
+| setting | current | recommended | why |
+|---|---|---|---|
+| `--pids-limit` | 8,192 | **32,768** | 2 x 7,738 ~ 15,500, with 2x margin |
+| `--memory` | 256 GiB | **384 GiB** | 2 x 130 GiB ~ 260 GiB — **exceeds the current 256** |
+| `--shm-size` | 64 GB | 64 GB (keep) | stayed at 64 G free with one arm running |
+| `--ulimit nofile` | 524,288 | keep | nowhere near binding |
+
+```
+docker run --pids-limit 32768 --memory 384g --shm-size 64g \
+           --ulimit nofile=524288:524288 --gpus all ...
+```
+
+**`memory.max` at 256 GiB is the trap**: it is *just under* what two arms need, so
+raising only the pid limit clears the first wall and OOMs at the second.
+
+**Host RAM is not ours to control and moves.** It was 61 GB available, then 224, then
+217. Two arms need ~210 GiB anon. **Check `free -g` immediately before launching the
+second arm; under ~230 GB available, run them serially instead.**
+
+Cheaper alternative if the host will not cooperate: the 128 env workers dominate both
+pids and RAM and that footprint barely depends on GPU count, so halving them roughly
+halves both — at the cost of a smaller rollout batch, which breaks comparability with
+the 79.7% arm. Raising the limits is the better path.
+
 GPUs 4–5 are genuinely idle (4 MiB), so nobody else is training — but someone may hold
 that RAM, which bears on the "do not interfere with other users" instruction.
 
