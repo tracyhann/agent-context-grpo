@@ -2330,6 +2330,43 @@ self-corrected to 0.996 within three steps — RL fixed the format unaided.
 
 ## Measurement notes — things that will mislead you
 
+### Train success is NOT below held-out — and a single train step will fool you
+
+Asked whether we hold train success rates, I first reported `ccpo-global-ext` at
+**95.3% train against 79.7% held-out** and called it a 15-point generalization gap, with
+the flourish that our policy reaches on training what G2PO reports on held-out.
+**That was wrong.** 95.3 is the value at the LAST step, and single-step train values
+swing enormously: 128 episodes drawn over only 16 tasks, so one favourable task draw
+moves the number 20 points.
+
+Averaging train over the 5 steps around each evaluation:
+
+| arm | step | train | held-out | gap |
+|---|---|---|---|---|
+| ccpo-global | 100 | 77.7 | 79.7 | **-2.0** |
+| ccpo-global-ext | 145 | 83.4 | 85.9 | **-2.5** |
+| ccpo-long | 100 | 67.7 | 70.3 | -2.7 |
+| ccpo-localstd | 80 | 64.7 | 64.1 | +0.6 |
+
+**Held-out sits slightly ABOVE train, consistently.** That is what the sampling
+temperatures predict: held-out runs at T=0.4 (greedy) against training's T=1.0
+(exploratory). There is no overfitting to correct.
+
+**Consequences.**
+
+1. **The gap to G2PO is a LEARNING gap, not a transfer gap.** We do not reach their
+   level on either split. Any hypothesis framed as "we overfit the training games" is
+   dead on arrival.
+2. **`ccpo-anchor` should be judged on held-out level alone** -- there is no train/test
+   gap for it to close.
+3. **Never quote a single train step.** Use a window. This is the same error class as
+   the `stepN-best` trap: reading a maximum, or an endpoint, off a noisy series.
+
+Composition does not explain anything either: `valid_seen` is if anything *easier* than
+`train` -- 13.1% `pick_two_obj_and_place` (the hardest type) against training's 16.7%,
+and more `pick_and_place_simple`.
+
+
 ### `eval_in_distribution` is much closer to training than its name suggests
 
 Checked 2026-09-09 after the question "is G2PO's 95% train/test leakage?".
