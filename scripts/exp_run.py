@@ -190,6 +190,10 @@ DEFAULTS = {
     # +194 prompt AND +6 response tokens at 15/15 paired steps (H-AA). See
     # tests/test_compact_mode.py for the budget/coverage sweep behind the chosen value.
     "compact_mode": "prepend",
+    # G2PO's anchor repair (H-AD). 0 = this tree's historical behaviour, which is also
+    # verl-agent/GiGPO's. 1 = reproduce G2PO. The anchor is the state identity used for
+    # node grouping in the step term, NOT the prompt.
+    "obs_repair": 0,
     "force_budget": 0,
     "force_tail": 32,
 }
@@ -211,7 +215,7 @@ ENV_KEYS = {
     "ccpo_std": "ACG_CCPO_STD", "ccpo_std_floor": "ACG_CCPO_STD_FLOOR",
     "ccpo_step_norm": "ACG_CCPO_STEP_NORM",
     "compact_budget": "ACG_COMPACT_BUDGET", "compact_stall": "ACG_COMPACT_STALL",
-    "compact_mode": "ACG_COMPACT_MODE",
+    "compact_mode": "ACG_COMPACT_MODE", "obs_repair": "ACG_OBS_REPAIR",
     "align_val_on_resume": "ACG_ALIGN_VAL_ON_RESUME", "force_budget": "ACG_FORCE_BUDGET",
     "force_tail": "ACG_FORCE_TAIL",
     "early_stop_patience": "ACG_EARLY_STOP_PATIENCE",

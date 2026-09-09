@@ -24,6 +24,10 @@ from agent_system.environments.base import EnvironmentManagerBase, to_numpy
 from agent_system.memory import SimpleMemory, SearchMemory
 from agent_system.memory.compact import build_digest
 
+# ALFWorld does not restate the result of these actions in the next
+# observation, so the state they produce is invisible to the anchor.
+_INVISIBLE_PATTERNS = ("You heat", "You cool", "You clean", "You turn on")
+
 def _stall_len(records, obs_key="text_obs"):
     """Turns since this trajectory last reached a NEW observation.
 
@@ -160,6 +164,9 @@ class AlfWorldEnvironmentManager(EnvironmentManagerBase):
         self.gamefile = parse_gamefile(infos)
         # initialize the history buffer
         self.memory.reset(batch_size = len(text_obs))
+        # ACG_OBS_REPAIR: G2PO's anchor repair, absent from verl-agent/GiGPO and from
+        # this tree until now. See the block in step() for what it does and why.
+        self.history_obs = [[o] for o in text_obs]
         self.tasks = []
         self.pre_text_obs = text_obs
         self.extract_task(text_obs)
@@ -185,6 +192,41 @@ class AlfWorldEnvironmentManager(EnvironmentManagerBase):
         # add action_valid to infos
         for i, info in enumerate(infos):
             info['is_action_valid'] = to_numpy(valids[i])
+
+        # ACG_OBS_REPAIR=1 reproduces G2PO's anchor repair
+        # (baselines/G2PO/agent_system/environments/env_manager.py:132-178). The anchor
+        # is the STATE IDENTITY used for node grouping in the step term -- it is not the
+        # prompt, which is `full_text_obs` and is built above, untouched.
+        #
+        # Two independent repairs, and they are NOT equally supported:
+        #
+        #   (B) a failed action does not advance the anchor. Without this our anchor
+        #       becomes the literal "Nothing happens." on every failure, so unrelated
+        #       failed states anywhere in the batch collapse to ONE anchor. Applies to
+        #       every task type.
+        #
+        #   (A) after "You heat/cool/clean/turn on", the next observation is concatenated
+        #       with the previous one, because ALFWorld does not restate the result of
+        #       those actions -- so "egg heated" and "egg not heated" otherwise carry
+        #       IDENTICAL anchor text and group together. Task-type specific.
+        #
+        # Honest note on (A): our per-type deficits do NOT support it. The four
+        # pattern-affected types average 77.8 and the two unaffected ones 78.6. (B) is
+        # untested by that comparison and is the more plausible of the two.
+        #
+        # G2PO folds admissible actions into the anchor string; this tree already
+        # carries them separately as `aff`, so that part is not duplicated here.
+        _repair = os.environ.get("ACG_OBS_REPAIR", "0") != "0"
+        if _repair and getattr(self, "history_obs", None) is not None:
+            _anchor = list(text_obs)
+            for _i in range(len(_anchor)):
+                if not str(_anchor[_i]).startswith("Nothing happens"):
+                    self.history_obs[_i].append(_anchor[_i])
+                _h = self.history_obs[_i]
+                _inv = len(_h) >= 2 and any(
+                    str(_h[-2]).startswith(_p) for _p in _INVISIBLE_PATTERNS)
+                _anchor[_i] = " ".join(_h[-2:]) if _inv else _h[-1]
+            text_obs = _anchor
 
         next_observations = {'text': full_text_obs, 'image': image_obs, 'anchor': text_obs,
                              'aff': ['|'.join(sorted(a)) for a in self.envs.get_admissible_commands]}

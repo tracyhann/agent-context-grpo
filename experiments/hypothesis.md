@@ -59,6 +59,81 @@ before the action exists.
 
 ## Open — ranked by expected value
 
+### [!!! OPEN — the best remaining lead] H-AD. G2PO repairs the anchor; we never did
+
+H-AB closed off config, eval protocol, split, training length, context conditioning,
+memory and the estimator, leaving "a harness difference outside those keys" as one of
+two survivors. **That did not need a training run to check -- both trees are on disk.**
+
+Diffed our harness against the G2PO checkout:
+
+```
+agent_system/environments/prompts/alfworld.py        0 differing lines  (identical)
+agent_system/environments/env_manager.py           138 differing lines
+agent_system/multi_turn_rollout/rollout_loop.py     86 differing lines
+```
+
+The prompt template is byte-identical. Inside `env_manager.py` sits a mechanism G2PO
+has and **we do not, and never did** (`git log -S` finds nothing; `baselines/verl-agent`,
+i.e. GiGPO's original, does not have it either -- so this is a G2PO harness
+CONTRIBUTION, not something we deleted):
+
+```python
+PATTERNS = ["You heat", "You cool", "You clean", "You turn on"]
+if not text_obs[i].startswith("Nothing happens"):
+    self.history_obs[i].append(text_obs[i])
+is_invisible_obs = len(self.history_obs[i]) >= 2 and any(
+    self.history_obs[i][-2].startswith(p) for p in PATTERNS)
+text_obs[i] = " ".join(self.history_obs[i][-2:]) if is_invisible_obs else self.history_obs[i][-1]
+```
+
+**Critically, this is not a prompt change.** `full_text_obs` -- the prompt -- is built
+before this block and is untouched. What it rewrites is **`anchor`**, which in our tree
+feeds `anchor_obs` -> `ccpo_step_advantage` and `derive_context`: it is the STATE
+IDENTITY used for node grouping in the step term. A wrong anchor means occurrences that
+are in different states share a baseline.
+
+**Two independent repairs, and they are not equally supported.**
+
+* **(B) a failed action does not advance the anchor.** Without it our anchor becomes the
+  literal `"Nothing happens."` on every failure, so unrelated failed states anywhere in
+  the batch collapse to ONE anchor. Applies to every task type.
+* **(A) invisible-state concatenation.** ALFWorld does not restate the result of
+  heat/cool/clean/turn-on, so "egg heated" and "egg not heated" carry identical anchor
+  text. Task-type specific.
+
+**Honest check that partly undercuts (A).** The obvious test is whether our per-type
+deficits fall on the four pattern-affected types. **They do not:**
+
+```
+pattern types    (heat/cool/clean/turn-on):  87.1, 78.2, 80.4, 65.6  -> mean 77.8
+non-pattern      (pick_and_place, two_obj):  87.6, 69.6              -> mean 78.6
+```
+
+Essentially equal. I first read the correspondence as striking -- worst type
+`look_at_obj_in_light` is the "You turn on" case -- but it does not survive averaging.
+**(B) is untested by this comparison** (it affects all types alike) and is the more
+plausible of the two.
+
+**Why this is still the best lead.** It is the ONLY substantive harness difference
+between our tree and the reference implementation that produced 95.0, it sits directly
+on the grouping our step term depends on, and our own code already flags anchor
+conflation as a known problem -- the `aff` field was added because "42.8% of
+observations map to >1 admissible set". `aff` cannot fix either repair: admissible
+actions are the same before and after heating, and the same at every failure.
+
+**Implemented behind `ACG_OBS_REPAIR` (default 0, so every prior run stays
+reproducible).** `tests/test_obs_repair.py` transcribes G2PO's loop literally and checks
+ours against it: **matches on 9/9 steps.** On the fixture, 2 of 9 raw anchors are the
+bare failure string (collapsing batch-wide to one) and the post-heat anchor is
+byte-identical to an earlier pre-heat one; after repair, neither holds.
+
+**Next arm: `ccpo-global` + `obs_repair=1`, 100 steps, everything else identical to the
+79.7% configuration.** This is a single-flag ablation against the best result, and
+unlike the memory arms it is not a new idea -- it is adopting a mechanism from the
+implementation we are trying to match.
+
+
 **Status board.** Entries below carry results as often as they carry questions; this
 says which is which, so the section can be read without opening every one.
 
