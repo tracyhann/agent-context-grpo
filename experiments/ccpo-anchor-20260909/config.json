@@ -3,6 +3,7 @@
     "adv_mode": "mean_std_norm",
     "alfworld_data": "/workspace/alfworld_data",
     "align_val_on_resume": 1,
+    "anchor_aff": 1,
     "arm": "ccpo",
     "ccpo_backoff_rho": 0.5,
     "ccpo_edge_w": 1.0,
@@ -72,10 +73,11 @@
     "val_top_p": 1.0,
     "venv_python": "/workspace/.venv/bin/python3"
   },
-  "created": "2026-09-09T01:49:48",
+  "created": "2026-09-09T02:22:31",
   "env": {
     "ACG_ADV_ESTIMATOR": "ccpo",
     "ACG_ALIGN_VAL_ON_RESUME": "1",
+    "ACG_ANCHOR_AFF": "1",
     "ACG_CCPO_BACKOFF_RHO": "0.5",
     "ACG_CCPO_DUMP": "/workspace/experiments/ccpo-anchor-20260909/outputs/ccpo_samples.csv",
     "ACG_CCPO_EDGE_W": "1.0",
@@ -128,8 +130,8 @@
   "experiment": "ccpo-anchor-20260909",
   "git": {
     "branch": "main",
-    "commit": "7012f8fed1c62950d64c28758f858f084014d474",
-    "dirty": false
+    "commit": "8e4a4019f232eb6030f45eee04549a6a05dcfc7d",
+    "dirty": true
   },
   "hydra_overrides": [
     "algorithm.adv_estimator=ccpo",

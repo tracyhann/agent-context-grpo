@@ -5,6 +5,7 @@ cd /workspace/verl-agent
 export \
   ACG_ADV_ESTIMATOR=ccpo \
   ACG_ALIGN_VAL_ON_RESUME=1 \
+  ACG_ANCHOR_AFF=1 \
   ACG_CCPO_BACKOFF_RHO=0.5 \
   ACG_CCPO_DUMP=/workspace/experiments/ccpo-anchor-20260909/outputs/ccpo_samples.csv \
   ACG_CCPO_EDGE_W=1.0 \
