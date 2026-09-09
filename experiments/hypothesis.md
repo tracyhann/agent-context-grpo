@@ -59,48 +59,44 @@ before the action exists.
 
 ## Open — ranked by expected value
 
-### [!!! RUNNING — decisive] H-AH. G2PO reproduces on our stack, and outpaces us by ~10 points
+### [!!! RUNNING — decisive] H-AH. G2PO reproduces on our stack and is BEATING us outright
 
-`g2po-ref-20260909` runs `baselines/G2PO` itself on GPUs 3/5, unmodified. **No deviation
-from their configuration was needed** -- the `use_remove_padding=True` failure that
-first looked like a Blackwell incompatibility was my own PYTHONPATH putting `fa_stub`
-ahead of the installed flash-attn, whose `unpad_input` is pure PyTorch and works on
-sm_120.
+**Update at step 25: the gap is widening, not constant.**
 
 ```
-step   G2PO   ours   diff
-   5   10.2   10.2   +0.0
-  10   21.1   10.9  +10.2
-  15   27.3   17.2  +10.1
+step   G2PO   ours   diff   (ours reaches G2PO's value at step)
+   5   10.2   10.2   +0.0      10
+  10   21.1   10.9  +10.2      30
+  15   27.3   17.2  +10.1      30
+  20   28.9   21.1   +7.8      30
+  25   42.2   21.1  +21.1      50
 ```
 
-Both runs use `env.seed=0` and the same 128-game validation set, so they draw the same
-games -- the comparison is **paired**, and the step-5 exact match confirms identical
-footing.
+**G2PO at step 25 has reached what our best arm reached at step 50 -- half our budget.**
+Windowed over steps 1-25: train +3.6, held-out +9.8. On this trajectory it passes our
+FINAL 79.7 somewhere around step 45-55.
 
-**G2PO reaches 27.3 at step 15; our curve does not reach that until ~step 28. They are
-~13 steps ahead.**
+**This is no longer "the published number transfers". It is "CCPO is materially worse
+than G2PO on identical hardware, data, protocol and evaluation draw."** The comparison
+is paired (same seed, same 128 games) and every configuration key was verified identical
+beforehand.
 
-**What this settles.** The published number is not an artifact of their hardware, their
-stack, or a friendlier environment build. It reproduces here. **Therefore the 15-point
-gap is in OUR code**, and both trees run on this box, so it is diffable rather than
-speculative.
+**The harness is now nearly exonerated.** After removing the KL clamp (Qwen3-era, inert
+here) and the length penalty (never enabled), and after showing the `global_seqlen`/
+memory/timing differences are purely 2-vs-4 GPUs (total tokens ratio 1.004), the only
+code difference left on the ALFWorld path is the two anchor mechanisms -- and those are
+small next to a 21-point gap.
 
-**What it does not settle.** Which part of our code. The candidates already implemented
-and testable:
+**So the remaining explanation is the estimator itself**, i.e. CCPO. The experiment that
+confirms it is already built and one command away: `--arm g2po` runs their estimator,
+vendored verbatim, inside OUR harness.
 
-* the two anchor mechanisms (H-AD/H-AE) -- `ACG_OBS_REPAIR`, `ACG_ANCHOR_AFF`; the arm
-  testing them was stopped at 31 having not converted, but it was never run against a
-  G2PO reference that was itself pulling ahead
-* `--arm g2po` in our tree (`g2po/core_g2po.py`, vendored verbatim) -- their estimator
-  in OUR harness. **This is now the experiment to run next**: if it tracks the reference,
-  the gap is in our estimator; if it tracks our arms, the gap is in our harness. That is
-  the 2x2 that locates the fault.
+* tracks the reference -> the fault is CCPO's advantage
+* tracks our arms -> something in our harness outside the diff
 
-**Caveat.** Three evaluations. Our own base curve has a step-to-step sd of 7.9 and
-contains ±14-point swings, so +10 is ~1.3 sd of ordinary noise. Two consecutive
-identical gaps is what makes it a trend rather than a swing. Confirm at steps 25-50.
-
+**The dissociation persists** (held-out gap 2.7x the train gap), which points at policy
+sharpness: their advantage produces a policy that gains far more from the T=1.0 -> T=0.4
+evaluation than ours does.
 
 ### [SETTLED — negative, and it strengthens H-AD/H-AE] H-AF. Our G2PO port is faithful
 
