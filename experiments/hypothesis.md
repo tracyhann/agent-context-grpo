@@ -81,7 +81,7 @@ damping POORLY-SAMPLED ones. The two disagree precisely where variance and suppo
 both high, so -2.08 on the first says nothing about the second.
 
 
-### [RUNNING] H-AC. `ccpo-cheapmem` — the digest at a twentieth of the cost
+### [RESULT — passes its kill rule, but the mechanism is null] H-AC. `ccpo-cheapmem` — the digest at a twentieth of the cost
 
 H-AA established that the digest's cost is real and its stated mechanism is not. H-Y's
 per-type split, pre-registered, still put both memory-demanding types at ranks 1 and 2
@@ -138,6 +138,50 @@ the 5.5x claimed above.**
 steps 10-20 is below 0.130 (base 0.160), or held-out at step 20 is below 15%.
 Continue only on the pre-registered per-type concentration, never on overall success
 alone.
+
+### RESULT at step 20 — the cost fix worked, the memory hypothesis did not
+
+```
+1. train mean 10-20   cheapmem 0.148   base 0.160   gatedmem 0.107   PASS (>0.130)
+2. held-out @20       cheapmem 16.4%   base 21.1%   gatedmem 15.6%   PASS (>15%)
+3. per-type pooled    memory +1.5      others -0.1                   "satisfied"
+```
+
+**What genuinely improved: the cost.** Train success over steps 10-20 is 0.148 against
+base's 0.160, where BOTH earlier digest arms sat at ~0.107. Cutting the budget 512->192
+and replacing the window instead of prepending removed essentially all of the digest's
+drag. That part of H-AA's diagnosis was correct and the fix worked.
+
+**What did not improve: anything the memory story predicts.** Pooled over four
+evaluations:
+
+| type | s5 | s10 | s15 | s20 | mean |
+|---|---|---|---|---|---|
+| *look_at_obj_in_light | +7 | +10 | -7 | +6 | **+3.9** |
+| *pick_two_obj_and_place | +0 | +0 | +0 | -4 | **-0.9** |
+| four non-memory types | | | | | **-0.1** |
+
+The continue condition is technically met (+1.5 vs -0.1) but **the margin is 1.6 points
+against a pooled per-type SE of ~5**, and it rests entirely on `look_at_obj_in_light`,
+the type with the LARGEST SE (6.8). `pick_two_obj_and_place` -- the tightest measured
+deficit and the clearest memory demand -- is **-0.9 pooled and exactly +0 at three of
+four evaluations.** The step-20 "satisfied" reading is produced by the non-memory types
+drawing badly (cool and heat both 0% against base's 16-17%), not by memory types gaining.
+
+**The honest summary: cheapmem's achievement is being *not worse* than base.** Held-out
+at step 20 is 16.4% against base's 21.1% -- still behind. Fixing the cost of an
+intervention that does not help returns you to baseline; it does not move you toward 95.
+
+**Three arms have now been spent on the digest** (`ccpo-memory`, `ccpo-gatedmem`,
+`ccpo-cheapmem`). The lever is characterised: its cost is real and now removable, its
+benefit is not measurable at this scale. Recommend NOT resuming to 100 unless the
+alternative uses are worse -- the kill rule permits continuation, it does not mandate it.
+
+**Prompt-overhead prediction: REFUTED.** I predicted the +78 step-1 overhead came from
+the untrained policy stalling more often than the sweep's 36%, and would therefore
+decline toward +35. Over 20 steps it never moved: +79 +79 +82 +85 +90 +78 +84 +81 +80
++85 ... +81. Either stalling does not fall over this range, or the firing rate was never
+the explanation.
 
 
 ### [OPEN — blocked on a decision] H-AB. Our config matches G2PO's published script exactly — the gap is not setup
