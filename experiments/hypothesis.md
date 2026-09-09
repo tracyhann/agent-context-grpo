@@ -135,6 +135,41 @@ aff-only would have had resolution at a singleton cost.)
 **Clean ablation confirmed:** step-1 `success_rate` is identical to base at 0.0547, so
 the rollouts are the same and only credit assignment differs.
 
+### STEP-20 RESULT — passes the kill rule, but 4/4 negative
+
+```
+paired diff (anchor - base), same eval draw at each step
+  step  5   -0.8
+  step 10   -2.3
+  step 15   -3.1
+  step 20   -5.5      mean -2.93, monotone
+  train window 11-20  -3.7
+```
+
+**Kill rule PASSES** (15.6% against a ~11% floor), so the arm runs to 50.
+
+**But the per-evaluation "within noise" labels understate this.** Those bands treat each
+evaluation as two independent 128-episode samples; the arms are PAIRED -- same seed, same
+game sequence at each step -- so the differences are the right unit. Four of four are
+negative, the magnitude grows monotonically, and the train window agrees at -3.7.
+
+**Why this is still not a verdict.** The four differences are not independent (they track
+the same two evolving policies), a sign test gives p=0.125, and **seed variance has never
+been measured** -- the between-arm paired sd was estimated at ~5.3, so -2.9 sits well
+inside what a single seed could produce. Base was at 21.1% here and reached 79.7%, and
+early-trajectory calls have been wrong four times in this project.
+
+**What it costs to keep going: nothing.** GPUs 4-5 carry another tenant and host RAM will
+not fit a second arm, so these cards have no alternative use.
+
+**The pattern worth naming.** This is the THIRD clean structural improvement that has not
+converted: `effect_rel` a hundredfold in the hard-gate comparison (-0.01 points), the
+digest's cost fix (back to baseline, no gain), and now a 55% resolution increase with
+fewer singletons, cross-validated against an independent 42.8% ambiguity measurement,
+producing nothing positive over 20 steps. **Grouping-quality metrics have zero
+demonstrated predictive value for held-out success on this task.** Any future arm
+justified by them should carry that prior.
+
 **Still to prove.** Grouping quality has failed to translate into accuracy once already:
 `ccpo-hardedge` vs `ccpo-global` moved `effect_rel` a hundredfold for **-0.01 points**
 of held-out success. Judge this arm at steps 20 / 50 / 100 against base's
