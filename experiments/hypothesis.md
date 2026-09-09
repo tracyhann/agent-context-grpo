@@ -148,6 +148,45 @@ singleton fraction, because states that previously collapsed onto the shared
 `"Nothing happens."` anchor now carry the last real observation instead, and post-heat
 states separate from pre-heat ones.
 
+**STEP-1 RESULT: the repair is active, and my predicted DIRECTION was half wrong.**
+
+| metric | base | anchor | delta |
+|---|---|---|---|
+| `n_buckets` | 758 | 797 | **+39** |
+| `bucket_size_mean` | 8.44 | 8.03 | -0.41 |
+| `bucket_size_p90` | 16 | 20 | +4 |
+| `bucket_singleton_frac` | 0.335 | **0.227** | **-0.108** |
+| `effect_rel` | 0.0945 | 0.1159 | +0.021 |
+| `episode/success_rate` | 0.0547 | 0.0547 | **0.000** |
+| `episode/valid_action_ratio` | 0.8431 | 0.8422 | -0.001 |
+
+I predicted more buckets **and a higher singleton fraction**. Buckets rose, but
+singletons **fell by 10.8 points** -- and the reason identifies which repair is doing
+the work:
+
+* **(B) drives the singleton drop.** A failed action at state S used to be anchored to
+  the shared string `"Nothing happens."`; now it carries S's last real observation and
+  joins S's node. States that occurred once therefore also collect their failure turns
+  and stop being singletons. `bucket_size_p90` rising 16->20 is the same effect.
+* **(A) drives the +39 nodes**, separating post-heat/cool/clean/turn-on states from the
+  pre-action states they were byte-identical to.
+
+**Why the singleton drop is the substantive part.** A singleton node has NO leave-one-out
+baseline -- with one occurrence there is nothing to leave out. 0.335 -> 0.227 moves
+about **11% of all occurrences from "no usable baseline" to "has neighbours."** That is
+a direct increase in the estimator's coverage, and it is the mechanism by which this
+could actually help.
+
+**Clean ablation confirmed.** `success_rate` is identical at step 1 (0.0547 both) and
+`valid_action_ratio` matches to 0.001, so the rollouts are the same and ONLY credit
+assignment differs.
+
+**The caution that must stay attached.** Structural improvement is necessary, not
+sufficient, and this exact inference has failed before: `ccpo-hardedge` vs `ccpo-global`
+moved `effect_rel` from 0.001 to 0.119 -- a hundredfold -- and changed held-out success
+by **-0.01 points**. A better-looking grouping has already once bought nothing. Judge
+this arm on held-out success at steps 20/50/100, not on its grouping metrics.
+
 **Kill rule, fixed in advance.** This arm is an ablation against the best result rather
 than a speculative lever, so the bar is different from the memory arms: run to 50 unless
 held-out at step 20 is more than 2 SE (about 10 points) BELOW base's 21.1%, i.e. below
