@@ -101,6 +101,45 @@ stands, and with the estimator, config (H-AB), eval protocol, training length (H
 context conditioning and memory all excluded, the two anchor differences (H-AD, H-AE)
 are what remains.
 
+### [!!! RUNNING — `ccpo-anchor-20260909`, both flags] H-AG. Step-1 grouping confirms anchor_aff dominates
+
+Relaunched after the container rebuild with **both** `obs_repair=1` and `anchor_aff=1`
+(the earlier attempt had only the first, and never reached step 1). Config diff against
+`ccpo-global-20260907`: those two flags are the only differences.
+
+```
+                base    +repair    +repair+aff
+n_buckets        758       797         1172
+singleton_frac  0.335     0.227        0.291
+step-1 success  0.0547    0.0547      0.0547   <- identical: rollouts unchanged
+```
+
+**`anchor_aff` is the dominant mechanism, by an order of magnitude.** It adds **+375
+nodes** over repair-only, against the repair's own +39 -- a 55% rise in node count over
+base.
+
+**That figure cross-checks against an independent measurement.** The `aff` field was
+added on 2026-09-03 because "42.8% of observations map to >1 admissible set". If each
+ambiguous observation splits in two, 758 x 0.428 ~ 324 extra nodes; we observe +375.
+The grouping change matches the ambiguity rate measured a week earlier by different
+means, which is good evidence the flag does what it claims rather than fragmenting
+arbitrarily.
+
+**The predicted tension resolved favourably.** Finer nodes push singletons UP
+(0.227 -> 0.291) while the failure-anchor repair pushes them DOWN; the net 0.291 is
+still **below base's 0.335**. So the pair delivers 55% more state resolution *and* fewer
+occurrences lacking a leave-one-out baseline than the 79.7% arm -- a combination neither
+flag reaches alone. (Repair-only had fewer singletons but almost no added resolution;
+aff-only would have had resolution at a singleton cost.)
+
+**Clean ablation confirmed:** step-1 `success_rate` is identical to base at 0.0547, so
+the rollouts are the same and only credit assignment differs.
+
+**Still to prove.** Grouping quality has failed to translate into accuracy once already:
+`ccpo-hardedge` vs `ccpo-global` moved `effect_rel` a hundredfold for **-0.01 points**
+of held-out success. Judge this arm at steps 20 / 50 / 100 against base's
+21.1 / 50.0 / 79.7.
+
 ### [!!] H-AE. `aff` was built to fix anchor ambiguity and never wired into the grouping
 
 Continuing the harness diff past the three files of H-AD, across the whole

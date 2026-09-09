@@ -73,7 +73,7 @@
     "val_top_p": 1.0,
     "venv_python": "/workspace/.venv/bin/python3"
   },
-  "created": "2026-09-09T02:22:31",
+  "created": "2026-09-09T04:16:44",
   "env": {
     "ACG_ADV_ESTIMATOR": "ccpo",
     "ACG_ALIGN_VAL_ON_RESUME": "1",
@@ -130,7 +130,7 @@
   "experiment": "ccpo-anchor-20260909",
   "git": {
     "branch": "main",
-    "commit": "8e4a4019f232eb6030f45eee04549a6a05dcfc7d",
+    "commit": "6dcbf82a5183558a38782d6a18b6f97d25d23e99",
     "dirty": true
   },
   "hydra_overrides": [
