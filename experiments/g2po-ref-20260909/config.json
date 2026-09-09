@@ -1,0 +1,48 @@
+{
+  "experiment": "g2po-ref-20260909",
+  "created": "2026-09-09T05:12:00",
+  "purpose": "G2PO reference reproduction on our hardware; decides what our 79.7 means",
+  "tree": "/workspace/baselines/G2PO (unmodified)",
+  "entrypoint": "experiments/g2po-ref-20260909/run.sh",
+  "git": "9355f7eb336a4c61c88b87c3ee8e770b70d4a60b",
+  "config": {
+    "adv_estimator": "g2po",
+    "g2po.step_advantage_w": 1.0,
+    "g2po.mode": "mean_std_norm",
+    "model": "Qwen/Qwen2.5-1.5B-Instruct",
+    "lr": 1e-06,
+    "kl_loss_coef": 0.01,
+    "kl_loss_type": "low_var_kl",
+    "gamma": 0.95,
+    "use_invalid_action_penalty": true,
+    "invalid_action_penalty_coef": 0.1,
+    "train_batch_size": 16,
+    "val_batch_size": 128,
+    "group_size": 8,
+    "max_prompt_length": 2048,
+    "max_response_length": 512,
+    "env": "alfworld/AlfredTWEnv",
+    "env_seed": 0,
+    "max_steps": 50,
+    "eval_split": "eval_in_distribution",
+    "val_temperature": 0.4,
+    "val_do_sample": true,
+    "test_freq": 5,
+    "save_freq": -1,
+    "total_epochs": 100,
+    "gpus": "4,5",
+    "tensor_model_parallel_size": 1,
+    "gpu_memory_utilization": 0.45,
+    "attn_backend": "TRITON_ATTN"
+  },
+  "deviations_from_reference": [
+    "VLLM_ATTENTION_BACKEND XFORMERS->TRITON_ATTN (no sm_120 kernel for xformers)",
+    "data_preprocess.prepare SKIPPED - reuses existing 128-row parquets to preserve comparability",
+    "2 GPUs TP=1 instead of 8 GPUs TP=2; gpu_memory_utilization 0.6->0.45 (shared cards)",
+    "logger console only; metrics recovered by scripts/parse_g2po_log.py"
+  ],
+  "comparators": {
+    "ccpo-global-20260907": 79.7,
+    "G2PO published": 95.0
+  }
+}

@@ -34,7 +34,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Anything that differs from that reference is flagged in `_REFERENCE_DELTA`.
 # ---------------------------------------------------------------------------
 DEFAULTS = {
-    "arm": "ccpo",                      # ccpo | grpo | gigpo
+    "arm": "ccpo",                      # ccpo | grpo | gigpo | g2po
     "model": "Qwen/Qwen2.5-1.5B-Instruct",
     # Four, not six: verl asserts train_batch_size * rollout.n % n_gpus == 0 and the
     # reference batch of 128 does not divide by 6. Two GPUs idle is the price of
@@ -273,7 +273,7 @@ def versions(python):
 
 def build_command(cfg, exp_dir):
     ngpu = len(cfg["gpus"].split(","))
-    est = {"ccpo": "ccpo", "grpo": "grpo", "gigpo": "gigpo"}[cfg["arm"]]
+    est = {"ccpo": "ccpo", "grpo": "grpo", "gigpo": "gigpo", "g2po": "g2po"}[cfg["arm"]]
     ckpt = os.path.join(exp_dir, "outputs", "checkpoints")
     args = [
         "python3", "-m", "verl.trainer.main_ppo",
@@ -435,7 +435,7 @@ def build_env(cfg, exp_dir):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--name", required=True)
-    ap.add_argument("--arm", default=None, choices=["ccpo", "grpo", "gigpo"])
+    ap.add_argument("--arm", default=None, choices=["ccpo", "grpo", "gigpo", "g2po"])
     ap.add_argument("--set", action="append", default=[], metavar="KEY=VALUE")
     ap.add_argument("--date", default=datetime.date.today().strftime("%Y%m%d"))
     ap.add_argument("--dry-run", action="store_true")
