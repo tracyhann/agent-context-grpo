@@ -1107,6 +1107,7 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
         <tr><td class="dim">HGPO (published, K=2)</td><td class="num">160</td><td class="num">92.77</td><td>different budget &mdash; not matched</td></tr>
         <tr><td class="dim">GiGPO (published)</td><td class="num">150</td><td class="num">86.7 &plusmn; 1.7</td><td>different budget &mdash; not matched</td></tr>
         <tr class="ourrow"><td class="dim"><b>CCPO &mdash; global gate + edge term</b></td><td class="num"><b>100</b></td><td class="num"><b>79.7</b></td><td><b>ours, 1 seed</b> &mdash; <span class="m">ccpo-global-20260907</span></td></tr>
+        <tr><td class="dim">CCPO &mdash; &plus; G&sup2;PO anchor repair &amp; admissible-action key</td><td class="num">100</td><td class="num" style="opacity:.6">running</td><td>single-variable change from the row above &mdash; <span class="m">ccpo-anchor-20260909</span>, see 05b-bis</td></tr>
         <tr><td class="dim">CCPO &mdash; same arm extended to 145</td><td class="num">145</td><td class="num">79.7</td><td>mean of 9 evals &mdash; <b>+0.00 over step 100</b>; <span class="m">ccpo-global-ext-20260908</span></td></tr>
         <tr><td class="dim">GRPO (published)</td><td class="num">100</td><td class="num">72.8 &plusmn; 3.6</td><td>&mdash;</td></tr>
         <tr><td class="dim">CCPO &mdash; hard gate, no edge term</td><td class="num">100</td><td class="num">70.3</td><td>ours &mdash; <span class="m">ccpo-long-20260906</span></td></tr>
@@ -1412,7 +1413,15 @@ text_obs[i] = " ".join(self.history_obs[i][-2:]) if is_invisible_obs else self.h
             soft kernel is the gate. <b>This bypasses the uncertainty half of the method, which is therefore
             untested in this arm.</b></td></tr>
         <tr><td><span class="m">ACG_COMPACT_BUDGET</span></td><td>0</td>
-            <td>Memory digest off. Reproduces the reference prompt exactly.</td></tr>
+            <td>Memory digest off. Reproduces the reference prompt exactly. Three arms tested it on; all
+            finished below base (05b).</td></tr>
+        <tr><td><span class="m">ACG_OBS_REPAIR</span></td><td>0 &rarr; <b>1</b> in <span class="m">ccpo-anchor</span></td>
+            <td>G&sup2;PO's anchor repair (05b-bis): a failed action no longer advances the anchor, and observations
+            after heat/cool/clean/turn-on are carried forward. Default 0 keeps every earlier arm reproducible.</td></tr>
+        <tr><td><span class="m">ACG_ANCHOR_AFF</span></td><td>0 &rarr; <b>1</b> in <span class="m">ccpo-anchor</span></td>
+            <td>Folds the admissible-action list into the anchor, as G&sup2;PO does &mdash; the disambiguator this
+            tree computed as <span class="m">aff</span> but never put in the node key. The dominant of the two:
+            +375 nodes against the repair's +39.</td></tr>
         <tr><td><span class="m">ACG_CCPO_SIM</span></td><td>0.0</td>
             <td>Similarity gate off &mdash; matching the baselines, whose <span class="m">enable_similarity</span>
             also defaults to False on ALFWorld.</td></tr>
