@@ -59,7 +59,7 @@ before the action exists.
 
 ## Open — ranked by expected value
 
-### [!!! OPEN — the best remaining lead] H-AD. G2PO repairs the anchor; we never did
+### [!!! RUNNING — `ccpo-anchor-20260909`] H-AD. G2PO repairs the anchor; we never did
 
 H-AB closed off config, eval protocol, split, training length, context conditioning,
 memory and the estimator, leaving "a harness difference outside those keys" as one of
@@ -132,6 +132,26 @@ byte-identical to an earlier pre-heat one; after repair, neither holds.
 79.7% configuration.** This is a single-flag ablation against the best result, and
 unlike the memory arms it is not a new idea -- it is adopting a mechanism from the
 implementation we are trying to match.
+
+**LAUNCHED as `ccpo-anchor-20260909`** on GPUs 0-3. Config diffed against the 79.7% arm:
+`obs_repair` is the ONLY real difference (`compact_stall=0` is cosmetic -- the digest is
+off entirely at `compact_budget=0`).
+
+**Step-1 falsification, before any success number.** The repair rewrites anchors, and
+anchors determine node grouping, so the grouping structure MUST change. Base at step 1:
+`n_buckets` 758, `bucket_size_mean` 8.44, `bucket_singleton_frac` 0.335. **If
+`n_buckets` comes back at 758 the flag is not taking effect** and the arm is
+meaningless -- stop it rather than run it for its success rate.
+
+Expected direction if the repair works as reasoned: **more** buckets and a **higher**
+singleton fraction, because states that previously collapsed onto the shared
+`"Nothing happens."` anchor now carry the last real observation instead, and post-heat
+states separate from pre-heat ones.
+
+**Kill rule, fixed in advance.** This arm is an ablation against the best result rather
+than a speculative lever, so the bar is different from the memory arms: run to 50 unless
+held-out at step 20 is more than 2 SE (about 10 points) BELOW base's 21.1%, i.e. below
+~11%. Judge it at step 50 against base's 50.0%, and at 100 against 79.7%.
 
 
 **Status board.** Entries below carry results as often as they carry questions; this
