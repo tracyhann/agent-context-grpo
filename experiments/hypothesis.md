@@ -59,6 +59,49 @@ before the action exists.
 
 ## Open — ranked by expected value
 
+### [!!! RUNNING — decisive] H-AH. G2PO reproduces on our stack, and outpaces us by ~10 points
+
+`g2po-ref-20260909` runs `baselines/G2PO` itself on GPUs 3/5, unmodified. **No deviation
+from their configuration was needed** -- the `use_remove_padding=True` failure that
+first looked like a Blackwell incompatibility was my own PYTHONPATH putting `fa_stub`
+ahead of the installed flash-attn, whose `unpad_input` is pure PyTorch and works on
+sm_120.
+
+```
+step   G2PO   ours   diff
+   5   10.2   10.2   +0.0
+  10   21.1   10.9  +10.2
+  15   27.3   17.2  +10.1
+```
+
+Both runs use `env.seed=0` and the same 128-game validation set, so they draw the same
+games -- the comparison is **paired**, and the step-5 exact match confirms identical
+footing.
+
+**G2PO reaches 27.3 at step 15; our curve does not reach that until ~step 28. They are
+~13 steps ahead.**
+
+**What this settles.** The published number is not an artifact of their hardware, their
+stack, or a friendlier environment build. It reproduces here. **Therefore the 15-point
+gap is in OUR code**, and both trees run on this box, so it is diffable rather than
+speculative.
+
+**What it does not settle.** Which part of our code. The candidates already implemented
+and testable:
+
+* the two anchor mechanisms (H-AD/H-AE) -- `ACG_OBS_REPAIR`, `ACG_ANCHOR_AFF`; the arm
+  testing them was stopped at 31 having not converted, but it was never run against a
+  G2PO reference that was itself pulling ahead
+* `--arm g2po` in our tree (`g2po/core_g2po.py`, vendored verbatim) -- their estimator
+  in OUR harness. **This is now the experiment to run next**: if it tracks the reference,
+  the gap is in our estimator; if it tracks our arms, the gap is in our harness. That is
+  the 2x2 that locates the fault.
+
+**Caveat.** Three evaluations. Our own base curve has a step-to-step sd of 7.9 and
+contains ±14-point swings, so +10 is ~1.3 sd of ordinary noise. Two consecutive
+identical gaps is what makes it a trend rather than a swing. Confirm at steps 25-50.
+
+
 ### [SETTLED — negative, and it strengthens H-AD/H-AE] H-AF. Our G2PO port is faithful
 
 Before attributing the gap to the harness, the alternative had to be excluded: that we
