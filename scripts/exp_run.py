@@ -194,6 +194,11 @@ DEFAULTS = {
     # verl-agent/GiGPO's. 1 = reproduce G2PO. The anchor is the state identity used for
     # node grouping in the step term, NOT the prompt.
     "obs_repair": 0,
+    # Fold the admissible-action list into the anchor, as G2PO does. This tree has
+    # carried that list as `aff` since 2026-09-03 -- because 42.8% of observations map
+    # to >1 admissible set -- but `aff` only ever reached the diagnostic CSV, never the
+    # node key. Set BOTH this and obs_repair to reproduce G2PO's anchor exactly.
+    "anchor_aff": 0,
     "force_budget": 0,
     "force_tail": 32,
 }
@@ -215,7 +220,7 @@ ENV_KEYS = {
     "ccpo_std": "ACG_CCPO_STD", "ccpo_std_floor": "ACG_CCPO_STD_FLOOR",
     "ccpo_step_norm": "ACG_CCPO_STEP_NORM",
     "compact_budget": "ACG_COMPACT_BUDGET", "compact_stall": "ACG_COMPACT_STALL",
-    "compact_mode": "ACG_COMPACT_MODE", "obs_repair": "ACG_OBS_REPAIR",
+    "compact_mode": "ACG_COMPACT_MODE", "obs_repair": "ACG_OBS_REPAIR", "anchor_aff": "ACG_ANCHOR_AFF",
     "align_val_on_resume": "ACG_ALIGN_VAL_ON_RESUME", "force_budget": "ACG_FORCE_BUDGET",
     "force_tail": "ACG_FORCE_TAIL",
     "early_stop_patience": "ACG_EARLY_STOP_PATIENCE",

@@ -59,6 +59,55 @@ before the action exists.
 
 ## Open — ranked by expected value
 
+### [!!] H-AE. `aff` was built to fix anchor ambiguity and never wired into the grouping
+
+Continuing the harness diff past the three files of H-AD, across the whole
+`agent_system` tree:
+
+```
+environments/env_manager.py      the anchor repair (H-AD) + the item below
+memory/memory.py                 fetch_sep -- DEAD CODE, zero call sites in their tree
+environments/prompts/appworld.py irrelevant (different environment)
+multi_turn_rollout/rollout_loop.py  enable_thinking only -- verified no-op on Qwen2.5
+```
+
+`memory.py` and `rollout_loop.py` are eliminated. What remains is a **second** anchor
+difference, and it may matter more than the first:
+
+```python
+# G2PO, env_manager.py, before the repair runs:
+text_obs[i] += f"\nAdmissible actions:\n {reformatted_admissible_actions}\n"
+```
+
+**G2PO's node identity is observation text PLUS the admissible-action list. Ours is the
+observation text alone** -- `key = (task, str(anchor_obs[i]))`, core_ccpo.py:409.
+
+**We already knew this was a problem and already built the fix.** The `aff` field was
+added to this tree on 2026-09-03 with the comment "42.8% of observations map to >1
+admissible set". It is threaded from `env_manager` through `anchor_aff` in the batch to
+`aff_labels` in `ccpo_step_advantage` -- and there it is used at exactly one place,
+core_ccpo.py:795, **to write a column into the diagnostic CSV.** It never enters a node
+key. We measured the ambiguity, built the disambiguator, and then grouped without it.
+
+On our own measurement that leaves **42.8% of observations** conflating states that
+G2PO separates -- a larger population than the anchor repair touches.
+
+**Implemented as `ACG_ANCHOR_AFF`** (default 0), ordered to match G2PO exactly: the
+append happens BEFORE the history append and before the repair tests, both of which are
+`startswith()` and so survive a trailing append. G2PO's reset seeds `history_obs` from
+`full_text_obs` while its step stores obs+admissible; that inconsistency is reproduced
+deliberately (it only ever reaches `history[-2]` on the first step).
+
+**`tests/test_obs_repair.py` now drives the REAL `AlfWorldEnvironmentManager.reset/step`
+against a stub env.** That was added because the first version of this change had
+`self.history_obs = [[o] for o in full_text_obs]` placed BEFORE `full_text_obs` was
+assigned -- it parsed cleanly and would have raised `NameError` eight minutes into a GPU
+run. The live-path test catches that class of bug in five seconds.
+
+**Revised next arm: BOTH flags.** `ccpo-anchor` ran with `obs_repair=1` only. To match
+G2PO's harness the arm needs `obs_repair=1 anchor_aff=1`. Ablate the halves later, only
+if the pair moves the number.
+
 ### [!!! RUNNING — `ccpo-anchor-20260909`] H-AD. G2PO repairs the anchor; we never did
 
 H-AB closed off config, eval protocol, split, training length, context conditioning,

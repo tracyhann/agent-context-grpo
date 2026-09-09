@@ -164,14 +164,18 @@ class AlfWorldEnvironmentManager(EnvironmentManagerBase):
         self.gamefile = parse_gamefile(infos)
         # initialize the history buffer
         self.memory.reset(batch_size = len(text_obs))
-        # ACG_OBS_REPAIR: G2PO's anchor repair, absent from verl-agent/GiGPO and from
-        # this tree until now. See the block in step() for what it does and why.
-        self.history_obs = [[o] for o in text_obs]
+        # ACG_OBS_REPAIR / ACG_ANCHOR_AFF: G2PO's anchor handling, absent from
+        # verl-agent/GiGPO and from this tree until now. See step() for what and why.
+        # Seeded from `full_text_obs` to match G2PO exactly
+        # (baselines/G2PO/.../env_manager.py:149) -- their reset stores the templated
+        # prompt while their step stores obs+admissible. That inconsistency only ever
+        # reaches history[-2] on the very first step, and is reproduced deliberately.
         self.tasks = []
         self.pre_text_obs = text_obs
         self.extract_task(text_obs)
 
         full_text_obs = self.build_text_obs(text_obs, self.envs.get_admissible_commands, init=True)
+        self.history_obs = [[o] for o in full_text_obs]
         # 'aff': the admissible-action set, carried alongside the anchor so the
         # credit assigner can label states the observation text conflates
         # (42.8% of observations map to >1 admissible set; measured 2026-09-03).
@@ -216,10 +220,30 @@ class AlfWorldEnvironmentManager(EnvironmentManagerBase):
         #
         # G2PO folds admissible actions into the anchor string; this tree already
         # carries them separately as `aff`, so that part is not duplicated here.
+        # ACG_ANCHOR_AFF folds the admissible-action list INTO the anchor, as G2PO
+        # does. This tree already carries that list as the separate `aff` field --
+        # added because "42.8% of observations map to >1 admissible set" -- but `aff`
+        # is only ever written to the diagnostic CSV (core_ccpo.py:795). It never
+        # reaches the node key, which is `(task, str(anchor_obs[i]))` at
+        # core_ccpo.py:409. So we measured the ambiguity, built the disambiguator, and
+        # then grouped without it; G2PO's nodes are strictly finer than ours on 42.8%
+        # of observations.
+        #
+        # Set BOTH flags to reproduce G2PO's anchor exactly. Separable so each half can
+        # be ablated later; the append must come FIRST because history stores the
+        # augmented string, and both the "Nothing happens" and pattern tests are
+        # startswith(), which the trailing append leaves intact.
         _repair = os.environ.get("ACG_OBS_REPAIR", "0") != "0"
-        if _repair and getattr(self, "history_obs", None) is not None:
+        _aff_anchor = os.environ.get("ACG_ANCHOR_AFF", "0") != "0"
+        if (_repair or _aff_anchor) and getattr(self, "history_obs", None) is not None:
+            _adm = self.envs.get_admissible_commands
             _anchor = list(text_obs)
             for _i in range(len(_anchor)):
+                if _aff_anchor:
+                    _ra = "\n ".join(f"'{_s}'" for _s in _adm[_i] if _s != 'help')
+                    _anchor[_i] = f"{_anchor[_i]}\nAdmissible actions:\n {_ra}\n"
+                if not _repair:
+                    continue
                 if not str(_anchor[_i]).startswith("Nothing happens"):
                     self.history_obs[_i].append(_anchor[_i])
                 _h = self.history_obs[_i]
