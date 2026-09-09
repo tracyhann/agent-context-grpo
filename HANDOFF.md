@@ -1,4 +1,4 @@
-# Handoff — 2026-09-08 (late)
+# Handoff — 2026-09-09
 
 State for a container rebuild. Everything below is committed; nothing lives only in a
 running process. Full reasoning for every entry is in `experiments/hypothesis.md`.
@@ -44,6 +44,7 @@ alongside a running arm.
 | `ccpo-gatedmem-20260908` | 20 (killed) | 15.6% @20 | stall-gated digest, H-Y |
 | `ccpo-memory-20260907` | 22 (stopped) | 9.4% @20 | ungated digest, H-W |
 | `ccpo-cheapmem-20260908` | 20 (stopped) | 16.4% @20 | digest at 192 tok / replace; cost fixed, mechanism null, H-AC |
+| `ccpo-anchor-20260909` | **RUNNING** | — | **G²PO anchor repair, H-AD. The live arm.** |
 
 Published at the same protocol (Qwen2.5-1.5B, ALFWorld, 100 iters, 3 seeds):
 **G²PO 95.0**, GiGPO 86.7 (at *150* iters), HGPO 92.77 (at 160), GRPO 72.8, RLOO 69.7,
@@ -151,9 +152,39 @@ ready to run (needs pid headroom — see top).
    Implemented behind **`ACG_OBS_REPAIR`** (default 0). `tests/test_obs_repair.py`
    transcribes G²PO's loop literally; ours matches **9/9 steps**.
 
-   **Run this first:** `ccpo-global` + `--set obs_repair=1`, 100 steps, everything else
-   identical to the 79.7% configuration. Single-flag ablation against the best result,
-   adopting a mechanism from the implementation that produced 95.0.
+   **LAUNCHED as `ccpo-anchor-20260909`** (GPUs 0–3, 100 steps, ~421 s/step). Config
+   diff against the 79.7% arm: `obs_repair` is the ONLY real difference.
+
+   **Step-1 check PASSED — the repair is live and the ablation is clean:**
+
+   | metric | base | anchor |
+   |---|---|---|
+   | `n_buckets` | 758 | **797** |
+   | `bucket_singleton_frac` | 0.335 | **0.227** |
+   | `bucket_size_p90` | 16 | 20 |
+   | `episode/success_rate` | 0.0547 | **0.0547** (identical → rollouts unchanged) |
+
+   Singletons fell 10.8 points: ~11% of occurrences moved from having NO leave-one-out
+   baseline to having neighbours. That is repair (B) — failures now anchor to their true
+   state instead of the shared `"Nothing happens."` string. (I had predicted singletons
+   would RISE; being wrong is what identified (B) as the dominant half.)
+
+   **Caution that must stay attached:** structural gain ≠ accuracy. `ccpo-hardedge` vs
+   `ccpo-global` moved `effect_rel` a hundredfold and moved held-out success by −0.01.
+   Judge this arm on held-out at steps 20/50/100, not on grouping metrics.
+
+   **Kill rule:** run to 50 unless held-out at step 20 is below ~11% (2 SE under base's
+   21.1%). Then judge at 50 vs base's 50.0%, at 100 vs 79.7%.
+
+   **To resume after the rebuild:**
+   ```
+   python3 scripts/exp_run.py --name ccpo-anchor2 --arm ccpo \
+     --set resume_from=experiments/ccpo-anchor-20260909/outputs/checkpoints/global_step_N \
+     --set total_epochs=100 --set obs_repair=1 --set ccpo_gate=global \
+     --set ccpo_phi=hidden+ctx --set ccpo_edge_w=1.0 --set ccpo_rho=0.59 \
+     --set ccpo_tau=0.15 --set ccpo_target=nextnode --set ccpo_shrink=eb \
+     --set ccpo_whiten=3 --set early_stop_min_steps=40 --set early_stop_patience=8
+   ```
 
 1. **H-AB — G²PO on our harness.** *Declined twice by the user*, so not run. It is now
    the only remaining way to attribute our 79.7%, because the config is proven
