@@ -135,6 +135,45 @@ aff-only would have had resolution at a singleton cost.)
 **Clean ablation confirmed:** step-1 `success_rate` is identical to base at 0.0547, so
 the rollouts are the same and only credit assignment differs.
 
+### [STOPPED at step 32] H-AG RESULT — the anchor fix did not convert
+
+Stopped by user direction to free the cards for the G2PO reference run.
+
+| step | anchor | base | diff |
+|---|---|---|---|
+| 5 | 9.4 | 10.2 | -0.8 |
+| 10 | 8.6 | 10.9 | -2.3 |
+| 15 | 14.1 | 17.2 | -3.1 |
+| 20 | 15.6 | 21.1 | -5.5 |
+| 25 | 11.7 | 21.1 | -9.4 |
+| 30 | 20.3 | 30.5 | -10.2 |
+
+mean paired difference **-5.21**, **6/6 negative**,
+monotone. Train over steps 1-32: anchor 15.1 vs base 17.4
+(-2.3).
+
+**The step-1 diagnostics were unambiguously good and predicted nothing.** Node count rose
+758 -> 1172 (+55%), the singleton fraction fell 0.335 -> 0.291, and the +375 nodes from
+`anchor_aff` cross-validated against an independently measured 42.8% ambiguity rate.
+Rollouts were identical at step 1, so the ablation was clean. None of it reached
+held-out success.
+
+**Lag, not obviously a ceiling.** Matching each anchor value to the base step that first
+reached it gives lags of 0, 5, 0, 5, 10, 10 -- the arm ran ~10 steps behind and the lag
+grew slowly. Whether it would have stabilised is **unresolved**: the run was stopped at
+32, before the step-50 test that would have separated "slower" from "capped".
+
+**This is the third structural improvement that did not convert**, after `effect_rel`
+moving a hundredfold for -0.01 points and the digest's cost fix returning to baseline.
+**Grouping-quality metrics have no demonstrated predictive value for held-out success on
+this task.** That is now a strong enough prior to require an accuracy result before
+believing any further grouping change.
+
+**What it does NOT establish.** Seed variance has still never been measured. A -4 mean
+difference sits inside the ~5.3 between-arm paired sd estimated earlier, so a single
+seed cannot separate "harmful" from "unlucky". The honest verdict is *unconverted*, not
+*refuted*.
+
 ### STEP-30 — 6/6 negative, but the right question is LAG vs CEILING
 
 ```
