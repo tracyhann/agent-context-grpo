@@ -2486,6 +2486,32 @@ self-corrected to 0.996 within three steps — RL fixed the format unaided.
 
 ## Measurement notes — things that will mislead you
 
+### The KL pre-clamp is a Qwen3 fix, inert on Qwen2.5 — and the obvious check is circular
+
+`core_algos.py` clamps `ref_logprob - logprob` to [-20, 20] before `exp()` in the k3 /
+`low_var_kl` estimator. Its comment claimed it was load-bearing, citing NaN grad norms
+from step 13 and 132 skipped updates. **Those observations are from the Qwen3-1.7B
+generation** (the clamp arrived in the initial CCPO commit, 2026-09-04, alongside the
+Blackwell sdpa/flash-attn-stub work).
+
+**The tempting check is circular.** Every Qwen2.5 arm shows zero NaN/inf grad norms
+(max 3.45 over 100 steps) and zero skipped updates -- but the clamp *prevents* exactly
+that symptom, so its absence says nothing about whether the clamp is firing.
+
+**The non-circular evidence is the reference run.** `g2po-ref-20260909` trains the same
+model on the same data with the same `kl_loss_type=low_var_kl`, running their tree
+**without this clamp**, and has passed 20 steps with no NaN. If Qwen2.5 produced
+|kl| ~ 90 tokens in this setup, their run would have died the way ours did on Qwen3.
+Corroborated by `actor/kl_loss` ~ 0.026: under k3, kld ~ kl^2/2, so RMS |kl| ~ 0.23.
+
+**Conclusion: not a difference from G2PO on this backbone.** The code is kept (free, and
+guards a return to Qwen3) with the comment corrected. Removed from the list of candidate
+explanations for the gap.
+
+**General lesson:** when a guard suppresses the symptom it was added for, you cannot use
+the symptom's absence to judge the guard. Find a system running without the guard.
+
+
 ### Train success is NOT below held-out — and a single train step will fool you
 
 Asked whether we hold train success rates, I first reported `ccpo-global-ext` at

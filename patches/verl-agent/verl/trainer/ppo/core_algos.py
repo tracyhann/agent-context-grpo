@@ -636,10 +636,21 @@ def kl_penalty(logprob: torch.FloatTensor, ref_logprob: torch.FloatTensor, kl_pe
     # J. Schulman. Approximating kl divergence, 2020.
     # # URL http://joschu.net/blog/kl-approx.html.
     if kl_penalty in ("low_var_kl", "k3"):
-        # clamp BEFORE exp: with policy drift a token can reach |kl|~90 and exp()
-        # overflows to inf -> NaN gradients (observed: grad_norm NaN from step 13,
-        # 132 skipped updates). The post-hoc output clamp cannot save the backward.
-        # Mirrors the upstream verl fix.
+        # QWEN3-ERA FIX, VERIFIED INERT ON QWEN2.5 (2026-09-09).
+        #
+        # Clamp BEFORE exp: on Qwen3-1.7B a token could reach |kl|~90 and exp()
+        # overflowed to inf -> NaN gradients (grad_norm NaN from step 13, 132 skipped
+        # updates); the post-hoc output clamp cannot save the backward. Mirrors the
+        # upstream verl fix.
+        #
+        # On Qwen2.5-1.5B-Instruct -- the model this repo now trains -- it never fires.
+        # The proof is NOT "we see no NaNs", which is circular since the clamp prevents
+        # them. It is the G2PO reference run (g2po-ref-20260909): identical model, data
+        # and kl_loss_type, running their tree WITHOUT this clamp, 20+ steps with no NaN.
+        # Corroborated by actor/kl_loss ~0.026, i.e. RMS |kl| ~ 0.23 under k3.
+        #
+        # Kept because it is free and guards a return to Qwen3. It is NOT a difference
+        # from G2PO in any run on this backbone.
         kl = torch.clamp(ref_logprob - logprob, min=-20.0, max=20.0)
         ratio = torch.exp(kl)
         kld = (ratio - kl - 1).contiguous()
