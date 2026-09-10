@@ -77,3 +77,26 @@ when affordances are added).
 **Only one step. Tracked automatically; do not quote until it has run 20+.**
 
 See H-AL in `experiments/hypothesis.md` for what it would imply.
+
+## Kill rule and H-AL decision — fixed at step 10, BEFORE step 20 exists
+
+Held-out so far: step 5 7.8 (base 10.2), step 10 7.0 (base 10.9) — both within noise.
+tau2 positive on 5/10 steps.
+
+**At step 20 (base there = 21.1):**
+
+* **STOP** if held-out < 11% — more than 2 SE below base, i.e. clearly failing. This is the
+  same threshold used for `ccpo-anchor`, which shares this partition. The queue behind
+  this arm waits on it, so running a failing arm to 100 costs ~9 h of GPUs 0-3.
+* Otherwise **run to 50** and judge against base's 50.0. The question this arm answers
+  (phi-weighting vs uniform inside the same node) is only settled against `g2po-aff`,
+  which is queued behind it — so a middling result here is not a reason to continue
+  past 50 on its own.
+
+**H-AL at step 20:** tau2 > 0 on **>= 11/20** steps -> launch `ccpo-refined-eb`
+(`shrink=eb` on this partition, the defensible data-driven version). Otherwise H-AL is dead
+and H-AK stands as written. Currently 5/10.
+
+These decisions are independent: the arm can fail its kill rule and still pass H-AL (the
+partition carries structure even if forced lambda=1 misuses it), which would be the
+strongest possible argument for the `eb` arm.
