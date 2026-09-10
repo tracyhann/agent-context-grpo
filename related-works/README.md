@@ -1,7 +1,10 @@
 # Related works
 
 The four ancestors CCPO is positioned against in [`docs/method.html`](../docs/method.html)
-(§ "Against the GRPO family" and the grouping-key ladder). arXiv IDs are the ones
+(§ "Against the GRPO family" and the grouping-key ladder) and, on the state-identity
+axis specifically, in
+[`experiments/ccpo-anchor-2gpu-20260909/docs/method.html`](../experiments/ccpo-anchor-2gpu-20260909/docs/method.html)
+(§07, which also compares our grouping statistics against G²PO's published ones). arXiv IDs are the ones
 cited inline in that page; PDFs pulled from `arxiv.org/pdf/<id>`.
 
 | file | method | title | first author | arXiv | v | date |

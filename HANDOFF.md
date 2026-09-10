@@ -1,7 +1,198 @@
 # Handoff — 2026-09-09
 
-State for a container rebuild. Everything below is committed; nothing lives only in a
-running process. Full reasoning for every entry is in `experiments/hypothesis.md`.
+State after a server move. Everything below is committed; nothing lives only in a
+running process. **The move destroyed every checkpoint** — see the next section. Full reasoning for every entry is in `experiments/hypothesis.md`.
+
+## RESULT — H-AD is NULL, and what it leaves
+
+`ccpo-anchor-2gpu-20260909` ran 100 steps with both anchor flags. **Twenty paired
+evaluations vs `ccpo-global-20260907`: mean +1.72 pts, sd 6.36, SE 1.42.** Not
+significant. Converged windows: **-0.11** (steps>=70) and **+1.56** (steps>=80);
+trimmed of the base arm's three erratic draws, **+0.78**. Step-100 endpoint 82.8% vs
+79.7%.
+
+**The anchor repair does not change held-out accuracy** — despite `n_buckets` +47%,
+mean node size 8.44 -> 5.51 and singletons 0.298 -> ~0.40. Second time a large grouping
+change has bought nothing (`ccpo-hardedge` was the first).
+
+**82.8% is not a result.** Single 128-game draw, SE +/-3.3, and the run maximum. The
+series ran 60.9 / 76.6 / 70.3 / 78.9 / 79.7 / 82.8 over its last six evaluations.
+
+**All of it is cross-hardware** (base: 4x Blackwell/Triton; this arm: 2x A100/FLASH_ATTN).
+`ccpo-global-fa-20260909` is now running the base config on the same GPUs and backend —
+the first properly paired comparison this project will have, and the second seed Open #4
+has wanted since the checkpoints were destroyed. **Treat H-AD's verdict as provisional
+until it finishes (~10 h).**
+
+**What this leaves:** config, eval protocol, split, training length, context
+conditioning, memory and now the anchor are all excluded. The estimator itself is what
+remains, so **H-AB (G2PO on our harness) is the only way left to attribute the gap.**
+
+## SERVER MOVE 2026-09-09 — read before trusting anything below
+
+We are on a **new box**. The container rebuild everyone planned did **not** happen; a
+host move did. Four things below this section are now wrong.
+
+**1. Hardware changed: 4x A100-SXM4-80GB (sm_80), not 6x Blackwell (sm_120).**
+`scripts/setup_env.sh` needed **no** changes — python 3.10 matches the cp310 flash-attn
+wheel, and flash-attn 2.8.3 has native sm_80 kernels (A100 is its best-supported arch),
+so its Blackwell prose is stale but harmless. Built clean: torch 2.8.0+cu128,
+vllm 0.11.0, transformers 4.57.1, ray 2.50.0, flash-attn 2.8.3.post1.
+`VLLM_ATTENTION_BACKEND=TRITON_ATTN` is still hardcoded in `exp_run.py` and justified
+there as a Blackwell choice — **on A100 the FLASH_ATTN backend is likely faster and is
+untested here.** Left alone deliberately: it keeps the rollout engine matched to the
+79.7% arm. Revisit only if step time is the binding constraint.
+
+**2. Only TWO GPUs are ours.** GPUs 0 and 1 carry another tenant's live job (18.4 GB
+and 17.4 GB pinned, utilisation bursting to ~50% over a 15 s sample). GPUs 2-3 are
+idle and are what we took. Do not grab 0-1 — that is the "do not interfere with other
+users" case, and this box has only 4 cards total.
+
+**3. Nothing outside git survived the move.** No `.venv`, no Qwen2.5-1.5B weights, no
+ALFWorld data, and **no checkpoints anywhere on disk**. Consequence:
+**Open item #4's checkpoint re-scoring is dead** — `step100-last`, `step100-best`,
+`step105-best`, `step145-last` no longer exist, so `scripts/eval_checkpoints.sh` has
+nothing to score. Re-scoring is only possible by retraining. The second-seed check is
+unaffected.
+
+**4. Container limits on THIS box.** `pids.max` is **8,192** and `memory.max`
+**256 GiB**. The "rebuild to 32768" plan in the section below belonged to the *old*
+server — it does not describe anything pending here. Host RAM is 1,607 GB available.
+
+**The 2-GPU pid estimate is confirmed.** The handoff estimated ~6,500-7,000 pids for a
+2-GPU arm. Measured with the arm below running: **7,075** against the 8,192 cap. The
+estimate was good, and the margin is ~14% — do not start anything alongside this arm.
+
+Minor: the raylet logs `/tmp/ray_acg ... is over 95% full` every 10 s. It is a
+percentage trigger on a 10 TB filesystem with 459 GB free; object spilling has room.
+Noise, not a fault.
+
+## Correction: what `ccpo-anchor-20260909` actually ran
+
+The text under H-AD below says that arm "ran `obs_repair=1` alone". **That describes
+only its first launch.** Git shows two:
+
+* `e58532a` — launched with `ACG_OBS_REPAIR=1` alone.
+* `9a3bd6b` — **step-1 diagnostics recorded from that obs_repair-only launch**
+  (`n_buckets` 797, `bucket_singleton_frac` 0.227, `success_rate` 0.0547).
+* `35ba3a2` — **relaunched with BOTH** `ACG_OBS_REPAIR=1` and `ACG_ANCHOR_AFF=1`,
+  then stopped before step 1 completed.
+
+So the recommendation below (relaunch with both flags) was already acted on, and the
+`run.sh` in that directory already carries both. **But the step-1 table below is an
+obs_repair-only measurement, not a both-flags one** — the singleton drop from 0.335 to
+0.227 is attributable to repair (B) alone. The both-flags relaunch truncated
+`metrics.jsonl` back to empty, which is why that directory looks bare; the step-1 row
+is preserved in git at `9a3bd6b` and nowhere else.
+
+## The live arm: `ccpo-anchor-2gpu-20260909`
+
+Launched 2026-09-09 on **GPUs 2,3**, fresh (no checkpoint existed to resume from).
+Both anchor flags on. `tests/test_obs_repair.py` passed 9/9 against G2PO's transcribed
+loop, plus the live-path stub, before launch.
+
+Config diff against the stopped `ccpo-anchor-20260909` `run.sh` is **exactly two lines**:
+`trainer.experiment_name` and `trainer.n_gpus_per_node=4` -> `2`. Every ACG_* flag,
+batch size, and hyperparameter is identical.
+
+```
+python3 scripts/exp_run.py --name ccpo-anchor-2gpu --arm ccpo \
+  --set gpus=2,3 --set obs_repair=1 --set anchor_aff=1 \
+  --set total_epochs=100 --set compact_budget=0 --set ccpo_gate=global \
+  --set ccpo_phi=hidden+ctx --set ccpo_edge_w=1.0 --set ccpo_rho=0.59 \
+  --set ccpo_tau=0.15 --set ccpo_target=nextnode --set ccpo_shrink=eb \
+  --set ccpo_whiten=3 --set early_stop_min_steps=40 --set early_stop_patience=8
+```
+
+**Kill rule is unchanged and still applies:** run to 50 unless held-out at step 20 is
+below ~11% (2 SE under base's 21.1%); judge at 50 vs base's 50.0%, at 100 vs 79.7%.
+Judge on held-out, **not** on grouping metrics — `ccpo-hardedge` moved `effect_rel` a
+hundredfold and held-out by -0.01.
+
+### Step 1 (both flags): `anchor_aff` REVERSES the singleton gain
+
+560 s/step, ETA ~15.4 h for 100 steps — better than the ~25 h the 2-GPU estimate feared.
+
+| metric | base (`ccpo-global`) | +obs_repair only | +BOTH flags |
+|---|---|---|---|
+| `n_buckets` | 758 | 797 | **1,149** |
+| `bucket_singleton_frac` | 0.335 | **0.227** | **0.339** |
+| `bucket_size_mean` | — | 8.03 | 5.35 |
+| `bucket_size_p90` | 16 | 20 | 12 |
+| `effect_rel` | 0.119 | 0.116 | 0.180 |
+
+Folding admissible actions into the node key splits nodes so much finer that singletons
+return to the base level. The two halves pull in **opposite directions**: obs_repair
+merges failure turns back onto their true state (singletons 0.335 -> 0.227); anchor_aff
+then re-splits on the 42.8% of observations that map to >1 admissible set
+(0.227 -> 0.339). Net effect on the fraction of occurrences with no leave-one-out
+baseline is roughly nil; what changed is *which* occurrences are pooled.
+
+**This makes the later ablation of the two halves mandatory, not optional.** If this arm
+moves held-out, the handoff's earlier reasoning — that the singleton drop was the
+mechanism — cannot be the explanation, because the pair does not preserve that drop.
+
+**`bucket_singleton_frac` is a fraction of NODES, not of occurrences.**
+`ray_trainer.py:453` computes `(sizes <= 1).mean()` over the node list. A singleton node
+holds exactly one occurrence, so the occurrence-level share is
+`n_buckets * singleton_frac / (n_buckets * bucket_size_mean)`:
+
+| arm | nodes | mean size | occurrences | singleton nodes | % nodes | **% occurrences** |
+|---|---|---|---|---|---|---|
+| base `ccpo-global` | 758 | 8.44 | 6,400 | 254 | 33.5% | **4.0%** |
+| +obs_repair | 797 | 8.03 | 6,400 | 181 | 22.7% | **2.8%** |
+| +both flags | 1,149 | 5.35 | 6,144 | 390 | 33.9% | **6.3%** |
+
+The earlier entry read the 10.8-point node move as "~11% of occurrences". The effect is
+real and in the claimed direction but **about nine times smaller than recorded**: 1.2
+points of occurrences, not 11. Base and +obs_repair share 6,400 occurrences exactly,
+which is the paired-hardware signature; the both-flags row has 6,144 and is not paired.
+
+**The step-1 rows are NOT paired.** `episode/success_rate` is 0.0547 (obs_repair-only,
+4 GPUs) vs 0.1094 (both flags, 2 GPUs) and `episode/reward/mean` 0.547 vs 1.094, so the
+rollouts differ. **The cause is not sharding** — `tensor_model_parallel_size=1` in both
+arms, so every GPU holds a whole copy of the 1.5B model and nothing is split. It is
+data-parallel width: verl runs one independent vLLM engine per rank
+(`distributed_executor_backend="external_launcher"`), and the 128 rollouts split across
+2 ranks instead of 4. Confirmed in the metrics — `global_seqlen/mean` went 898,233 ->
+1,846,313 (x2.06) while `perf/total_num_tokens` held at 3.59M -> 3.69M (x1.03): same
+total work, half the workers, double each.
+
+Two mechanisms then make identical prompts emit different tokens. (i) **RNG position** —
+`SamplingParams` carries no per-request seed (verified from the live log: no `seed` key),
+so each engine draws from one generator seeded 0 in scheduling order; the same prompt
+sits at a different position in that stream when an engine serves 64 sequences instead
+of 32, and training temperature is 1.0. (ii) **Batch-dependent floating point** — larger
+per-engine batches select different GEMM/attention tile shapes and reduction orders, and
+float addition is not associative, so logits differ in the last bits. Either one flips a
+token; a flipped token changes the action, which changes the next observation and every
+prompt after it, so a 50-step agentic rollout amplifies it into a different trajectory.
+
+**The task draw is NOT the confound.** `build_alfworld_envs` takes
+`(seed, train_batch_size=16, group_n=8)` and has no GPU-count dependence, so both arms
+play the same 128 games. That also supports the "arms share their evaluation draw"
+property surviving the move — still worth confirming at step 5, but the code says it holds.
+
+7 successes vs 14 out of 128 is ~2.3 sd at p~0.08; it needs no bug to explain. The clean
+ON/OFF property the step-1 check relied on last time (`success_rate` identical to 4 dp)
+**does not hold across a GPU-count change**, so the grouping deltas above are confounded
+by a different rollout batch. The direction of the
+`n_buckets`/singleton move is far too large to be batch noise, but do not quote these as
+a controlled ablation.
+
+**Two caveats the GPU count introduces, both to check at the first evaluation (step 5):**
+
+* The comparator (79.7%) ran on **4 Blackwell GPUs**; this runs on **2 A100s**. The
+  gradient math is unchanged — `train_batch_size=16` divides 2, so only gradient
+  accumulation differs — but this is no longer a same-hardware comparison.
+* "Arms share their evaluation draw" is asserted below for *fresh* arms. The 128
+  validation environments are Ray actors and are **not** per-GPU, so the draw should
+  still match; **this is an assumption, not a measurement.** Confirm at step 5 that
+  `val/success_rate` sits in the expected band before treating the comparison as paired.
+
+Expect a longer step than the 4-GPU Blackwell figure of **407 s/step** (measured at
+`9a3bd6b`). The handoff's ~25 h estimate for 100 steps at 2 GPUs assumed Blackwell, so
+treat it as a floor.
 
 ## READ FIRST if you are rebuilding the container
 
@@ -99,7 +290,9 @@ alongside a running arm.
 | `ccpo-gatedmem-20260908` | 20 (killed) | 15.6% @20 | stall-gated digest, H-Y |
 | `ccpo-memory-20260907` | 22 (stopped) | 9.4% @20 | ungated digest, H-W |
 | `ccpo-cheapmem-20260908` | 20 (stopped) | 16.4% @20 | digest at 192 tok / replace; cost fixed, mechanism null, H-AC |
-| `ccpo-anchor-20260909` | **RUNNING** | — | **G²PO anchor repair, H-AD. The live arm.** |
+| `ccpo-anchor-20260909` | 1 (stopped) | — | anchor repair; stopped for the host move, no checkpoint |
+| `ccpo-anchor-2gpu-20260909` | 100 | **82.8% @100** | **H-AD/H-AE, both anchor flags. NULL: +1.72 pts over 20 paired evals (sd 6.36).** |
+| `ccpo-global-fa-20260909` | **RUNNING** | — | **base config, same box/backend — the paired comparator. The live arm.** |
 
 Published at the same protocol (Qwen2.5-1.5B, ALFWorld, 100 iters, 3 seeds):
 **G²PO 95.0**, GiGPO 86.7 (at *150* iters), HGPO 92.77 (at 160), GRPO 72.8, RLOO 69.7,
@@ -219,8 +412,8 @@ ready to run (needs pid headroom — see top).
    | `bucket_size_p90` | 16 | 20 |
    | `episode/success_rate` | 0.0547 | **0.0547** (identical → rollouts unchanged) |
 
-   Singletons fell 10.8 points: ~11% of occurrences moved from having NO leave-one-out
-   baseline to having neighbours. That is repair (B) — failures now anchor to their true
+   Singletons fell 10.8 points **of NODES, not of occurrences** — see the correction
+   below; the occurrence-level move was 4.0% -> 2.8%, about 1.2 points. That is repair (B) — failures now anchor to their true
    state instead of the shared `"Nothing happens."` string. (I had predicted singletons
    would RISE; being wrong is what identified (B) as the dominant half.)
 
@@ -318,3 +511,9 @@ Eval-only: `--set val_only=1 --set align_val_on_resume=0 --set resume_from=<ckpt
 
 **Kill by PID from `outputs/train.pid`, never `pkill -f <pattern>`** — the pattern
 matches the inline shell running the kill. This has caused two incidents.
+
+## Method note for this arm
+
+`experiments/ccpo-anchor-2gpu-20260909/docs/method.html` — architecture, the three
+repairs with figures, the 9-step anchor demo, the refinement argument, and the
+confound table. Written in the house style of `docs/method.html`.

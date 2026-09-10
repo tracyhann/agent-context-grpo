@@ -1,0 +1,945 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
+<title>The Anchor Repair</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+:root{
+  color-scheme: light;
+  --ground:#f7f8f7; --surface:#ffffff; --surface-2:#f1f4f3; --sunk:#eaeeed;
+  --ink:#14181a; --ink-2:#525c5e; --ink-3:#8b9599;
+  --rule:#dfe4e3; --rule-2:#c9d2d0;
+  --accent:#0f5d63; --accent-soft:#e2eeee;
+  --ok:#1a6b4d; --ok-soft:#e2efe9;
+  --warn:#8a5d0f; --warn-soft:#f5ecda;
+  --crit:#9a3229; --crit-soft:#f6e6e3;
+  --shadow:0 1px 2px rgba(20,24,26,.05), 0 8px 24px -16px rgba(20,24,26,.25);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --ground:#0e1213; --surface:#161b1c; --surface-2:#1b2122; --sunk:#111617;
+    --ink:#edf2f1; --ink-2:#a4afae; --ink-3:#6b7776;
+    --rule:#252f30; --rule-2:#354041;
+    --accent:#5cb9c0; --accent-soft:#12292b;
+    --ok:#4dbb8d; --ok-soft:#12261e;
+    --warn:#d2a24f; --warn-soft:#2a2113;
+    --crit:#e07a6f; --crit-soft:#2c1917;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -18px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --ground:#0e1213; --surface:#161b1c; --surface-2:#1b2122; --sunk:#111617;
+  --ink:#edf2f1; --ink-2:#a4afae; --ink-3:#6b7776;
+  --rule:#252f30; --rule-2:#354041;
+  --accent:#5cb9c0; --accent-soft:#12292b;
+  --ok:#4dbb8d; --ok-soft:#12261e;
+  --warn:#d2a24f; --warn-soft:#2a2113;
+  --crit:#e07a6f; --crit-soft:#2c1917;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -18px rgba(0,0,0,.8);
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  font-size:16px; line-height:1.62; margin:0;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1080px; margin:0 auto; padding:0 28px 96px}
+
+h1,h2,h3{font-family:"Newsreader", Georgia, serif; text-wrap:balance; margin:0}
+h1{font-size:clamp(2.3rem,5.2vw,3.4rem); font-weight:500; letter-spacing:-.018em; line-height:1.08}
+h2{font-size:1.72rem; font-weight:500; letter-spacing:-.01em}
+h3{font-size:1.12rem; font-weight:600; font-family:"IBM Plex Sans",sans-serif; letter-spacing:-.005em}
+p{margin:0}
+a{color:var(--accent)}
+
+.eyebrow{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:.7rem; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--ink-3); font-weight:500;
+}
+code,.mono,.m{font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:.86em}
+.num{font-variant-numeric:tabular-nums}
+
+/* ---------- masthead ---------- */
+header.mast{border-bottom:1px solid var(--rule); background:var(--surface)}
+.mast-in{max-width:1080px; margin:0 auto; padding:56px 28px 40px; display:flex; flex-direction:column; gap:22px}
+.thesis{font-family:"Newsreader",Georgia,serif; font-size:1.3rem; line-height:1.5; color:var(--ink-2); max-width:62ch}
+.thesis b{color:var(--ink); font-weight:600}
+.mast-meta{display:flex; flex-wrap:wrap; gap:8px 26px; padding-top:6px; border-top:1px solid var(--rule); color:var(--ink-3); font-size:.83rem}
+
+/* ---------- status strip ---------- */
+.status{display:grid; grid-template-columns:repeat(auto-fit,minmax(178px,1fr)); gap:10px; margin-top:6px}
+.st{border:1px solid var(--rule); border-radius:3px; padding:12px 14px; background:var(--surface); display:flex; flex-direction:column; gap:5px}
+.st .k{font-family:"IBM Plex Mono",monospace; font-size:.74rem; letter-spacing:.06em; color:var(--ink-3)}
+.st .v{font-weight:600; font-size:.95rem; line-height:1.25}
+.st.ok{border-left:3px solid var(--ok)}      .st.ok .v{color:var(--ok)}
+.st.warn{border-left:3px solid var(--warn)}  .st.warn .v{color:var(--warn)}
+.st.crit{border-left:3px solid var(--crit)}  .st.crit .v{color:var(--crit)}
+.st .n{font-size:.79rem; color:var(--ink-2); line-height:1.4}
+
+section{padding-top:60px}
+.sec-head{display:flex; flex-direction:column; gap:9px; margin-bottom:26px}
+.sec-head p{color:var(--ink-2); max-width:70ch}
+
+/* ---------- ladder ---------- */
+.ladder{display:flex; flex-direction:column; gap:0; border:1px solid var(--rule); border-radius:4px; overflow:hidden; background:var(--surface)}
+.rung{display:grid; grid-template-columns:150px 1fr 260px; gap:20px; align-items:center;
+      padding:15px 18px; border-bottom:1px solid var(--rule)}
+.rung:last-child{border-bottom:none}
+.rung.ours{background:var(--accent-soft)}
+.rung .who{font-weight:600; font-size:.95rem; display:flex; flex-direction:column; gap:2px}
+.rung .who span{font-weight:400; font-size:.74rem; color:var(--ink-3); font-family:"IBM Plex Mono",monospace}
+.rung.ours .who{color:var(--accent)}
+.key{font-family:"IBM Plex Mono",monospace; font-size:.88rem; color:var(--ink);
+     background:var(--sunk); border:1px solid var(--rule); border-radius:3px; padding:7px 11px; display:inline-block}
+.rung.ours .key{background:var(--surface); border-color:var(--accent)}
+.rung .note{font-size:.83rem; color:var(--ink-2); line-height:1.45}
+
+/* ---------- equations ---------- */
+.eqs{display:flex; flex-direction:column; gap:12px}
+.eq{background:var(--surface); border:1px solid var(--rule); border-radius:4px; padding:16px 18px;
+    display:grid; grid-template-columns:26px 1fr; gap:16px; align-items:start}
+.eq .i{font-family:"IBM Plex Mono",monospace; font-size:.78rem; color:var(--ink-3); padding-top:3px; font-weight:500}
+.eq .body{display:flex; flex-direction:column; gap:8px; min-width:0}
+.eq .math{font-family:"IBM Plex Mono",monospace; font-size:.94rem; line-height:1.75; color:var(--ink);
+          overflow-x:auto; padding-bottom:2px; white-space:nowrap}
+.eq .gloss{font-size:.87rem; color:var(--ink-2); line-height:1.5}
+.eq.flag{border-left:3px solid var(--warn)}
+
+/* ---------- tables ---------- */
+.scroll{overflow-x:auto; border:1px solid var(--rule); border-radius:4px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:.86rem; min-width:720px}
+th,td{text-align:left; padding:11px 14px; border-bottom:1px solid var(--rule); vertical-align:top; line-height:1.45}
+thead th{background:var(--surface-2); font-weight:600; font-size:.76rem;
+         letter-spacing:.05em; text-transform:uppercase; color:var(--ink-2); white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+td.dim{font-weight:600; color:var(--ink); white-space:nowrap}
+col.ourcol{background:var(--accent-soft)}
+th.ourhead{color:var(--accent)}
+td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
+.yes{color:var(--ok); font-weight:600} .no{color:var(--crit); font-weight:600}
+.up{color:var(--crit); font-weight:600} .down{color:var(--ok); font-weight:600}
+.tbl-cap{font-size:.79rem; color:var(--ink-3); margin-top:9px; line-height:1.5}
+
+/* ---------- cards / callouts ---------- */
+.ev{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:12px}
+.card{background:var(--surface); border:1px solid var(--rule); border-radius:4px; padding:16px 18px;
+      display:flex; flex-direction:column; gap:9px}
+.card .tag{display:flex; align-items:center; gap:9px; flex-wrap:wrap}
+.card .id{font-family:"IBM Plex Mono",monospace; font-size:.74rem; font-weight:600; color:var(--ink-3)}
+.card .verdict{font-family:"IBM Plex Mono",monospace; font-size:.68rem; letter-spacing:.08em; text-transform:uppercase;
+               padding:2px 7px; border-radius:2px; font-weight:600}
+.v-ok{color:var(--ok); background:var(--ok-soft); border:1px solid var(--ok)}
+.v-warn{color:var(--warn); background:var(--warn-soft); border:1px solid var(--warn)}
+.v-crit{color:var(--crit); background:var(--crit-soft); border:1px solid var(--crit)}
+.card h3{font-size:1rem}
+.card p{font-size:.87rem; color:var(--ink-2)}
+.card .fig{font-family:"IBM Plex Mono",monospace; font-size:.8rem; color:var(--ink);
+           background:var(--sunk); border-radius:3px; padding:8px 11px; line-height:1.6}
+
+.callout{border:1px solid var(--rule-2); border-left:3px solid var(--accent); background:var(--surface);
+         border-radius:3px; padding:16px 20px; display:flex; flex-direction:column; gap:8px}
+.callout.warn{border-left-color:var(--warn)}
+.callout.crit{border-left-color:var(--crit)}
+.callout .lbl{font-family:"IBM Plex Mono",monospace; font-size:.7rem; letter-spacing:.12em;
+              text-transform:uppercase; color:var(--accent); font-weight:600}
+.callout.warn .lbl{color:var(--warn)} .callout.crit .lbl{color:var(--crit)}
+.callout p{color:var(--ink-2); font-size:.92rem}
+.callout b{color:var(--ink)}
+
+/* ---------- figures ---------- */
+.figgrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(430px,1fr)); gap:14px}
+.fig2{background:var(--surface); border:1px solid var(--rule); border-radius:4px; padding:14px 16px 16px}
+.plabel{font-family:"IBM Plex Mono",monospace; font-size:.68rem; letter-spacing:.09em;
+        text-transform:uppercase; color:var(--ink-3); margin:0 0 8px}
+.cap{font-size:.8rem; color:var(--ink-2); line-height:1.5; margin-top:9px}
+svg{width:100%; height:auto; display:block}
+svg text{font-family:"IBM Plex Sans",sans-serif; fill:var(--ink)}
+svg .mono{font-family:"IBM Plex Mono",monospace}
+svg .dim{fill:var(--ink-3)}
+
+/* ---------- demo ---------- */
+.demo{border:1px solid var(--rule); border-radius:4px; overflow:hidden; background:var(--surface)}
+.drow{display:grid; grid-template-columns:52px 1fr 1fr; gap:0; border-bottom:1px solid var(--rule); font-size:.83rem}
+.drow:last-child{border-bottom:none}
+.drow.head{background:var(--surface-2); font-family:"IBM Plex Mono",monospace; font-size:.7rem;
+           letter-spacing:.06em; text-transform:uppercase; color:var(--ink-2); font-weight:600}
+.drow .t{padding:10px 12px; font-family:"IBM Plex Mono",monospace; color:var(--ink-3); border-right:1px solid var(--rule)}
+.drow .raw,.drow .rep{padding:10px 13px; line-height:1.5; font-family:"IBM Plex Mono",monospace; font-size:.78rem}
+.drow .raw{border-right:1px solid var(--rule); color:var(--ink-2)}
+.drow.diff{background:var(--accent-soft)}
+.drow.diff .rep{color:var(--ink); font-weight:500}
+.drow.collapse .raw{color:var(--crit); font-weight:600}
+.badge{display:inline-block; font-family:"IBM Plex Mono",monospace; font-size:.62rem; letter-spacing:.07em;
+       text-transform:uppercase; padding:1px 5px; border-radius:2px; margin-left:6px; vertical-align:middle}
+.b-b{color:var(--crit); background:var(--crit-soft); border:1px solid var(--crit)}
+.b-a{color:var(--warn); background:var(--warn-soft); border:1px solid var(--warn)}
+.ins{color:var(--accent); font-weight:600}
+
+.pipe{display:flex;flex-direction:column;gap:0;max-width:880px}
+.pstep{display:grid;grid-template-columns:44px 1fr;gap:14px;align-items:stretch}
+.pnum{display:flex;flex-direction:column;align-items:center}
+.pnum .n{width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;
+         font-family:"IBM Plex Mono",monospace;font-size:.82rem;font-weight:600;
+         display:flex;align-items:center;justify-content:center;flex:none}
+.pnum .stem{width:2px;flex:1;background:var(--rule-2);min-height:14px}
+.pstep:last-child .stem{display:none}
+.pbox{background:var(--surface);border:1px solid var(--rule);border-radius:4px;
+      padding:12px 16px 13px;margin-bottom:14px}
+.pbox h4{margin:0 0 4px;font-size:.95rem;font-family:"IBM Plex Sans",sans-serif}
+.pbox p{font-size:.85rem;color:var(--ink-2);line-height:1.5}
+.pbox.ours{border-left:3px solid var(--accent)}
+
+.foot{margin-top:70px; padding-top:22px; border-top:1px solid var(--rule); color:var(--ink-3); font-size:.81rem; line-height:1.6}
+
+@media (max-width:820px){
+  .rung{grid-template-columns:1fr; gap:9px}
+  .rung .note{border-top:1px solid var(--rule); padding-top:9px}
+  .drow{grid-template-columns:38px 1fr}
+  .drow .rep{grid-column:2; border-top:1px dashed var(--rule)}
+  .drow.head .rep{display:none}
+}
+</style>
+
+<header class="mast">
+  <div class="mast-in">
+    <div class="eyebrow">Group-relative RL · credit assignment · arm note</div>
+    <h1>The Anchor Repair</h1>
+    <p class="thesis">The step-level baseline is only as good as its notion of &ldquo;the same state.&rdquo;
+    Ours read that identity straight off the observation text — so <b>every failed action in the batch became
+    one state</b>, and every heated egg was indistinguishable from an unheated one. This arm adopts
+    G&sup2;PO's anchor construction, and <b>nothing else</b>.</p>
+    <div class="status">
+      <div class="st ok">
+        <div class="k">HARNESS DIFF</div>
+        <div class="v">One difference</div>
+        <div class="n">Full diff vs the G&sup2;PO checkout: prompts byte-identical, rollout loop a verified no-op. The anchor is all that is left.</div>
+      </div>
+      <div class="st ok">
+        <div class="k">PORT FIDELITY</div>
+        <div class="v">9/9 steps</div>
+        <div class="n"><span class="m">tests/test_obs_repair.py</span> matches a literal transcription of G&sup2;PO's loop, plus a live-path stub test.</div>
+      </div>
+      <div class="st warn">
+        <div class="k">THE TWO HALVES</div>
+        <div class="v">Oppose each other</div>
+        <div class="n">obs_repair merges singleton nodes; anchor_aff re-splits them. Net vs base is ~nil, and its <em>sign</em> flips with the attention backend.</div>
+      </div>
+      <div class="st crit">
+        <div class="k">STEP-1 PAIRING</div>
+        <div class="v">Lost</div>
+        <div class="n">Hardware and data-parallel width both changed. Rollouts are decorrelated; the ON/OFF check used last launch is unavailable.</div>
+      </div>
+      <div class="st ok">
+        <div class="k">DIRECTION</div>
+        <div class="v">Provable</div>
+        <div class="n">anchor_aff is a strict partition refinement, so its sign holds regardless of the confound. Only magnitude is at risk.</div>
+      </div>
+    </div>
+    <div class="mast-meta">
+      <span>ccpo-anchor-2gpu-20260909</span>
+      <span>ALFWorld · Qwen2.5-1.5B-Instruct</span>
+      <span>2 &times; A100-SXM4-80GB</span>
+      <span>H-AD + H-AE</span>
+      <span>2026-09-09</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">01 — what the anchor is</div>
+    <h2>Two strings leave the environment, and only one of them is the prompt</h2>
+    <p>Every call to <span class="m">AlfWorldEnvironmentManager.step()</span> returns a dict with both
+    <span class="m">text</span> and <span class="m">anchor</span>. They are not the same string and they do not
+    serve the same purpose. Confusing them is the reason this defect survived so long.</p>
+  </div>
+
+  <div class="ev">
+    <div class="card">
+      <div class="tag"><span class="id">text</span><span class="verdict v-ok">policy input</span></div>
+      <h3>What the agent sees</h3>
+      <p>Task description + last-2 history + observation + admissible actions, assembled by
+      <span class="m">build_text_obs()</span>. This is the prompt tokens go through.
+      <b>The repair does not touch it.</b> Rollouts are affected only through the gradient, never
+      through a changed prompt.</p>
+    </div>
+    <div class="card">
+      <div class="tag"><span class="id">anchor</span><span class="verdict v-warn">state identity</span></div>
+      <h3>What the estimator groups by</h3>
+      <p>Flows into <span class="m">anchor_obs</span> and becomes the node key in
+      <span class="m">g2po_node_values()</span>. Two occurrences with the same anchor are declared the same
+      state and pooled into one value estimate. <b>This is what the arm changes.</b></p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:34px">The node key, three ways</h3>
+  <div class="ladder" style="margin-top:14px">
+    <div class="rung">
+      <div class="who">Ours, before<span>core_ccpo.py:409</span></div>
+      <div><span class="key">(task, obs_text)</span></div>
+      <div class="note">Raw observation string. A failed action returns the literal
+      <span class="m">"Nothing happens."</span>, so that string <em>is</em> the state.</div>
+    </div>
+    <div class="rung">
+      <div class="who">+ <span class="mono">ACG_OBS_REPAIR</span><span>repairs B and A</span></div>
+      <div><span class="key">(task, repaired_obs)</span></div>
+      <div class="note">Failures no longer advance the anchor; observations after an invisible action are
+      concatenated with their predecessor.</div>
+    </div>
+    <div class="rung ours">
+      <div class="who">+ <span class="mono">ACG_ANCHOR_AFF</span><span>this arm — both flags</span></div>
+      <div><span class="key">(task, repaired_obs + admissible)</span></div>
+      <div class="note">G&sup2;PO's full anchor. The admissible-action list joins the identity, disambiguating
+      observations that read alike but offer different moves.</div>
+    </div>
+  </div>
+  <div class="tbl-cap">The task component is the rollout-group uid, so occurrences from different ALFWorld games never
+  pool regardless of text. Everything below concerns the second component only.</div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">02 — where the anchor enters the maths</div>
+    <h2>Four lines decide what a state is worth</h2>
+    <p>Under <span class="m">ccpo_target=nextnode</span> the step credit is not a return — it is the pooled value
+    of the node the action moved <em>into</em>. The anchor therefore sets the <b>target</b>, not merely the
+    comparison pool.</p>
+  </div>
+
+  <div class="eqs">
+    <div class="eq"><div class="i">1</div><div class="body">
+      <div class="math">NODE[i] = (task[i], str(anchor_obs[i]))</div>
+      <div class="gloss">The node key. One string equality test decides whether two occurrences are the same
+      state. No similarity, no embedding — byte equality.</div>
+    </div></div>
+    <div class="eq"><div class="i">2</div><div class="body">
+      <div class="math">VAL[k] = mean over visits i&isin;k of &gamma;<sup>(T&minus;t)</sup> &middot; R(traj i)</div>
+      <div class="gloss">A node's value is the mean discounted outcome over <em>every</em> visit to it in the batch,
+      across all 8 sibling rollouts. Merge two unrelated states and this average is taken over experiences that
+      have nothing to do with each other.</div>
+    </div></div>
+    <div class="eq"><div class="i">3</div><div class="body">
+      <div class="math">NEXT[i] = NODE[i+1] within the trajectory, else terminal</div>
+      <div class="gloss">The successor. <span class="m">TGT[i] = VAL[NEXT[i]] &minus; penalty&middot;invalid[i]</span>
+      is what the step advantage is computed on.</div>
+    </div></div>
+    <div class="eq flag"><div class="i">4</div><div class="body">
+      <div class="math">if len(members[node]) &lt; 2:  continue     # advantage stays 0</div>
+      <div class="gloss"><b>A singleton node contributes no step credit at all.</b> With one member there is no
+      leave-one-out comparison to make, so the occurrence is dropped from the step term. This is why the
+      singleton count is the statistic everyone watches — and why it is not, on its own, a quality measure.</div>
+    </div></div>
+  </div>
+
+  <div class="callout" style="margin-top:20px">
+    <div class="lbl">Why this survives a global gate</div>
+    <p>This arm runs <span class="m">ccpo_gate=global</span>, where the <em>bucket</em> is the whole task and a
+    continuous affinity does the weighting. It is tempting to conclude the anchor no longer matters. It does:
+    the gate chooses the <b>baseline pool</b>, but the anchor still builds <span class="m">VAL</span>, and
+    <span class="m">VAL</span> is the <b>target</b>. A broken anchor corrupts what the step term is trying to
+    predict, which no amount of baseline smoothing repairs.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">03 — the three repairs</div>
+    <h2>One flag fixes two defects, the other fixes a third</h2>
+    <p>G&sup2;PO's <span class="m">env_manager.py</span> contains all three. <span class="m">git log -S</span>
+    confirms none was ever in our tree, and GiGPO's original lacks them too — so this is a G&sup2;PO contribution,
+    not a regression on our side.</p>
+  </div>
+
+  <div class="figgrid">
+    <div class="fig2">
+      <div class="plabel">B · the failure collapse — <span class="mono">ACG_OBS_REPAIR</span></div>
+      <svg viewBox="0 0 560 210">
+        <text x="6" y="14" font-size="10.4" class="mono dim">BEFORE — three unrelated states, three failed actions</text>
+        <g fill="var(--ink-3)">
+          <circle cx="52" cy="42" r="6"/><circle cx="52" cy="70" r="6"/><circle cx="52" cy="98" r="6"/>
+        </g>
+        <text x="66" y="46" font-size="10" class="mono">kitchen, holding egg</text>
+        <text x="66" y="74" font-size="10" class="mono">bedroom, at desk</text>
+        <text x="66" y="102" font-size="10" class="mono">hallway, empty-handed</text>
+        <g stroke="var(--crit)" fill="none" stroke-width="1.6">
+          <path d="M200,42 C300,42 320,66 372,68"/>
+          <path d="M200,70 C300,70 330,70 372,70"/>
+          <path d="M200,98 C300,98 320,74 372,72"/>
+        </g>
+        <rect x="374" y="54" width="176" height="32" rx="4" fill="var(--crit-soft)" stroke="var(--crit)"/>
+        <text x="384" y="74" font-size="10.5" class="mono" fill="var(--crit)">ONE node: "Nothing happens."</text>
+        <line x1="6" y1="120" x2="554" y2="120" stroke="var(--rule-2)" stroke-dasharray="3 3"/>
+        <text x="6" y="140" font-size="10.4" class="mono dim">AFTER — the anchor does not advance on failure</text>
+        <g fill="var(--accent)">
+          <circle cx="52" cy="166" r="6"/><circle cx="52" cy="188" r="6"/><circle cx="52" cy="152" r="6"/>
+        </g>
+        <g stroke="var(--accent)" fill="none" stroke-width="1.6">
+          <path d="M200,152 L372,152"/><path d="M200,166 L372,166"/><path d="M200,188 L372,188"/>
+        </g>
+        <rect x="374" y="142" width="176" height="20" rx="3" fill="var(--accent-soft)" stroke="var(--accent)"/>
+        <text x="384" y="156" font-size="9.5" class="mono">node = kitchen state</text>
+        <rect x="374" y="164" width="176" height="20" rx="3" fill="var(--accent-soft)" stroke="var(--accent)"/>
+        <text x="384" y="178" font-size="9.5" class="mono">node = bedroom state</text>
+        <rect x="374" y="186" width="176" height="18" rx="3" fill="var(--accent-soft)" stroke="var(--accent)"/>
+        <text x="384" y="199" font-size="9.5" class="mono">node = hallway state</text>
+      </svg>
+      <div class="cap"><b>The dominant half.</b> ALFWorld answers every illegal action with the same sentence.
+      Taking that sentence as the state pools an agent that failed in the kitchen with one that failed in the
+      bedroom — and then feeds their averaged outcome back as the target for both. Applies to every task type.</div>
+    </div>
+
+    <div class="fig2">
+      <div class="plabel">A · the invisible state — <span class="mono">ACG_OBS_REPAIR</span></div>
+      <svg viewBox="0 0 560 210">
+        <text x="6" y="14" font-size="10.4" class="mono dim">ALFWorld does not restate the result of heat / cool / clean / turn on</text>
+        <rect x="10" y="28" width="250" height="56" rx="4" fill="var(--surface-2)" stroke="var(--rule)"/>
+        <text x="20" y="46" font-size="9.6" class="mono dim">rollout 2, t=6 &nbsp;(egg NOT heated)</text>
+        <text x="20" y="64" font-size="9.6" class="mono">"You arrive at loc 3. On the</text>
+        <text x="20" y="76" font-size="9.6" class="mono">countertop 1, you see nothing."</text>
+        <rect x="300" y="28" width="250" height="56" rx="4" fill="var(--surface-2)" stroke="var(--rule)"/>
+        <text x="310" y="46" font-size="9.6" class="mono dim">rollout 5, t=6 &nbsp;(egg IS heated)</text>
+        <text x="310" y="64" font-size="9.6" class="mono">"You arrive at loc 3. On the</text>
+        <text x="310" y="76" font-size="9.6" class="mono">countertop 1, you see nothing."</text>
+        <path d="M135,88 L135,104 M425,88 L425,104" stroke="var(--crit)" stroke-width="1.6"/>
+        <path d="M135,104 L425,104" stroke="var(--crit)" stroke-width="1.6"/>
+        <path d="M280,104 L280,118" stroke="var(--crit)" stroke-width="1.6"/>
+        <rect x="176" y="118" width="208" height="22" rx="3" fill="var(--crit-soft)" stroke="var(--crit)"/>
+        <text x="186" y="133" font-size="10" class="mono" fill="var(--crit)">byte-identical &rarr; same node</text>
+        <text x="6" y="162" font-size="10.4" class="mono dim">AFTER — prepend the predecessor when it was an invisible action</text>
+        <rect x="10" y="172" width="250" height="30" rx="4" fill="var(--accent-soft)" stroke="var(--accent)"/>
+        <text x="20" y="191" font-size="9.2" class="mono">"You arrive at loc 3. &hellip;"</text>
+        <rect x="300" y="172" width="250" height="30" rx="4" fill="var(--accent-soft)" stroke="var(--accent)"/>
+        <text x="310" y="185" font-size="9.2" class="mono ins">"You heat the egg 1 &hellip;"</text>
+        <text x="310" y="197" font-size="9.2" class="mono">+ "You arrive at loc 3. &hellip;"</text>
+      </svg>
+      <div class="cap"><b>The weaker half, recorded honestly.</b> Our own per-type deficits do not support it: the
+      four pattern-affected types average <b>77.8</b> and the two unaffected ones <b>78.6</b>. Kept because it is
+      part of G&sup2;PO's anchor, not because we have evidence for it.</div>
+    </div>
+  </div>
+
+  <div class="fig2" style="margin-top:14px">
+    <div class="plabel">C · the admissible-action disambiguator — <span class="mono">ACG_ANCHOR_AFF</span></div>
+    <svg viewBox="0 0 560 130">
+      <text x="6" y="14" font-size="10.4" class="mono dim">42.8% of observations map to more than one admissible-action set</text>
+      <rect x="10" y="26" width="200" height="26" rx="3" fill="var(--surface-2)" stroke="var(--rule)"/>
+      <text x="20" y="43" font-size="9.6" class="mono">obs: "You arrive at loc 7."</text>
+      <path d="M212,39 L262,30 M212,39 L262,48" stroke="var(--accent)" stroke-width="1.4" fill="none"/>
+      <rect x="266" y="18" width="284" height="24" rx="3" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text x="276" y="34" font-size="9" class="mono">+ ['open microwave 1', 'go to countertop 1', &hellip;]</text>
+      <rect x="266" y="46" width="284" height="24" rx="3" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text x="276" y="62" font-size="9" class="mono">+ ['close microwave 1', 'heat egg 1', &hellip;]</text>
+      <text x="10" y="92" font-size="10" class="dim">Same text, different affordances &mdash; therefore a different state. The list was already</text>
+      <text x="10" y="106" font-size="10" class="dim">computed and carried as `aff`, but only ever written to the diagnostic CSV.</text>
+      <text x="10" y="120" font-size="10" class="mono" fill="var(--warn)">We measured the ambiguity, built the disambiguator, and then grouped without it.</text>
+    </svg>
+    <div class="cap">Added to the tree on 2026-09-03 with the 42.8% figure attached, and never wired into the node key
+    (<span class="m">core_ccpo.py:795</span> writes it to the dump; <span class="m">core_ccpo.py:409</span> builds the
+    key without it). H-AE is the observation that these two facts had never been put together.</div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">04 — step by step</div>
+    <h2>One trajectory, nine turns, both anchors side by side</h2>
+    <p>This is the exact sequence in <span class="m">tests/test_obs_repair.py</span>, rendered from the real
+    function. <span class="m">ACG_ANCHOR_AFF</span> is omitted here so the two repairs inside
+    <span class="m">ACG_OBS_REPAIR</span> can be seen in isolation; it would append an admissible-action block to
+    every row on the right.</p>
+  </div>
+
+  <div class="demo">
+    <div class="drow head"><div class="t">t</div><div class="raw">anchor before — <span style="text-transform:none">raw observation</span></div><div class="rep">anchor after — <span style="text-transform:none">repaired</span></div></div>
+    <div class="drow"><div class="t">1</div><div class="raw">You arrive at loc 3. On the countertop 1, you see an egg 1.</div><div class="rep">You arrive at loc 3. On the countertop 1, you see an egg 1.</div></div>
+    <div class="drow"><div class="t">2</div><div class="raw">You pick up the egg 1 from the countertop 1.</div><div class="rep">You pick up the egg 1 from the countertop 1.</div></div>
+    <div class="drow diff collapse"><div class="t">3</div><div class="raw">Nothing happens.<span class="badge b-b">B</span></div><div class="rep">You pick up the egg 1 from the countertop 1.</div></div>
+    <div class="drow"><div class="t">4</div><div class="raw">You arrive at loc 7. The microwave 1 is closed.</div><div class="rep">You arrive at loc 7. The microwave 1 is closed.</div></div>
+    <div class="drow"><div class="t">5</div><div class="raw">You heat the egg 1 with the microwave 1.</div><div class="rep">You heat the egg 1 with the microwave 1.</div></div>
+    <div class="drow diff"><div class="t">6</div><div class="raw">You arrive at loc 3. On the countertop 1, you see nothing.<span class="badge b-a">A</span></div><div class="rep"><span class="ins">You heat the egg 1 with the microwave 1.</span> You arrive at loc 3. On the countertop 1, you see nothing.</div></div>
+    <div class="drow diff collapse"><div class="t">7</div><div class="raw">Nothing happens.<span class="badge b-b">B</span></div><div class="rep">You heat the egg 1 with the microwave 1. You arrive at loc 3. On the countertop 1, you see nothing.</div></div>
+    <div class="drow"><div class="t">8</div><div class="raw">You turn on the desklamp 1.</div><div class="rep">You turn on the desklamp 1.</div></div>
+    <div class="drow diff"><div class="t">9</div><div class="raw">You are in the middle of a room. You see a fridge 1, a microwave 1, a countertop 1.<span class="badge b-a">A</span></div><div class="rep"><span class="ins">You turn on the desklamp 1.</span> You are in the middle of a room. You see a fridge 1, a microwave 1, a countertop 1.</div></div>
+  </div>
+
+  <div class="ev" style="margin-top:16px">
+    <div class="card">
+      <div class="tag"><span class="id">read the failures</span></div>
+      <h3>t=3 and t=7 — repair B</h3>
+      <p>Both raw anchors are the bare string <span class="m">"Nothing happens."</span>. Batch-wide these two
+      turns — one holding an egg in the kitchen, one standing at a heated countertop — would have shared a node
+      with every other failure in all 128 rollouts. After repair they inherit their own last real observation
+      and separate cleanly. <b>2 of 9 turns collapse without it; 0 after.</b></p>
+    </div>
+    <div class="card">
+      <div class="tag"><span class="id">read the concatenations</span></div>
+      <h3>t=6 and t=9 — repair A</h3>
+      <p>t=6 raw is byte-identical to what the same square looks like <em>before</em> the egg was heated —
+      the state changed, the text did not. Prepending the predecessor makes the heat event part of the identity.
+      t=9 shows the same for <span class="m">"You turn on"</span>. <b>Distinct anchors go 8/9 raw &rarr; 7/9
+      repaired</b>, which is the point: the count falls because two turns correctly merged onto their true
+      predecessor state.</p>
+    </div>
+  </div>
+
+  <div class="callout warn" style="margin-top:18px">
+    <div class="lbl">Order matters, and the code depends on it</div>
+    <p>When both flags are on, the admissible-action block is appended <b>before</b> the repair logic runs, so the
+    history stores augmented strings. This is safe only because both branch tests —
+    <span class="m">startswith("Nothing happens")</span> and the invisible-pattern test — are <b>prefix</b> tests,
+    which a trailing append leaves intact. Control flow is therefore identical with and without
+    <span class="m">ACG_ANCHOR_AFF</span>. That invariant is what makes the refinement argument in &sect;06 hold.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">05 — what changed at step 1</div>
+    <h2>The two halves pull in opposite directions</h2>
+    <p>Grouping statistics at the first training step, against the 79.7% arm's own step 1 and against the
+    obs_repair-only launch that preceded this one.</p>
+  </div>
+
+  <div class="scroll">
+    <table>
+      <colgroup><col><col><col><col><col class="ourcol"></colgroup>
+      <thead><tr><th>metric</th><th>base <span class="mono">ccpo-global</span></th><th>+ obs_repair only</th><th>+ both flags<br><span style="text-transform:none;font-weight:400">Triton (stopped)</span></th><th class="ourhead">+ both flags<br><span style="text-transform:none;font-weight:400">FLASH — the live arm</span></th></tr></thead>
+      <tbody>
+        <tr><td class="dim">n_buckets <span style="font-weight:400;color:var(--ink-3)">(nodes)</span></td><td><span class="m">758</span></td><td><span class="m">797</span></td><td><span class="m">1,149</span></td><td><span class="m">1,116</span></td></tr>
+        <tr><td class="dim">bucket_size_mean</td><td><span class="m">8.44</span></td><td><span class="m">8.03</span></td><td><span class="m">5.35</span></td><td><span class="m">5.51</span></td></tr>
+        <tr><td class="dim">bucket_size_p90</td><td><span class="m">16</span></td><td><span class="m">20</span></td><td><span class="m">12</span></td><td><span class="m">12</span></td></tr>
+        <tr><td class="dim">bucket_singleton_frac<br><span style="font-weight:400;color:var(--ink-3)">fraction of NODES</span></td><td><span class="m">0.335</span></td><td><span class="m down">0.227</span></td><td><span class="m up">0.339</span></td><td><span class="m">0.298</span></td></tr>
+        <tr><td class="dim">occurrences in singletons<br><span style="font-weight:400;color:var(--ink-3)">derived — see caption</span></td><td><span class="m">4.0%</span></td><td><span class="m down">2.8%</span></td><td><span class="m up">6.3%</span></td><td><span class="m">5.4%</span></td></tr>
+        <tr><td class="dim">effect_rel</td><td><span class="m">0.095</span></td><td><span class="m">0.116</span></td><td><span class="m">0.180</span></td><td><span class="m">0.172</span></td></tr>
+        <tr><td class="dim">r_vs_g2po</td><td><span class="m">&mdash;</span></td><td><span class="m">0.675</span></td><td><span class="m">0.564</span></td><td><span class="m">0.556</span></td></tr>
+        <tr><td class="dim">episode/success_rate</td><td><span class="m">&mdash;</span></td><td><span class="m">0.0547</span></td><td><span class="m">0.1094</span></td><td><span class="m">0.1406</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="tbl-cap"><b>The singleton row is a fraction of nodes, not of occurrences</b>
+  (<span class="m">ray_trainer.py:453</span> computes <span class="m">(sizes &lt;= 1).mean()</span> over the node
+  list). Since a singleton node holds exactly one occurrence, the occurrence-level share is
+  <span class="m">n_buckets &times; singleton_frac / (n_buckets &times; size_mean)</span> — the derived row above.
+  <b>An earlier handoff read the 10.8-point node move as &ldquo;~11% of occurrences&rdquo;; the true occurrence
+  move was 4.0% &rarr; 2.8%, about 1.2 points.</b> The effect is real and in the claimed direction, roughly nine
+  times smaller than recorded.</div>
+
+  <div class="callout crit" style="margin-top:22px">
+    <div class="lbl">These columns are not a controlled ablation</div>
+    <p>The base and obs_repair columns are paired — same hardware, same 6,400 occurrences, and
+    <span class="m">success_rate</span> identical to four decimals, which is what made that launch's ON/OFF check
+    meaningful. <b>The third column is not.</b> It was measured on different GPUs at a different data-parallel
+    width, and its rollouts decorrelated: 6,144 occurrences, and success 0.1094 against 0.0547. Read the third
+    column for direction, never for magnitude. &sect;08 explains why no analysis can recover the attribution.</p>
+  </div>
+
+  <div class="callout warn" style="margin-top:16px">
+    <div class="lbl">How much do these statistics move on rollout noise alone? Now measured</div>
+    <p>The last two columns are the <b>same configuration</b> — both anchor flags, same GPUs, same seed, same
+    128 games — differing only in <span class="m">VLLM_ATTENTION_BACKEND</span>. That is as close to a pure
+    rollout-noise replicate as this setup can produce, and it moves the grouping statistics by:</p>
+    <div class="fig" style="font-family:'IBM Plex Mono',monospace;font-size:.8rem;background:var(--sunk);border-radius:3px;padding:9px 12px;line-height:1.7">
+      n_buckets&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1,149 &rarr; 1,116&nbsp;&nbsp;(&minus;2.9%)<br>
+      singleton_frac&nbsp;&nbsp;&nbsp;0.339 &rarr; 0.298&nbsp;&nbsp;(<b>&minus;4.1 pts</b>)<br>
+      occ. singletons&nbsp;&nbsp;6.3% &rarr; 5.4%&nbsp;&nbsp;&nbsp;(&minus;0.9 pts)
+    </div>
+    <p style="margin-top:10px"><b>One narrative in this note does not survive that.</b> Against the Triton run,
+    node singletons land at 0.339, <em>above</em> base's 0.335; against the FLASH run they land at 0.298,
+    <em>below</em> it. So &ldquo;anchor_aff returns singletons to base level&rdquo; is backend-dependent and must
+    not be stated as a finding. What survives is weaker and true either way: <b>anchor_aff raises singletons
+    relative to obs_repair-only</b> (0.227 &rarr; 0.298 or 0.339, guaranteed by &sect;06), and <b>the two halves
+    roughly cancel against base</b>, to within ±4 points of sign-ambiguous noise.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">06 — the one thing the confound cannot touch</div>
+    <h2>anchor_aff can only split nodes, never merge them</h2>
+    <p>The direction of the third column is not an empirical finding. It is forced by the construction, which
+    means it survives the hardware change intact.</p>
+  </div>
+
+  <div class="eqs">
+    <div class="eq"><div class="i">&there4;</div><div class="body">
+      <div class="math">key' = f(obs, admissible)   &nbsp;&nbsp;vs&nbsp;&nbsp;   key = f(obs)</div>
+      <div class="gloss">Appending a field to a key produces a <b>refinement of the partition</b>: if two
+      occurrences agree on <span class="m">key'</span> they must agree on <span class="m">key</span>, but not
+      conversely. Formally <span class="m">key'[i] = key'[j] &rArr; key[i] = key[j]</span>.</div>
+    </div></div>
+    <div class="eq"><div class="i">&rArr;</div><div class="body">
+      <div class="math">n_nodes' &ge; n_nodes &nbsp;&nbsp;and&nbsp;&nbsp; singleton_frac' &ge; singleton_frac</div>
+      <div class="gloss">For <em>any</em> fixed batch, on <em>any</em> hardware. Every node either stays whole or
+      breaks into pieces; pieces of size one can only be created, never destroyed.</div>
+    </div></div>
+  </div>
+
+  <div class="callout" style="margin-top:18px">
+    <div class="lbl">What this buys and what it does not</div>
+    <p>The claim <b>&ldquo;anchor_aff reverses obs_repair's singleton gain&rdquo; is sound in direction</b> —
+    it needs no clean pairing, because the inequality is a theorem about the key, not a measurement.
+    The claim <b>&ldquo;by 797 &rarr; 1,149 and 0.227 &rarr; 0.339&rdquo; is confounded</b> — the live FLASH
+    run of the same configuration gives 1,116 and 0.298 — and should be re-measured on matched hardware
+    before it is quoted. The precondition is the prefix-test invariant from
+    &sect;04: control flow must not change between the two configurations, or the refinement property fails.</p>
+  </div>
+
+  <div class="callout warn" style="margin-top:14px">
+    <div class="lbl">Consequence for the working hypothesis</div>
+    <p>The step-1 note on the previous launch argued that repair B's singleton drop was the mechanism worth
+    betting on. <b>That story cannot also explain a positive result from this arm</b>, because the pair does not
+    preserve the drop — it ends up slightly <em>above</em> base in node terms and clearly above in occurrence
+    terms. If held-out improves here, the cause is finer, more accurate node identity feeding
+    <span class="m">VAL</span>, not increased pooling. Ablating the halves is therefore mandatory rather than
+    optional, and only worth running if the pair moves the number.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">07 — against the baselines</div>
+    <h2>Everyone in this family groups by state identity, and only one of them repairs it</h2>
+    <p>The four ancestors are in <span class="m">related-works/</span>. Read on the one axis this arm changes —
+    how each defines &ldquo;the same state&rdquo; — they separate cleanly, and the separation is not where the
+    papers say it is.</p>
+  </div>
+
+  <div class="scroll">
+    <table>
+      <colgroup><col><col><col><col><col class="ourcol"></colgroup>
+      <thead><tr>
+        <th>method</th><th>state-identity key</th><th>failed action</th><th>invisible action</th><th class="ourhead">admissible set in key</th>
+      </tr></thead>
+      <tbody>
+        <tr><td class="dim">GRPO<br><span style="font-weight:400" class="m">2402.03300</span></td>
+            <td>none — <span class="m">task x</span> only, no step baseline</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+        <tr><td class="dim">GiGPO<br><span style="font-weight:400" class="m">2505.10978</span></td>
+            <td>exact match on <span class="m">s<sub>t</sub></span>, &ldquo;lightweight key-based grouping using hashmaps&rdquo; (&sect;4.2)</td>
+            <td class="no">not addressed</td><td class="no">not addressed</td><td class="no">✗</td></tr>
+        <tr><td class="dim">HGPO<br><span style="font-weight:400" class="m">2602.22817</span></td>
+            <td>exact <span class="m">k</span>-step history <span class="m">C<sub>k</sub>(s<sub>t</sub>)</span>, nested over <span class="m">k=0…K</span></td>
+            <td class="no">not addressed</td><td class="no">not addressed</td><td class="no">✗</td></tr>
+        <tr><td class="dim">G&sup2;PO<br><span style="font-weight:400" class="m">2606.22995</span></td>
+            <td><b>paper:</b> &ldquo;clustering identical observations&rdquo;, <span class="m">G<sub>k</sub> = {o<sup>i</sup><sub>j</sub> | o<sup>i</sup><sub>j</sub> = ō<sub>k</sub>}</span> (&sect;4.1)<br><b>code:</b> repaired anchor</td>
+            <td class="yes">✓ code only</td><td class="yes">✓ code only</td><td class="yes">✓ code only</td></tr>
+        <tr><td class="dim">Ours, before</td><td><span class="m">(task, raw o<sub>t</sub>)</span></td>
+            <td class="no">✗</td><td class="no">✗</td><td class="no">✗ — computed as <span class="m">aff</span>, never used</td></tr>
+        <tr><td class="dim">Ours, this arm</td><td><span class="m">(task, repaired o<sub>t</sub> + admissible)</span></td>
+            <td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="tbl-cap"><b>This is how the defect survived.</b> G&sup2;PO's paper defines its node key as identical
+  observations and nothing more — <span class="m">o<sup>i</sup><sub>j</sub> = ō<sub>k</sub></span>, exactly what we
+  implemented. The word &ldquo;admissible&rdquo; appears in that paper only inside the ALFWorld prompt template, and
+  the string <span class="m">"Nothing happens"</span> appears in none of the four papers. All three repairs live
+  only in the released implementation. <b>We matched the paper and missed the code.</b></div>
+
+  <h3 style="margin-top:38px">Published ALFWorld, Qwen2.5-1.5B-Instruct</h3>
+  <div class="scroll" style="margin-top:12px">
+    <table>
+      <thead><tr><th>method</th><th>Pick</th><th>Look</th><th>Clean</th><th>Heat</th><th>Cool</th><th>Pick2</th><th>All</th><th>iters</th><th>seeds</th></tr></thead>
+      <tbody>
+        <tr><td class="dim">PPO (critic)</td><td>64.8</td><td>40.5</td><td>57.1</td><td>60.6</td><td>46.4</td><td>47.4</td><td>54.4 &plusmn;3.1</td><td>—</td><td>3</td></tr>
+        <tr><td class="dim">RLOO</td><td>88.3</td><td>52.8</td><td>71.0</td><td>62.8</td><td>66.4</td><td>56.9</td><td>69.7 &plusmn;2.5</td><td>—</td><td>3</td></tr>
+        <tr><td class="dim">GRPO</td><td>85.3</td><td>53.7</td><td>84.5</td><td>78.2</td><td>59.7</td><td>53.5</td><td>72.8 &plusmn;3.6</td><td>—</td><td>3</td></tr>
+        <tr><td class="dim">GiGPO</td><td>94.4</td><td>67.5</td><td>94.8</td><td>94.4</td><td>79.8</td><td>76.4</td><td>86.7 &plusmn;1.7</td><td><b>150</b></td><td>3</td></tr>
+        <tr><td class="dim">HGPO (K=2)</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>92.77 &plusmn;1.08</td><td><b>160</b></td><td>3</td></tr>
+        <tr><td class="dim">G&sup2;PO</td><td>97.2</td><td>96.3</td><td>95.1</td><td>94.9</td><td>97.1</td><td>91.4</td><td><b>95.0 &plusmn;0.8</b></td><td><b>100</b></td><td>3</td></tr>
+        <tr style="background:var(--accent-soft)"><td class="dim">Ours — the 79.7 arm</td><td>87.6</td><td>65.6</td><td>80.4</td><td>87.1</td><td>78.2</td><td>69.6</td><td><b>79.7</b></td><td>100</td><td><b class="no">1</b></td></tr>
+        <tr><td class="dim">&Delta; ours &minus; GRPO</td><td>+2.3</td><td>+11.9</td><td class="no">&minus;4.1</td><td>+8.9</td><td>+18.5</td><td>+16.1</td><td><b>+6.9</b></td><td></td><td></td></tr>
+        <tr><td class="dim">&Delta; ours &minus; G&sup2;PO</td><td>&minus;9.6</td><td class="no">&minus;30.7</td><td>&minus;14.7</td><td>&minus;7.8</td><td>&minus;18.9</td><td class="no">&minus;21.8</td><td><b>&minus;15.3</b></td><td></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="tbl-cap"><b>Regime context, not a parity claim.</b> Three reasons the rows are not interchangeable:
+  the training budgets differ (<b>G&sup2;PO 100, GiGPO 150, HGPO 160</b> iterations); HGPO evaluates on
+  <b>512</b> validation games against our 128; and <b>every one of our numbers is a single seed</b> while every
+  published row is a 3-seed mean with a standard deviation. Our per-type row is the mean of nine converged
+  evaluations of <span class="m">ccpo-global-ext</span>, each a mean of two batch-level rates rather than a pooled
+  proportion. GiGPO's row in G&sup2;PO's Table 1 is byte-identical to GiGPO's own paper, so it was quoted, not
+  re-run — which is why a 150-iteration number sits inside a 100-iteration table.</div>
+
+  <h3 style="margin-top:38px">Where G&sup2;PO's advantage actually sits — and whether the anchor explains it</h3>
+  <div class="scroll" style="margin-top:12px">
+    <table style="min-width:660px">
+      <thead><tr><th>task type</th><th>GiGPO</th><th>G&sup2;PO</th><th>&Delta;</th><th>invisible-action pattern?</th><th>ours &minus; GiGPO</th></tr></thead>
+      <tbody>
+        <tr><td class="dim">Look (turn on desklamp)</td><td>67.5</td><td>96.3</td><td><b>+28.8</b></td><td class="yes">yes — "You turn on"</td><td>&minus;1.9</td></tr>
+        <tr><td class="dim">Cool</td><td>79.8</td><td>97.1</td><td><b>+17.3</b></td><td class="yes">yes — "You cool"</td><td>&minus;1.6</td></tr>
+        <tr><td class="dim">Pick2</td><td>76.4</td><td>91.4</td><td><b>+15.0</b></td><td class="no">no</td><td>&minus;6.8</td></tr>
+        <tr><td class="dim">Pick</td><td>94.4</td><td>97.2</td><td>+2.8</td><td class="no">no</td><td>&minus;6.8</td></tr>
+        <tr><td class="dim">Heat</td><td>94.4</td><td>94.9</td><td>+0.5</td><td class="yes">yes — "You heat"</td><td>&minus;7.3</td></tr>
+        <tr><td class="dim">Clean</td><td>94.8</td><td>95.1</td><td>+0.3</td><td class="yes">yes — "You clean"</td><td>&minus;14.4</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="tbl-cap"><b>The published deltas do not isolate repair (A) either.</b> Two pattern-affected types
+  carry the two largest gains, but the other two pattern-affected types (Heat, Clean) gain essentially nothing,
+  and the third-largest gain lands on a type with no invisible action at all. This independently reproduces the
+  caveat already carried in our code — our own affected types average 77.8 against 78.6 unaffected. It is also
+  over-reach to attribute any of this column to the anchor: G&sup2;PO differs from GiGPO in node-centric
+  <em>and</em> edge-centric advantage and in group aggregation, not only in state identity.</div>
+
+  <div class="callout" style="margin-top:20px">
+    <div class="lbl">The one alignment worth noticing</div>
+    <p>Our profile sits almost exactly on GiGPO's for <b>Look (&minus;1.9)</b> and <b>Cool (&minus;1.6)</b> — the
+    two types where G&sup2;PO pulls furthest ahead of GiGPO. Our deficit against G&sup2;PO is therefore
+    concentrated precisely where G&sup2;PO's own advantage over GiGPO is concentrated. That is consistent with
+    the missing ingredient being whatever G&sup2;PO does that GiGPO does not, and the anchor is one of the
+    things on that list. It is consistency, not evidence — the arm is what tests it.</p>
+  </div>
+
+  <h3 style="margin-top:38px">The grouping statistics G&sup2;PO published, against ours</h3>
+  <p style="color:var(--ink-2); max-width:70ch; margin-top:8px">G&sup2;PO's Appendix D reports the two quantities
+  this arm moves, on the same benchmark and the same base model. This is the closest thing to a direct check that
+  the repaired anchor reproduces their grouping regime.</p>
+  <div class="scroll" style="margin-top:14px">
+    <table style="min-width:700px">
+      <colgroup><col><col><col><col class="ourcol"><col></colgroup>
+      <thead><tr><th>statistic</th><th>base <span class="mono">ccpo-global</span></th><th>+ obs_repair</th><th class="ourhead">+ both flags</th><th>G&sup2;PO published</th></tr></thead>
+      <tbody>
+        <tr><td class="dim">mean state-group size</td><td><span class="m">8.44</span></td><td><span class="m">8.03</span></td><td><span class="m">5.51</span></td><td><span class="m">~5</span></td></tr>
+        <tr><td class="dim">steps in a size-1 group</td><td><span class="m">4.0%</span></td><td><span class="m">2.8%</span></td><td><span class="m">5.4%</span></td><td><span class="m">8.1%</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="tbl-cap">G&sup2;PO, Appendix D: &ldquo;the average group size for both WebShop and ALFWorld &hellip; is
+  around 5&rdquo;, and Figure 7 gives &ldquo;only 11.9% and 8.1% of steps in WebShop and ALFWorld, respectively,
+  have a group size of 1.&rdquo; Same benchmark, same Qwen2.5-1.5B-Instruct, same group size N=8, same lr 1e-6,
+  same 0.1 invalid-action penalty.</div>
+
+  <div class="callout" style="margin-top:20px">
+    <div class="lbl">Both statistics move toward G&sup2;PO, and only with both flags</div>
+    <p>Mean group size <b>8.44 &rarr; 5.51</b> against their ~5, and the size-1 share <b>4.0% &rarr; 5.4%</b>
+    against their 8.1% (live FLASH arm; the Triton run gave 5.35 and 6.3%, closer still). Neither the base nor obs_repair alone is close on either quantity — obs_repair alone moves
+    the singleton share <em>away</em> from G&sup2;PO. This is the strongest independent support the arm has: two
+    quantities G&sup2;PO published, both landing near their values only when the anchor is constructed the way
+    G&sup2;PO constructs it.</p>
+  </div>
+
+  <div class="callout warn" style="margin-top:14px">
+    <div class="lbl">Three things that keep this from being conclusive</div>
+    <p><b>1.</b> Theirs are dynamics over a 100-iteration run; ours are step 1. Their own text says ALFWorld group
+    size <em>rises</em> during training, so their step-1 values would sit below 5 and above 8.1% — meaning we may
+    still be under-splitting rather than matching. <b>2.</b> Our step-1 row came from the unpaired 2-GPU launch
+    (&sect;08), so the magnitudes carry that confound; only the direction is protected by &sect;06. <b>3.</b>
+    Grouping resemblance is not accuracy. <span class="m">ccpo-hardedge</span> matched a target structure and moved
+    held-out by &minus;0.01. This table raises the prior; only the step-20/50/100 evaluations settle it.</p>
+  </div>
+</section>
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">08 — the confound, stated precisely</div>
+    <h2>Three things changed at once, and each alone is sufficient</h2>
+    <p>The comparator was produced on a different machine. This is not a small numerical detail in an agentic
+    setting, and it is worth being exact about why.</p>
+  </div>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th>axis</th><th>comparator arms</th><th>this arm</th><th>does it decorrelate rollouts?</th></tr></thead>
+      <tbody>
+        <tr><td class="dim">architecture</td><td><span class="m">RTX PRO 6000 Blackwell, sm_120</span></td><td><span class="m">A100-SXM4-80GB, sm_80</span></td><td><span class="yes">yes, alone</span></td></tr>
+        <tr><td class="dim">attention backend</td><td><span class="m">TRITON_ATTN</span></td><td><span class="m">TRITON_ATTN</span> (same choice)</td><td>same choice, <b>different compiled kernel</b> — Triton JITs per arch</td></tr>
+        <tr><td class="dim">data-parallel width</td><td>4 engines &times; 32 seq</td><td>2 engines &times; 64 seq</td><td><span class="yes">yes, alone</span></td></tr>
+        <tr><td class="dim">tensor parallel</td><td><span class="m">tp=1</span></td><td><span class="m">tp=1</span></td><td><span class="no">no — nothing is sharded</span></td></tr>
+        <tr><td class="dim">env construction</td><td><span class="m">(seed, 16, group_n=8)</span></td><td><span class="m">(seed, 16, group_n=8)</span></td><td><span class="no">no — same 128 games</span></td></tr>
+        <tr><td class="dim">weights at step 1</td><td>base checkpoint</td><td>base checkpoint</td><td><span class="no">no — bitwise identical</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="tbl-cap">Verified rather than assumed: <span class="m">tensor_model_parallel_size=1</span> appears in
+  both <span class="m">run.sh</span> files, so the earlier &ldquo;sharding&rdquo; explanation was wrong — no
+  parameter is split across cards. The data-parallel split is confirmed by the metrics:
+  <span class="m">global_seqlen/mean</span> went 898,233 &rarr; 1,846,313 (&times;2.06) while
+  <span class="m">perf/total_num_tokens</span> held at 3.59M &rarr; 3.69M (&times;1.03) — same total work, half the
+  workers, double each. <span class="m">TRITON_ATTN</span> has no capability gate in vLLM 0.11
+  (<span class="m">platforms/cuda.py:321</span>), so it is honoured on sm_80.</div>
+
+  <div class="ev" style="margin-top:20px">
+    <div class="card">
+      <div class="tag"><span class="id">mechanism i</span><span class="verdict v-warn">RNG position</span></div>
+      <h3>No per-request seed exists</h3>
+      <p>The engine is constructed with <span class="m">seed=0</span>, but the resolved sampling parameters —
+      read from this run's own log — are
+      <span class="m">{n:1, logprobs:0, max_tokens:512, detokenize:False, temperature:1.0, top_k:-1, top_p:1.0,
+      ignore_eos:False}</span>. <b>No <span class="m">seed</span> key.</b> Sampling therefore draws from one
+      engine-level generator in scheduling order, and a prompt sitting 12th in a 32-sequence batch lands
+      elsewhere in a 64-sequence one.</p>
+    </div>
+    <div class="card">
+      <div class="tag"><span class="id">mechanism ii</span><span class="verdict v-warn">float non-associativity</span></div>
+      <h3>Batch shape selects kernels</h3>
+      <p>Larger per-engine batches change GEMM and attention tile shapes and reduction orders; a different
+      architecture changes the tensor-core instructions and the Triton codegen outright. Logits differ in the
+      last bits — enough to flip a token near a decision boundary.</p>
+    </div>
+    <div class="card">
+      <div class="tag"><span class="id">amplifier</span><span class="verdict v-crit">chaotic, all-or-nothing</span></div>
+      <h3>One token ends the pairing</h3>
+      <p>A flipped token changes the action, which changes the observation, which changes every prompt after it.
+      Over ≤50 turns the trajectories become independent draws. <b>A second cause adds nothing on top of the
+      first</b>, so the 7-vs-14 success gap cannot be apportioned between hardware and batch width, and no
+      further analysis recovers it. 7 vs 14 of 128 is ~2.3 sd at p&asymp;0.08 — it needs no bug to explain.</p>
+    </div>
+  </div>
+
+  <div class="callout" style="margin-top:18px">
+    <div class="lbl">What still holds — and it is the part that matters</div>
+    <p><span class="m">build_alfworld_envs(path, seed, train_batch_size=16, group_n=8)</span> has <b>no GPU-count
+    dependence</b>, so both arms play the same games. Pairing exists to control task difficulty, and that control
+    survives. Hardware acts like a <b>seed change — variance, not bias</b>. Held-out comparisons at matched steps
+    remain meaningful; single-step rollout equality does not.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">09 — one training step on this box</div>
+    <h2>What actually runs</h2>
+  </div>
+
+  <div class="pipe">
+    <div class="pstep"><div class="pnum"><div class="n">1</div><div class="stem"></div></div>
+      <div class="pbox"><h4>Sample tasks &amp; replicate</h4>
+      <p><span class="m">16</span> ALFWorld games from the train split, each replicated <span class="m">&times;8</span>
+      → <span class="m">128</span> concurrent episodes, one Ray actor apiece. Built from
+      <span class="m">(seed, 16, 8)</span> — independent of GPU count.</p></div></div>
+
+    <div class="pstep"><div class="pnum"><div class="n">2</div><div class="stem"></div></div>
+      <div class="pbox"><h4>Multi-turn rollout (≤50 turns)</h4>
+      <p>Prompt = task + last-2 history + observation + admissible actions → ≤<span class="m">512</span> tokens of
+      <span class="m">&lt;think&gt;…&lt;/think&gt;&lt;action&gt;…&lt;/action&gt;</span> → parser → env reward
+      (success 10 / invalid −0.1). Rollout temp <span class="m">1.0</span>; validation temp
+      <span class="m">0.4</span>. Two vLLM engines, 64 sequences each.
+      <b>254 s of the 527 s step.</b></p></div></div>
+
+    <div class="pstep"><div class="pnum"><div class="n">3</div><div class="stem"></div></div>
+      <div class="pbox ours"><h4>Build the anchor &mdash; the only thing this arm changes</h4>
+      <p>For each of the 128 environments: append the admissible-action block
+      (<span class="m">ACG_ANCHOR_AFF</span>), then apply the repair
+      (<span class="m">ACG_OBS_REPAIR</span>) — skip the history append on
+      <span class="m">"Nothing happens"</span>, and join the last two entries when the predecessor began with
+      <span class="m">"You heat" / "You cool" / "You clean" / "You turn on"</span>. Emitted as
+      <span class="m">anchor</span>, alongside the untouched <span class="m">text</span>.</p></div></div>
+
+    <div class="pstep"><div class="pnum"><div class="n">4</div><div class="stem"></div></div>
+      <div class="pbox"><h4>Flatten &amp; group</h4>
+      <p>≈<span class="m">6,144</span> occurrences <span class="m">u=(traj i, turn t)</span>. Node keys built from
+      the anchor; <span class="m">VAL</span>, <span class="m">NODE</span>, <span class="m">NEXT</span> follow
+      (&sect;02). <span class="m">&gamma;=0.95</span>.</p></div></div>
+
+    <div class="pstep"><div class="pnum"><div class="n">5</div><div class="stem"></div></div>
+      <div class="pbox"><h4>Two advantage terms, one scale</h4>
+      <p>Episode term (group-relative outcome) + step term (successor value under
+      <span class="m">target=nextnode</span>, global gate, <span class="m">edge_w=1.0</span>), both under
+      <span class="m">mean_std_norm</span> so <span class="m">adv_ep_over_cc &asymp; 1</span>.</p></div></div>
+
+    <div class="pstep"><div class="pnum"><div class="n">6</div><div class="stem"></div></div>
+      <div class="pbox"><h4>PPO update, then evaluate every 5 steps</h4>
+      <p>Token-level PPO, <span class="m">lr 1e-6</span>, <span class="m">kl_loss_coef 0.01</span> low-var KL.
+      Held-out = 128 rows of <span class="m">test.parquet</span> in two chunks of 64.
+      <b>131 s update, 15 s advantage.</b></p></div></div>
+  </div>
+
+  <h3 style="margin-top:34px">The shipped configuration</h3>
+  <div class="scroll" style="margin-top:12px">
+    <table style="min-width:640px">
+      <thead><tr><th>setting</th><th>value</th><th>note</th></tr></thead>
+      <tbody>
+        <tr><td class="dim">obs_repair</td><td><span class="m">1</span></td><td>repairs B and A</td></tr>
+        <tr><td class="dim">anchor_aff</td><td><span class="m">1</span></td><td>repair C — H-AE, added after the previous launch</td></tr>
+        <tr><td class="dim">ccpo_gate</td><td><span class="m">global</span></td><td>bucket = whole task; affinity does the weighting</td></tr>
+        <tr><td class="dim">ccpo_target</td><td><span class="m">nextnode</span></td><td>successor value, not return-to-go</td></tr>
+        <tr><td class="dim">ccpo_edge_w</td><td><span class="m">1.0</span></td><td>the term the 70.3 &rarr; 79.7 jump is attributed to</td></tr>
+        <tr><td class="dim">ccpo_phi / rho / tau</td><td><span class="m">hidden+ctx / 0.59 / 0.15</span></td><td>matched to the 79.7% arm</td></tr>
+        <tr><td class="dim">ccpo_shrink / whiten</td><td><span class="m">eb / 3</span></td><td>matched to the 79.7% arm</td></tr>
+        <tr><td class="dim">total_epochs</td><td><span class="m">100</span></td><td>fresh — no checkpoint survived the host move</td></tr>
+        <tr><td class="dim">gpus</td><td><span class="m">2,3</span></td><td>GPUs 0–1 carry another tenant's live job</td></tr>
+        <tr><td class="dim">train_batch_size</td><td><span class="m">16</span></td><td>divides 2 cleanly, so the arm stays comparable</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="tbl-cap">Config diff against the stopped <span class="m">ccpo-anchor-20260909</span> is exactly two
+  lines: <span class="m">trainer.experiment_name</span> and
+  <span class="m">trainer.n_gpus_per_node 4 &rarr; 2</span>. Every <span class="m">ACG_*</span> flag, batch size and
+  hyperparameter is identical.</div>
+
+  <h3 style="margin-top:34px">Measured cost on 2 &times; A100</h3>
+  <div class="scroll" style="margin-top:12px">
+    <table style="min-width:640px">
+      <thead><tr><th>quantity</th><th>this arm (2 &times; A100, FLASH_ATTN)</th><th>comparator (4 &times; Blackwell, Triton)</th></tr></thead>
+      <tbody>
+        <tr><td class="dim">time per step</td><td><span class="m">527 s</span></td><td><span class="m">407 s</span></td></tr>
+        <tr><td class="dim">projected 100 steps</td><td><span class="m">~14.6 h</span></td><td><span class="m">~11.3 h</span></td></tr>
+        <tr><td class="dim">generation share</td><td><span class="m">254 s</span></td><td><span class="m">206 s</span></td></tr>
+        <tr><td class="dim">per-rank tokens</td><td><span class="m">1,846,313</span></td><td><span class="m">898,233</span></td></tr>
+        <tr><td class="dim">total tokens</td><td><span class="m">3,692,626</span></td><td><span class="m">3,592,932</span></td></tr>
+        <tr><td class="dim">pids held</td><td><span class="m">~7,075 / 8,192</span></td><td><span class="m">7,738 / 8,192</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="tbl-cap">Only 1,117 pids of headroom remain, so <b>nothing may be launched alongside this arm</b> — a
+  second Ray cluster is the documented silent death one line after
+  <span class="m">Started a local Ray instance</span>. The ~25 h figure feared for a 2-GPU arm was based on
+  Blackwell timings and proved pessimistic.</div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">10 — how this arm will be judged</div>
+    <h2>Held-out only, at three pre-registered points</h2>
+  </div>
+
+  <div class="scroll">
+    <table style="min-width:640px">
+      <thead><tr><th>step</th><th>comparator</th><th>rule</th></tr></thead>
+      <tbody>
+        <tr><td class="dim">20</td><td><span class="m">21.1%</span></td><td><b>Abort</b> below ~<span class="m">11%</span> — 2 SE under base.</td></tr>
+        <tr><td class="dim">50</td><td><span class="m">50.0%</span></td><td>Continue only if at or above.</td></tr>
+        <tr><td class="dim">100</td><td><span class="m">79.7%</span></td><td>The headline comparison. Single seed on both sides.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout crit" style="margin-top:20px">
+    <div class="lbl">Structural gain is not accuracy — this has already burned us once</div>
+    <p><span class="m">ccpo-hardedge</span> vs <span class="m">ccpo-global</span> moved
+    <span class="m">effect_rel</span> by a factor of a hundred and moved held-out success by
+    <b>&minus;0.01 points</b> over nine paired evaluations. Every grouping statistic in &sect;05 is therefore
+    <b>diagnostic only</b>. Do not promote this arm on <span class="m">n_buckets</span>,
+    <span class="m">singleton_frac</span> or <span class="m">effect_rel</span>.</p>
+  </div>
+
+  <div class="callout warn" style="margin-top:14px">
+    <div class="lbl">Two caveats to settle at the first evaluation</div>
+    <p><b>1.</b> The shared-draw property — validation envs are Ray actors sized by
+    <span class="m">val_batch_size</span>, not by GPU count, so the draw should match. The code says it holds;
+    it has not been measured on this box. Confirm at step 5 before treating any comparison as paired.
+    <b>2.</b> Do not quote a <span class="m">stepN-best</span> number. Best-checkpoint selection takes the maximum
+    of a noisy series and is biased up by ~1.5 sd; report the mean over evaluations.</p>
+  </div>
+</section>
+
+<div class="foot">
+  <p><b>ccpo-anchor-2gpu-20260909</b> — hypotheses H-AD (anchor repair) and H-AE (admissible-action identity).
+  Sources: <span class="mono">patches/verl-agent/agent_system/environments/env_manager.py:236-256</span>,
+  <span class="mono">ccpo/core_ccpo.py:395-416, 467-520</span>,
+  <span class="mono">patches/verl-agent/verl/trainer/ppo/ray_trainer.py:447-453</span>,
+  <span class="mono">tests/test_obs_repair.py</span>. Reference implementation:
+  <span class="mono">baselines/G2PO/agent_system/environments/env_manager.py:132-178</span>.</p>
+  <p style="margin-top:10px">Step-1 rows for the comparator arms are preserved in git at
+  <span class="mono">9a3bd6b</span> (obs_repair only) and in
+  <span class="mono">experiments/ccpo-global-20260907/outputs/metrics.jsonl</span> (base); the obs_repair-only
+  working tree was truncated by the both-flags relaunch and holds nothing.</p>
+</div>
+
+</div>
+</body></html>

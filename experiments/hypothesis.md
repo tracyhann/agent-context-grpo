@@ -150,7 +150,47 @@ run. The live-path test catches that class of bug in five seconds.
 G2PO's harness the arm needs `obs_repair=1 anchor_aff=1`. Ablate the halves later, only
 if the pair moves the number.
 
-### [!!! RUNNING — `ccpo-anchor-20260909`] H-AD. G2PO repairs the anchor; we never did
+### [RESULT — NULL on held-out; `ccpo-anchor-2gpu-20260909`, 100 steps, 20 evals] H-AD. G2PO repairs the anchor; we never did
+
+> **RESULT 2026-09-09.** Ran to completion as `ccpo-anchor-2gpu-20260909` (2xA100,
+> FLASH_ATTN, both flags). **Twenty paired evaluations against `ccpo-global-20260907`:
+> mean delta +1.72 pts, sd 6.36, SE 1.42 — 1.2 SE, not significant.** Four ways of
+> summarising it disagree in sign and all sit inside +/-1.7:
+>
+> | statistic | value |
+> |---|---|
+> | all 20 evaluations | **+1.72** (sd 6.36) |
+> | trimmed of base's 3 erratic draws (30/40/55) | **+0.78** |
+> | converged window, steps >=70 (7 evals) | **-0.11** |
+> | converged window, steps >=80 (5 evals) | **+1.56** |
+> | step-100 endpoint | 82.8% vs 79.7% = **+3.1** |
+>
+> **The anchor repair does not measurably change held-out accuracy**, despite moving
+> every grouping statistic substantially: `n_buckets` +47% (758 -> 1,116), mean node
+> size 8.44 -> 5.51, singleton fraction 0.298 -> ~0.40 by end of run. **This is the
+> second time a large structural change to the grouping bought nothing** — see
+> `ccpo-hardedge`, which moved `effect_rel` a hundredfold for -0.01.
+>
+> **Consequence: the last structural difference from G2PO is excluded.** Config
+> (H-AB), eval protocol, split, training length, context conditioning, memory and now
+> the anchor are all ruled out. **What remains is the estimator itself, which makes
+> H-AB — running G2PO on our harness — the only way left to attribute the 15-point
+> gap.**
+>
+> **Do not quote 82.8% as a win.** It is a single 128-game draw (SE +/-3.3) and it is
+> also the run maximum; the series ran 60.9 -> 76.6 -> 70.3 -> 78.9 -> 79.7 -> 82.8
+> with sd 6.36 across evaluations. The endpoint comparison is legitimate (79.7 is also
+> a step-100 value) but it is one draw against one draw.
+>
+> **Every delta above is CROSS-HARDWARE** — base on 4x Blackwell/Triton, this arm on
+> 2x A100/FLASH_ATTN. `ccpo-global-fa-20260909` is now running the identical base
+> config on the same GPUs and backend to give the first properly paired comparison.
+> Treat the numbers above as provisional until it lands.
+>
+> Per-step trajectory and the full comparison are in
+> `experiments/ccpo-anchor-2gpu-20260909/docs/method.html`.
+
+
 
 H-AB closed off config, eval protocol, split, training length, context conditioning,
 memory and the estimator, leaving "a harness difference outside those keys" as one of
@@ -304,6 +344,233 @@ says which is which, so the section can be read without opening every one.
 divided A_CC by sigma, damping HIGH-VARIANCE neighbourhoods. H-S weights by reliability,
 damping POORLY-SAMPLED ones. The two disagree precisely where variance and support are
 both high, so -2.08 on the first says nothing about the second.
+
+
+### [OPEN — untested, measured on `ccpo-anchor-2gpu-20260909`] H-AG. **The uncertainty apparatus is inert in the shipped config** — λ is pinned and J is constant
+
+Read the dump before proposing anything else about uncertainty. Every uncertainty
+quantity in this file describes the **baseline**, and under the shipped configuration
+(`ccpo_gate=global`, `ccpo_target=nextnode`) both of the dials that were supposed to
+vary do not.
+
+**λ is pinned at 1.0 by construction.** `core_ccpo.py:731-739`:
+
+```python
+if _GATE == "global":
+    # ... the soft kernel IS the gate, so there is nothing to shrink toward
+    lam = 1.0
+```
+
+Measured over `ccpo_samples.csv`, **31,104 occurrences across steps 1–5: `lam` = 1.0000
+on 100% of them.** The empirical-Bayes rule is still computed as a diagnostic and would
+have given `lam_eb_obs` = 0.037, firing on 8.6% of occurrences; `lam_pooled_obs` = 0.000.
+So the shrinkage machinery this file spends thousands of words on is **switched off in
+the arm that produced 79.7%**, deliberately and with a documented reason.
+
+**J is constant.** `J` is the count of distinct reference trajectories. Under the global
+gate the bucket is the whole task, so every occurrence sees all seven siblings:
+**`J` = 7.0 on all 31,104 rows, every step.** Not "mostly 7" — exactly 7, always.
+
+| quantity | under the hard gate (`gate-probe-20260907`) | under the shipped global gate |
+|---|---|---|
+| `J` | varies; **13.1% at J≤3** | **constant at 7** |
+| `n_eff` | — | mean 6.27, sd 0.79, p10 5.40, **0.94% at ≤3** |
+| `lam` | 0.011 when free to choose | **1.000, pinned** |
+
+**The consequence for H-S.** H-S proposes `w_u = J_u/(J_u + c)`. Under the shipped gate
+`J_u` is a constant, so **that weight is a constant and the proposal is a no-op** — it
+rescales every occurrence identically, which the advantage normalisation then removes.
+H-S's supporting measurement (13.1% of occurrences at J≤3, reliability 1.36× between
+J≤3 and J≥6) came from `gate-probe-20260907`, which ran the **hard** gate. It does not
+transfer to the configuration we actually ship.
+
+H-S is not refuted — the epistemic idea is sound. It is **mis-specified for the current
+gate** and must be respecified on a quantity that still varies. `n_eff` is the honest
+candidate on the baseline side, but its spread has largely collapsed too (sd 0.79 on a
+max of 7, under 1% below 3), so the upside there is smaller than H-S estimated. The
+quantity with real spread is on the **target** side — see H-AH.
+
+**Test — offline, no GPU.** Recompute A_CC over the existing dump with (a) `lam` free
+under `eb_hier` instead of pinned, and (b) `w = n_eff/(n_eff + c)`. Report variance of
+A_CC and its correlation with the target. Neither is expected to move much; the value
+of the test is retiring two ideas cheaply rather than spending an arm on them.
+
+
+### [PREMISE CONFIRMED offline — the weighting itself still untested] H-AH. **The target carries the uncertainty, and nothing prices it**
+
+> **First measurement, 2026-09-10.** Ran on `ccpo-global-fa-20260909`'s dump — 36 steps,
+> **133,123 usable occurrences**, no GPU time. The `g_cur`/`g_next` columns added to
+> `ACG_CCPO_DUMP` for exactly this.
+>
+> **Target precision varies ~5.8x with support, and the estimator ignores it.**
+> Deviation of a target from its (step, task) reference mean, by successor-node size:
+>
+> | \|G_next\| | n | \|dev\| self-incl | \|dev\| **leave-node-out** |
+> |---|---|---|---|
+> | 1 | 5,603 | 1.0268 | **1.1844** |
+> | 2-3 | 9,518 | 0.8682 | 1.0108 |
+> | 4-7 | 14,747 | 0.6855 | 0.8071 |
+> | 8-15 | 19,433 | 0.4911 | 0.5861 |
+> | 16-31 | 19,267 | 0.3118 | 0.3990 |
+> | 32-63 | 14,680 | 0.2287 | 0.3229 |
+> | 64-127 | 17,933 | 0.2104 | 0.3513 |
+> | 128+ | 31,942 | 0.0860 | **0.2035** |
+>
+> `corr(log|G_next|, |dev|) = -0.351` leave-node-out (-0.361 self-inclusive).
+>
+> **The leave-node-out column is the one to read.** Occurrences sharing a successor node
+> share the exact same target value, so `(step, task, target)` identifies the node and the
+> whole node can be removed from its own reference mean. Without that, large nodes look
+> precise merely because they *dominate* the mean. The correction cut the effect from 12x
+> to 5.8x and left the monotone decline intact — so this is estimator precision, not
+> self-inclusion.
+>
+> **Two things this does NOT establish.** (1) That weighting by `|G_next|` improves
+> learning — a noisier target is not automatically a worse one to learn from. (2) A
+> residual confound survives offline: small nodes may be genuinely unusual states with
+> genuinely extreme values, not noisy estimates of typical ones. Only an arm separates those.
+>
+> **Correction to the size estimate below.** The occurrence-weighted distribution is far
+> heavier-tailed than the per-node statistics imply: mean **67.9**, median 32, p90 175,
+> max 276, against a per-node mean of 8.08 — the inspection paradox, since a random
+> occurrence usually sits in a large node. **Only 4.1% of occurrences have a singleton
+> target** (matching the 4.0% derived independently for the base config). So the claim
+> "predicted effect larger than H-S's" is half right: the *range* of support is much
+> wider, but the poorly-supported *fraction* is small. Upside is concentrated in a thin
+> low-support tail, and H-AJ's singleton population is correspondingly small.
+
+
+
+The step advantage is `A ∝ TGT − baseline`. This file models the noise in the
+**baseline** exhaustively and the noise in the **TARGET** not at all.
+
+Under `ccpo_target=nextnode`:
+
+```python
+VAL[k]  = mean over the |G_k| visits of  γ^(T−t) · R      # core_ccpo.py:409-414
+TGT[i]  = VAL[NEXT[i]] − penalty · invalid[i]
+```
+
+and the read is unweighted — `_successor_values` is literally
+`VAL.get(NEXT[i], 0.0)` (`core_ccpo.py:420`). **A node averaged over 20 visits and a node
+estimated from one trajectory produce equally trusted targets.**
+
+`Var(VAL[k]) ≈ σ²/|G_k|` — G²PO proves exactly this in their Appendix B.1 ("when the
+state group size |G_k| > 1, the variance of the value estimation decreases linearly").
+That is the *stated motivation* for their group-aggregation mechanism, and it is the
+one place the anchor enters the estimator quantitatively.
+
+**And |G_k| has enormous spread** — far more than J or n_eff ever had. At step 1 of the
+live FLASH arm: **1,116 nodes, mean size 5.51, p90 12, 29.8% of nodes singletons**
+(5.4% of occurrences). The stopped Triton run of the identical config gave 1,149 / 5.35 /
+33.9% — so treat the second decimal as noise. Either way the target's precision varies by
+more than an order of magnitude across occurrences and the estimator treats every target
+identically.
+
+**The asymmetry, stated plainly.** We shrink the baseline toward uniform when it is
+noisy — or would, if λ were not pinned — and we use the target at face value however
+noisy it is. That is backwards relative to where the variance actually lives.
+
+**Proposal.** Weight the step term by target support, alone or multiplied with a
+baseline-reliability term:
+
+```
+current:   A = A_EP + w · A_CC          w = 1
+proposed:  A = A_EP + w_u · A_CC        w_u = |G_next(u)| / (|G_next(u)| + c)
+```
+
+**Two weight families, and they differ on singletons — pick deliberately.**
+
+```
+(i)  w_u = G/(G + c)         w(1) = 1/(1+c) > 0    down-weights singletons, keeps them
+(ii) w_u = (G-1)/(G-1 + c)   w(1) = 0              drops them, as G2PO does
+```
+
+Family (i) is the principled inverse-variance form: with `Var(target) ~ sigma^2/G`,
+reliability is `G/(G + sigma^2/tau^2)`, so `c` has a meaning rather than being a knob.
+**It does not nest G2PO** — no value of `c` sends `w(1)` to zero. Family (ii) does, and
+recovers `if len(ids) < 2: continue` exactly at every `c`. Which is right is the empirical
+question H-AJ poses; run both.
+
+**Predicted effect: larger than H-S's**, because the underlying quantity varies over a
+wider range and over a larger fraction of the batch (29.8% of nodes vs H-S's 13.1% of
+occurrences), and because it is not neutralised by the global gate.
+
+**Test — offline first.** The current dump does **not** carry node size; it carries
+`aff` and the gate `bucket` (16 values, one per task) but not `anchor_obs` or |G_next|.
+Add |G_next| to `ACG_CCPO_DUMP` — a one-line change where the CSV row is built
+(`core_ccpo.py:795`) — then on a single batch check whether `|adv_cc|` residual error
+falls with node size. If it does not, the whole idea dies for the cost of one dump.
+
+
+### [OPEN — a prediction about the live arm] H-AI. **`anchor_aff` buys target bias with target variance, and only one side is priced**
+
+This is H-AH aimed at the arm that is currently running, and it makes a falsifiable
+prediction rather than a proposal.
+
+Adding the admissible-action set to the node key is a **strict partition refinement**
+(see the method note for this arm, §06): nodes can only split. Measured at step 1:
+
+| | base `ccpo-global` | +obs_repair | +both flags |
+|---|---|---|---|
+| mean node size | 8.44 | 8.03 | **5.35** |
+| occurrences in singleton nodes | 4.0% | 2.8% | **6.3%** |
+
+By `Var ≈ σ²/|G_k|`, shrinking mean node size from 8.44 to 5.35 raises mean target
+variance by **at least ~1.6×** — at least, because Jensen makes `E[1/|G|] ≥ 1/E[|G|]`
+and the singleton tail also got heavier. **The repair is a bias reduction bought with a
+substantial variance increase, in an estimator with no target-variance control.**
+
+**Prediction.** If `ccpo-anchor-2gpu` underperforms the 79.7% arm, the first suspect is
+this variance, *not* the correctness of the anchor. The remedy would then be H-AH —
+pair the refinement with target-support weighting — rather than reverting `anchor_aff`.
+Concretely: **`anchor_aff` + H-AH should beat `anchor_aff` alone.** If the arm
+*outperforms*, the bias reduction dominated and H-AH is a smaller opportunity than
+stated above.
+
+**Why this could not have been noticed before.** `bucket_singleton_frac` is a fraction
+of NODES (`ray_trainer.py:453` is `(sizes <= 1).mean()`), and reading it as a fraction of
+occurrences overstates the singleton population by ~9×. The occurrence-level row above
+is derived, not logged. **Log it directly.**
+
+
+### [OPEN — cheap, and a real divergence from the reference] H-AJ. **We credit singleton-node targets that G²PO discards**
+
+G²PO zeroes them:
+
+```python
+for ids in members.values():
+    if len(ids) < 2:
+        continue                       # G2PO leaves singleton nodes at 0
+```
+
+That is our port (`core_ccpo.py:449-452`), and H-AF verified the port is faithful. Their
+paper reports the same population from the other side: "only 11.9% and 8.1% of steps in
+WebShop and ALFWorld, respectively, have a group size of 1."
+
+**CCPO does not do this.** Under the global gate `live_frac` = 1.000 — every occurrence
+is credited, including one whose successor node was visited exactly once. Its target is
+a single trajectory's discounted return, unshrunk and unweighted.
+
+So on ~6.3% of occurrences we inject a maximally noisy target where the reference
+injects nothing. **This was never a decision** — it falls out of the global gate
+removing the exact-match test that used to make such occurrences fall dead, and it has
+never appeared in this file.
+
+**Two readings, and they are opposite.** Either we are using data G²PO wastes (a real
+advantage of the soft gate), or we are adding pure variance where they correctly abstain.
+H-AH's weighting spans both, but **only in its (ii) family** — `w = (G-1)/(G-1+c)` is 0 at
+`|G| = 1` and so reproduces G²PO's drop, while the inverse-variance family
+`w = G/(G+c)` never zeroes a singleton at any `c`. An earlier draft of this entry claimed
+the latter nests G²PO; it does not.
+
+**Test.** Free with H-AH's dump change: zero the step term on singleton-target
+occurrences over one batch and re-measure `adv_cc` correlation with the target. This is
+the `c → 0` limit and needs no training run.
+
+**Caution, as ever.** Every quantity above is structural. `ccpo-hardedge` moved
+`effect_rel` a hundredfold and held-out success by −0.01. None of H-AG through H-AJ may
+be promoted on grouping statistics alone.
 
 
 ### [RESULT — passes its kill rule, but the mechanism is null] H-AC. `ccpo-cheapmem` — the digest at a twentieth of the cost
@@ -672,6 +939,12 @@ nothing to be uncertain about because there is no signal.
 **What may still be worth one arm:** epistemic weighting (H-S). Predicted effect
 remains small; it is variance reduction on the ~13% of occurrences with J≤3.
 
+**Correction (2026-09-09, see H-AG).** That ~13% figure is a **hard-gate** measurement.
+Under the shipped global gate `J` is constant at 7 and `lam` is pinned at 1.0, so both
+dials in the table above are inert as configured — the epistemic column is not merely
+untested, it is currently unreachable. The live epistemic quantity is **target** support
+`|G_next|`, which has an order of magnitude of spread and no weighting at all: H-AH.
+
 ---
 
 ### [RESOLVED — ran as ccpo-gatedmem, killed at step 20] H-Y. **Uncertainty-gated memory** — spend the digest only where the agent is lost
@@ -976,7 +1249,14 @@ R² 0.00013 — but it is the one remaining channel the current φ cannot see, s
 minutes to measure beats 11 hours to guess.
 
 
-### [OPEN — untested] H-S. **Uncertainty as a weight on A_CC, not a choice between baselines** — the reframing that survives
+### [MIS-SPECIFIED under the shipped gate — see H-AG] H-S. **Uncertainty as a weight on A_CC, not a choice between baselines** — the reframing that survives
+
+> **Read H-AG first.** The weight below is `w_u = J_u/(J_u + c)`, and under the shipped
+> `ccpo_gate=global` **`J_u` is constant at 7 on every occurrence of every step**
+> (31,104 rows checked). A constant weight is a no-op. The supporting table below was
+> measured under the **hard** gate, where J varies, and does not transfer. The epistemic
+> idea survives; this specification of it does not. H-AH carries it to the target side,
+> where the underlying quantity still varies.
 
 Every uncertainty result in this file is about **whether to trust φ's neighbourhood
 over the uniform one**. That question is settled and the answer is "don't": τ² ≈ 4e-6,
@@ -1441,7 +1721,42 @@ earlier from the opposite direction (great ICC, 95% dead).
 
 ---
 
-### [ ] H-K. **The nextnode target hollows out the anchor gate** — the real finding
+### [MEASURED 2026-09-10 — confirmed, and it explains both structural nulls] H-K. **The nextnode target hollows out the anchor gate** — the real finding
+
+> **RESULT.** Re-measured offline on `gate-probe-20260907/outputs/grouping.jsonl`
+> (6,912 occurrences, 6,410 usable) with the **leave-one-TRAJECTORY-out** rule the
+> estimator actually uses — the dump carries both targets, `G` (return-to-go) and
+> `target` (successor value), so the two are directly comparable on the same rows:
+>
+> | target | Var resid, task only | Var resid, + anchor gate | R2 gain |
+> |---|---|---|---|
+> | return-to-go `G` — GiGPO's | 7.0379 | 6.5922 | **+0.0633** |
+> | nextnode `V(next)` — **ours** | 1.9521 | 2.0184 | **-0.0339** |
+>
+> Under GiGPO's target the anchor gate explains **+6.3%** of residual variance. Under
+> the successor-value target we run it is **-3.4%** — conditioning on the anchor makes
+> the baseline **worse than ignoring the observation entirely**. The figures recorded
+> when this entry was written were +0.043 and -0.005; under the correct LOO rule the
+> split is wider on both sides. `analyse_gate.py` independently scores the
+> `(task, obs)` gate at **ICC -0.0398**, negative against its permutation null.
+>
+> **This is the mechanism behind both structural nulls.** `ccpo-hardedge` (gate ON vs
+> OFF, -0.01 over 9 paired evals) and `ccpo-anchor-2gpu` (anchor repaired vs raw, -0.1
+> on the converged mean over 20 evals) were both measuring a knob that
+> `target=nextnode` had already disabled. **No repair to the node key can help when the
+> target is already better off ignoring it.** H-AD could not have succeeded.
+>
+> **What we did wrong:** adopted GiGPO's anchor grouping and G2PO's successor target
+> **separately, never together**. The combination cancels — we kept the machinery that
+> gives GiGPO its edge over GRPO while running a target that neutralises it.
+>
+> **Decisive test:** one arm with `ACG_CCPO_TARGET=return`, everything else fixed.
+> Unlike the anchor arm this has a measured mechanism predicting a real effect rather
+> than a structural change hoping for one. It needs its own comparator, since
+> `target=return` is not the 79.7% configuration — `ccpo-global-fa-20260909` is the
+> paired baseline it wants.
+
+
 
 Same dump. Read the two R² columns above *against each other*:
 
