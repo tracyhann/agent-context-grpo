@@ -17,7 +17,7 @@
 # successor-feature variant (P4) is a separate arm: Phase 1 produced no evidence
 # that predictive similarity beats a null control, so the cheap rung is the
 # scientifically correct thing to run first.
-from collections import defaultdict
+from collections import Counter, defaultdict
 from difflib import SequenceMatcher
 import hashlib
 import os
@@ -518,6 +518,12 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
             target = "return"
         TGT = G
 
+    # Node occupancy |G_k|, for the H-AH diagnostic: the target TGT[i] is
+    # VAL[NEXT[i]], a mean over |G_next| visits, so Var(target) ~ sigma^2/|G_next|
+    # (G2PO Appendix B.1). Nothing in the estimator weights by it; the dump is how
+    # we find out whether it should. Terminal successors have no node -> -1.
+    _node_sz = Counter(NODE) if NODE is not None else Counter()
+
     adv = np.zeros(n, dtype=np.float64)
     lam_all, neff_all, w_all, _rec = [], [], [], []
     _rel_all, _rel_slope = [], []
@@ -793,6 +799,8 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
                 "" if ADV_G2PO is None else float(ADV_G2PO[i]),
                 float(_eff),
                 "" if aff_labels is None else str(aff_labels[i]),
+                int(_node_sz.get(NODE[i], 0)) if NODE is not None else -1,
+                int(_node_sz.get(NEXT[i], -1)) if NEXT is not None else -1,
             ))
 
     # ---- edge term (G2PO component 2), off by default -----------------------
@@ -859,7 +867,8 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
             with open(_dump, "a") as _fh:
                 if _new:
                     _fh.write("step,uid,traj_uid,bucket,level,G,target,lam,b_loo,"
-                              "b_obs,n_eff,J,adv_cc,adv_gigpo,adv_g2po,effect,aff\n")
+                              "b_obs,n_eff,J,adv_cc,adv_gigpo,adv_g2po,effect,aff,"
+                              "g_cur,g_next\n")
                 for _r in _rows:
                     _fh.write(str(step_tag) + "," + ",".join(str(x) for x in _r) + "\n")
         except OSError:

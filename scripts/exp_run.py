@@ -104,6 +104,11 @@ DEFAULTS = {
     # run. It only needs KV cache for ~32 concurrent generations of <=512 tokens;
     # everything else is better left to the trainer's backward pass.
     "gpu_mem_util": 0.25,
+    # vLLM's attention backend. TRITON_ATTN was pinned for Blackwell (sm_120);
+    # on A100 (sm_80) FLASH_ATTN is the mature path and generation is ~50% of the
+    # step, so this is worth measuring rather than assuming. Configurable so the
+    # two can be A/B'd as a single-flag ablation, like every other option here.
+    "vllm_attn_backend": "TRITON_ATTN",
     "lr": 1e-6,
     "kl_loss_coef": 0.01,
     "kl_loss_type": "low_var_kl",
@@ -206,7 +211,7 @@ DEFAULTS = {
 _REFERENCE_DELTA = [
     "base model: Qwen2.5-1.5B-Instruct matches the G2PO/GiGPO/HGPO reference",
     "attention: flash-attn 2.8.3 DOES build for sm_120; trainer runs flash_attention_2\n     with use_remove_padding=True (packed). Falls back to sdpa if the import fails.",
-    "rollout: vllm with VLLM_ATTENTION_BACKEND=TRITON_ATTN (Blackwell)",
+    "rollout: vllm, VLLM_ATTENTION_BACKEND set by the vllm_attn_backend key",
     "tensor_model_parallel_size=1 on 6 GPUs vs their 8 with tp=2",
 ]
 
@@ -381,7 +386,7 @@ def build_env(cfg, exp_dir):
         # is ~2.6x faster per step, so prefer it; sdpa remains the fallback and
         # vllm runs its Triton attention kernels, which JIT per-arch.
         "VERL_ATTN_IMPL": ("flash_attention_2" if _have_flash_attn(cfg["venv_python"]) else "sdpa"),
-        "VLLM_ATTENTION_BACKEND": "TRITON_ATTN",
+        "VLLM_ATTENTION_BACKEND": cfg["vllm_attn_backend"],
         "TRITON_PTXAS_PATH": "/usr/local/cuda/bin/ptxas",
         "VLLM_USE_FLASHINFER_SAMPLER": "0",
         # NOT expandable_segments: vLLM's memory pool (sleep/wake between rollout
