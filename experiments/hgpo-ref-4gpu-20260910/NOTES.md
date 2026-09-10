@@ -55,3 +55,11 @@ arms. It is nearly all threads: 256 `AlfworldWorker` actors (128 train + 128 val
 built at startup by `make_envs`, so evaluation adds no new environment workers) plus ~225
 `ray::IDLE` workers, each carrying dozens of threads. **No second arm can run
 alongside it in this container.** A monitor alerts at 16k, 18k and 19.5k.
+
+## Pace (measured at step 4, 14:00)
+
+**442 s/step**, so 160 steps take ~19.7 h and the run should end around **09:00 on
+2026-09-11**. Step 100 (the budget-matched checkpoint) lands around **01:30 on
+2026-09-11**. That is slower than the ~15-17 h estimated from G2PO (~335 s/step): HGPO
+uses a 4096-token prompt cap against G2PO's 2048. The first three metric rows parsed
+cleanly (73 fields per step: KL loss, pg loss, rewards, advantages, valid-action ratio).

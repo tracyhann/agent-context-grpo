@@ -10,6 +10,8 @@ after the step-50 save; `step50-best` and `step50-last` are kept. See its NOTES 
 `scripts/snapshot_ckpt.sh` is waiting to preserve its step-100 weights as `step100-budget`.
 It uses **~13.8k of 20k pids** (256 env actors, with val envs pre-built, plus idle Ray
 workers), so nothing else can share the container while it runs.
+Pace is **442 s/step**: it ends around **09:00 on 2026-09-11**, with step 100 around
+01:30. The g2po arms queue behind it.
 
 **Disk (09:20)** — the shared filesystem was at 69 GB free (14 TB total, ours ~690 GB).
 `exp_run.py` now waits for >=80 GB before launching (`EXP_MIN_FREE_GB`). A running arm
