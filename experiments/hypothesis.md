@@ -59,6 +59,45 @@ before the action exists.
 
 ## Open — ranked by expected value
 
+### [!!! MEASURED] H-AJ. Admissible actions explain 29.1% of within-node value variance — 5x context
+
+Offline on `ccpo-hardedge`'s 264,058 dumped occurrences. That arm ran the HARD gate, so
+its `bucket` is `(task, observation)` -- G2PO's key minus the admissible-action list.
+Within each node, how much of the variance in `target` (= V(next)) does the admissible
+set explain?
+
+```
+nodes with >=4 occurrences                         12,632
+nodes where `aff` splits them (>=2 distinct sets)   3,924   (31.1%)
+within-node variance in V(next) explained by aff    29.1%
+```
+
+**Compare H-H's ICC of 6.1% for context conditioning.** The admissible-action set carries
+roughly **five times** the signal of the thing this project was built on.
+
+**G2PO already captures it.** Their anchor is `observation + admissible actions`
+(`env_manager.py`), so those splits happen inside their grouping for free. Ours is
+observation-only, so we pool states whose available actions differ -- destroying 29.1% of
+the within-node variance in exactly the quantity the step term predicts. **This is a
+quantified mechanism for part of the 12-20 point gap, not a hypothesis.**
+
+It also explains why `ccpo-hardedge` failed despite using G2PO's key: the key was right,
+but the anchor feeding it was too coarse.
+
+**PRE-REGISTERED prediction for `g2po-harness-20260910`** (running now: their estimator,
+our un-refined anchor, `anchor_aff=0`):
+
+* it should land **between** our CCPO arms (79.7 endpoint) and the reference (91.4) --
+  it gains their estimator but not their state resolution
+* if it matches the reference, the anchor does not matter and H-AJ is a red herring
+* if it matches our arms, the estimator does not matter and the anchor carries everything
+
+**Next arm after it: same config with `anchor_aff=1`.** That is the direct test of whether
+our generic `aff` field recovers what their hand-built anchor gets. Unlike their
+`PATTERNS = ["You heat", "You cool", ...]`, ours needs no domain vocabulary -- which is
+the one place a contribution over G2PO still plausibly exists.
+
+
 ### [SETTLED] H-AH-FINAL. G2PO reproduces on our stack at 91.4/95.3; CCPO loses by 12-20 points
 
 `g2po-ref-20260909` ran their tree to step 100 on our hardware, no deviation from their
