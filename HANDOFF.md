@@ -16,9 +16,11 @@ needs ~25 GB headroom at each save. The G2PO reference was pruned to `step100-be
 completion marker, so **resume by explicit path only** (command in its NOTES).
 
 **Queued** (`scripts/queue_anchor_aff.sh`, one watcher, waits on ccpo-refined):
-`g2po-harness-resume` -> `g2po-aff` -> `g2po-affonly`. (`hgpo-ref` is being
-run in another container, not here -- its results will not land via this queue.) Each waits for the
-previous to exit and host RAM to drain; aborts rather than skipping an arm.
+**`hgpo-ref-4gpu`** (HGPO reference, 160 iters, GPUs 0-3; added 2026-09-10 at the user's
+request, runs FIRST) -> `g2po-harness-resume` -> `g2po-aff` -> `g2po-affonly`. Each waits
+for host RAM >=100G, GPUs 0-3 free and disk >=80G. HGPO is ~15-17 h, so the g2po arms
+start roughly a day out. (`hgpo-ref-20260910` is the separate 2-GPU copy handed to another
+container; this one has its own id so the two never share an output path.)
 
 **The standing results**
 

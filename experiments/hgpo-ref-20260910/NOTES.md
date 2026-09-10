@@ -53,3 +53,8 @@ itself is happening elsewhere, so `outputs/` here will not be populated by this
 container. Compare against it only once its metrics are brought back with the same
 evaluation protocol (128-game `eval_in_distribution`, T=0.4) -- and remember its
 headline is at 160 iterations, not 100.
+
+## 2026-09-10: a 4-GPU copy is chained in THIS container too
+
+At the user's request HGPO was also queued here, after `ccpo-refined`, on GPUs 0-3:
+see `experiments/hgpo-ref-4gpu-20260910`. Same objective config; separate id and output path.
