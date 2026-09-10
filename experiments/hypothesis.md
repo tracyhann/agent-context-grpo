@@ -59,6 +59,35 @@ before the action exists.
 
 ## Open — ranked by expected value
 
+### [!!! CONFIRMED at step 50] H-AH-final. G2PO reaches our 100-step result in 50 steps
+
+```
+step     5   10   15   20   25   30   35   40   45   50
+G2PO    12   12   29   36   47   55   65   67   72   80
+ours    10   11   17   21   21   31   36   23   41   50
+gap     +2   +1  +12  +15  +26  +24  +29  +45  +31  +30
+```
+
+**G2PO's step-50 held-out is 79.7% -- exactly our best arm's FINAL value at step 100.**
+It reaches our best result in half the budget, with 50 steps still to run and 15 points
+to the published 95.0.
+
+**This clears the noise objection that H-AI raised.** The measured within-method spread
+(attempt 1 vs attempt 2, same config and seed) is mean 6.5 / max 14.1 points. A 30-point
+separation is 2-4x that, and unlike the early steps it is sustained across six
+consecutive evaluations. The conservative test -- the WORSE G2PO run against ours -- was
+positive at every step where both existed.
+
+**Caveat that remains.** From step 40 on there is only one G2PO trajectory (attempt 1
+died at 35), so the within-method control no longer runs alongside. The variance estimate
+comes from steps 5-35. At a 30-point gap that does not threaten the conclusion, but a
+precise figure still wants a CCPO replicate.
+
+**Standing conclusion: CCPO is substantially worse than G2PO on identical hardware, data,
+protocol and evaluation draw.** Not a harness artifact -- config verified identical
+(H-AB), harness diff reduced to the two anchor mechanisms (H-AD/H-AE), the KL clamp shown
+inert, and our port of their estimator verified faithful (H-AF).
+
 ### [!!!] H-AI. The accidental replicate: G2PO's own run-to-run spread is ~10 points
 
 The OOM restart produced something we had never had -- **a same-config, same-seed
