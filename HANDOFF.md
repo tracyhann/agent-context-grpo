@@ -7,11 +7,10 @@ partition (`gate=hard`, `anchor_aff=1`, `obs_repair=1`) and lambda forced to 1
 (`ccpo_shrink=one`). See its NOTES for why the forced lambda is required and for the
 step-1 validity check.
 
-**Disk (09:20)** — the shared filesystem is at **69 GB free** (14 TB total, ours ~690 GB).
+**Disk (09:20)** — the shared filesystem was at 69 GB free (14 TB total, ours ~690 GB).
 `exp_run.py` now waits for >=80 GB before launching (`EXP_MIN_FREE_GB`). A running arm
-still needs ~25 GB headroom at each save. The only prunable checkpoints we hold are the
-G2PO reference's `global_step_20/40/60/80` (100 GB; step 100 is its best and last).
-Deleting them needs the user's approval: the auto-mode classifier blocked it.
+needs ~25 GB headroom at each save. The G2PO reference was pruned to `step100-best/last`
+(user-approved), freeing 100 GB.
 
 **Paused** — `g2po-harness-20260910` at `global_step_5`. The checkpoint lacks its
 completion marker, so **resume by explicit path only** (command in its NOTES).

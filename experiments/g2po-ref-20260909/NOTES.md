@@ -122,3 +122,11 @@ Resume from a checkpoint if this attempt also dies:
 
     trainer.resume_mode=resume_path \
     trainer.resume_from_path=/workspace/baselines/G2PO/checkpoints/g2po_reference/g2po-ref-20260909/global_step_N
+
+## Checkpoint pruning (2026-09-10, user-approved)
+
+`save_freq=20` wrote every 20th step (their trainer has no best/last logic). Pruned to the
+project rule: `global_step_100` is both **best** among saved steps (held-out 91.4; 20/40/60/80
+scored 35.9/67.2/85.2/78.1) and **last**. `step100-best` and `step100-last` are symlinks to it;
+the directory keeps its `global_step_100` name so `latest_checkpointed_iteration.txt` and the
+resume path above stay valid. Freed 100 GB on a shared disk that was down to 69 GB free.
