@@ -150,7 +150,35 @@ run. The live-path test catches that class of bug in five seconds.
 G2PO's harness the arm needs `obs_repair=1 anchor_aff=1`. Ablate the halves later, only
 if the pair moves the number.
 
-### [RESULT — NULL on held-out; `ccpo-anchor-2gpu-20260909`, 100 steps, 20 evals] H-AD. G2PO repairs the anchor; we never did
+### [RESULT — NULL, confirmed against a paired same-hardware comparator] H-AD. G2PO repairs the anchor; we never did
+
+> **FINAL 2026-09-10 — the paired comparator landed.** `ccpo-global-fa-20260909` ran the
+> base config on the same 2xA100 / FLASH_ATTN, differing from the anchor arm only in the
+> two anchor flags (step-1 rollouts identical). Converged window, steps >= 70, n=7:
+>
+> | arm | converged mean | sd | step 100 |
+> |---|---|---|---|
+> | `ccpo-global-fa` (flags OFF) | **74.89%** | 3.73 | 82.0% |
+> | `ccpo-anchor-2gpu` (flags ON) | **72.99%** | 8.84 | 82.8% |
+> | `ccpo-global` Blackwell (flags OFF) | 73.10% | 5.83 | 79.7% |
+>
+> **Anchor minus paired comparator, converged: -1.90 pts (SE 2.40, t -0.79).** Over all
+> 20 paired evaluations: -1.45 (t -1.09).
+>
+> **The decisive context: two runs of the SAME config differ by as much.**
+> `global-fa` minus Blackwell, converged: **+1.79**; at matched steps >= 20 the gap ranged
+> **-3.9 to +21.1**. The anchor effect (-1.90) is smaller than the same-config gap. A
+> single pair of runs cannot resolve effects of this size — run-to-run variance, not
+> evaluation noise, dominates.
+>
+> **Verdict: NULL.** A mild-cost reading appeared mid-run (post-startup t -2.38) but the
+> window was chosen after seeing the data and sits inside the same-config spread; it did
+> not survive to the converged window. H-K supplies the mechanism for the null: under
+> `target=nextnode` the anchor carries no usable signal, so repairing it cannot help.
+>
+> **Also established:** the 79.7% config reproduces on 2xA100 / FLASH_ATTN (converged
+> 74.9% vs 73.1%).
+
 
 > **RESULT 2026-09-09.** Ran to completion as `ccpo-anchor-2gpu-20260909` (2xA100,
 > FLASH_ATTN, both flags). **Twenty paired evaluations against `ccpo-global-20260907`:

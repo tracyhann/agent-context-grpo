@@ -253,12 +253,17 @@ anchor      9.4  14.1  18.0  19.5  21.1  21.9  33.6  38.3  45.3  43.8  49.2
 blackwell  10.2  10.9  17.2  21.1  21.1  30.5  35.9  22.7  41.4  50.0  35.2
 
 step         60    65    70    75    80    85    90    95   100
+global-fa  50.8  65.6  71.9  70.3  74.2  75.8  75.8  74.2  82.0
 anchor     49.2  57.0  61.7  60.9  76.6  70.3  78.9  79.7  82.8
 blackwell  41.4  47.7  63.3  68.0  71.9  75.8  75.0  78.1  79.7
 ```
 
-* `global-fa` = `ccpo-global-fa-20260909`: the comparator. 2×A100, FLASH_ATTN, still
-  running at the time of writing — take its final series from its `metrics.jsonl`.
+* `global-fa` = `ccpo-global-fa-20260909`: the comparator. 2×A100, FLASH_ATTN.
+  **Finished: converged mean 74.9% (sd 3.7), step 100 82.0%.** This is the number
+  `ccpo-return` is judged against.
+* **Same-config spread:** `global-fa` and `blackwell` run the identical config, yet differed
+  by **-3.9 to +21.1 points** at matched steps >= 20 (+1.8 on the converged mean). Treat any
+  single-run difference under ~5 points as unresolved.
 * `anchor` = `ccpo-anchor-2gpu-20260909`: 2×A100, FLASH_ATTN. Converged mean 73.0%.
 * `blackwell` = `ccpo-global-20260907`: the original 79.7% arm. 4× Blackwell, Triton.
   Converged mean 73.1%. Its dips at steps 40 and 55 did not reproduce in either later

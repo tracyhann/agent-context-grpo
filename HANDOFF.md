@@ -5,6 +5,13 @@ running process. **The move destroyed every checkpoint** — see the next sectio
 
 ## RESULT — H-AD is NULL, and what it leaves
 
+**FINAL (2026-09-10), paired:** the same-hardware comparator `ccpo-global-fa` finished at a
+converged mean of **74.9%** against the anchor arm's **73.0%** (-1.9, t -0.8). Two runs of
+the *same* config (`global-fa` vs Blackwell) differ by +1.8 converged and by up to 21 points
+at matched steps, so the anchor effect is inside run-to-run noise. **H-AD is null.** The
+cross-hardware figures below are superseded by this paired result.
+
+
 `ccpo-anchor-2gpu-20260909` ran 100 steps with both anchor flags. **Twenty paired
 evaluations vs `ccpo-global-20260907`: mean +1.72 pts, sd 6.36, SE 1.42.** Not
 significant. Converged windows: **-0.11** (steps>=70) and **+1.56** (steps>=80);
@@ -291,8 +298,9 @@ alongside a running arm.
 | `ccpo-memory-20260907` | 22 (stopped) | 9.4% @20 | ungated digest, H-W |
 | `ccpo-cheapmem-20260908` | 20 (stopped) | 16.4% @20 | digest at 192 tok / replace; cost fixed, mechanism null, H-AC |
 | `ccpo-anchor-20260909` | 1 (stopped) | — | anchor repair; stopped for the host move, no checkpoint |
-| `ccpo-anchor-2gpu-20260909` | 100 | **82.8% @100** | **H-AD/H-AE, both anchor flags. NULL: +1.72 pts over 20 paired evals (sd 6.36).** |
-| `ccpo-global-fa-20260909` | **RUNNING** | — | **base config, same box/backend — the paired comparator. The live arm.** |
+| `ccpo-anchor-2gpu-20260909` | 100 | 82.8% @100 | H-AD/H-AE, both anchor flags. **NULL: converged 73.0% vs paired comparator 74.9% (-1.9, t -0.8).** |
+| `ccpo-global-fa-20260909` | 100 | 82.0% @100 | base config, 2xA100/FLASH — the paired comparator. **Converged 74.9%; the 79.7 config reproduces.** |
+| `ccpo-return-hard-20260910` | **RUNNING** | — | **ladder step 1: hard gate + return + uniform (rho=0), raw anchor. The live arm.** |
 
 Published at the same protocol (Qwen2.5-1.5B, ALFWorld, 100 iters, 3 seeds):
 **G²PO 95.0**, GiGPO 86.7 (at *150* iters), HGPO 92.77 (at 160), GRPO 72.8, RLOO 69.7,
