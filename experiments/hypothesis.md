@@ -2696,6 +2696,48 @@ self-corrected to 0.996 within three steps — RL fixed the format unaided.
 
 ## Measurement notes — things that will mislead you
 
+### tau^2 = 0: the estimator switches context OFF by itself, and that is the whole result
+
+The empirical-Bayes shrinkage is
+
+```
+lam = tau^2 / (tau^2 + rho^2 * sigma^2 * (1/n_eff - 1/J))
+```
+
+where `tau^2` is the between-bucket variance the context term exists to explain.
+Measured:
+
+| arm | gate | tau^2 | lam | effect_rel |
+|---|---|---|---|---|
+| `ccpo-global` | global | 4.01e-06 | **1.0000** (FORCED by code) | 0.1185 |
+| `ccpo-hardedge` | hard | **0.00e+00** | **0.0110** | 0.0014 |
+| `ccpo-long` | hard | **0.00e+00** | **0.0000** | 0.0000 |
+
+**Under the hard gate, tau^2 measures exactly zero and lam collapses to ~0.01.** The
+estimator is not malfunctioning -- it is correctly concluding there is no between-bucket
+variance for context to explain, and removing the term. **CCPO's own shrinkage refutes
+CCPO.**
+
+The global gate produced a non-trivial lam only because the code **forces** `lam = 1.0`
+there, bypassing the estimate. So every CCPO result to date is either (a) context
+auto-disabled by shrinkage, or (b) context forced on over an estimate of ~zero signal.
+
+**This nearly caused a repeat error.** `ccpo-refined` was configured as
+`ccpo_gate=hard` + affordance refinement to "fix the design error" -- but under the hard
+gate lam would be 0.011, putting 98.9% of the weight on the plain observation-only
+baseline. It would not have been a context-conditioned method at all; it would have been
+`g2po-affonly` with a vestigial 1% term. **Framing a fix correctly and then configuring
+it into inertness is the same error in a new costume.**
+
+**Added `ACG_CCPO_SHRINK=one`** (`core_ccpo.py:731`), which forces `lam = 1` and
+overrides the EB verdict, so the question "does context help on a GOOD partition?" can be
+asked at all. **Not a defensible production setting** -- it forces a term the data calls
+worthless. Prior on record: H-Q measured phi-weighting inside a bucket at 2-10 R^2 points
+worse than uniform, and the refined partition has smaller buckets (45,978 vs 17,607), so
+phi has less room. Expect harm; a positive result would be the one thing that revives the
+thesis.
+
+
 ### Why our anchor is observation-only: we treated the hard key as the baseline to BEAT
 
 Not an oversight. Traced 2026-09-10:

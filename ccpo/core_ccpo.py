@@ -728,7 +728,23 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
     for _r in _rec:
         i, b_loo, b_obs = _r["i"], _r["b_loo"], _r["b_obs"]
         s2, var_gain, rho_l = _r["s2"], _r["var_gain"], _r["rho"]
-        if _GATE == "global":
+        if shrink == "one":
+            # FORCE lam = 1: full weight on the phi-weighted leave-one-out baseline,
+            # OVERRIDING the empirical-Bayes estimate.
+            #
+            # Why this exists: under the hard gate the EB shrinkage collapses to
+            # lam ~ 0.011 because tau^2 measures 0.00e+00 -- the estimator finds no
+            # between-bucket variance for the context term to explain, and correctly
+            # shrinks it away. That makes "CCPO on a refined partition" untestable:
+            # the estimator switches context off before it can be evaluated.
+            #
+            # `one` overrides that verdict so the question can be asked directly. It is
+            # NOT a defensible production setting -- it forces a term the data says is
+            # worthless. Use it only to test whether context conditioning helps when it
+            # is made to operate on a GOOD partition (H-Q predicts it will hurt:
+            # phi-weighting inside a bucket measured 2-10 R^2 points worse than uniform).
+            lam = 1.0
+        elif _GATE == "global":
             # b_obs here is the uniform mean over the whole task, which measured
             # 0.4248 against the hard gate's 0.4579 -- WORSE. The quantity that
             # measured better (0.4841) is the phi-weighted b_loo. Shrinking toward
