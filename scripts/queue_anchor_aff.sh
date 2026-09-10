@@ -23,3 +23,16 @@ python3 scripts/exp_run.py --name g2po-aff --arm g2po \
   --set obs_repair=1 --set anchor_aff=1 \
   --set early_stop_min_steps=40 --set early_stop_patience=8 2>&1 | tail -2
 echo "LAUNCHED g2po-aff-20260910 (their estimator + our generic anchor refinement)"
+
+# --- then HGPO, once that arm frees memory in turn ---
+sleep 60
+P2=/workspace/experiments/g2po-aff-20260910/outputs/train.pid
+while [ ! -f "$P2" ]; do sleep 60; done
+while kill -0 "$(cat $P2 2>/dev/null)" 2>/dev/null; do sleep 300; done
+sleep 120
+A2=$(free -g | awk '/^Mem:/{print $7}')
+echo "g2po-aff finished; host RAM ${A2}G"
+[ "${A2:-0}" -lt 100 ] && { echo "ABORT hgpo: only ${A2}G free"; exit 1; }
+GPUS=0,1,2,3 bash /workspace/experiments/hgpo-ref-20260910/run.sh &
+echo $! > /workspace/experiments/hgpo-ref-20260910/outputs/train.pid
+echo "LAUNCHED hgpo-ref-20260910 (published 92.77 @160 iters)"
