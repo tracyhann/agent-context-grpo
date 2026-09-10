@@ -44,3 +44,20 @@ room. Five independent measurements (H-AK) put inferred state equivalence at no 
 comparison that isolates a positive contribution from the soft weighting. A win over the
 79.7 arm alone would NOT be enough, since the partition change by itself should account
 for most of any gain.
+
+## Step-1 validity check: PASSED (2026-09-10)
+
+```
+lam_u_mean   1.0000   (ccpo-hardedge 0.0110)   shrink=one took effect
+effect_rel   0.1637   (ccpo-hardedge 0.0014)   context term moves ~16% of |A|
+n_buckets    1172     singleton 0.293          matches ccpo-anchor's refined partition
+tau2         1.10e-03                          see below -- interpretation pending
+```
+
+**This arm genuinely tests context conditioning on a refined partition.** It is not
+`g2po-affonly` in disguise: the context term carries ~117x the weight it did under the
+obs-only hard gate.
+
+**tau2 is nonzero here** (obs-only hard-gate arms averaged exactly 0). Not yet interpreted:
+it is one batch from an untrained policy, and has to be compared like-for-like against
+the other arms' own early steps before it can mean anything.
