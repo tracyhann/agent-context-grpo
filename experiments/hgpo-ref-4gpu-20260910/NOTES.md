@@ -43,3 +43,15 @@ console logger, prepare skipped, explicit checkpoint dir) are listed in `run.sh`
 Chained by `scripts/queue_anchor_aff.sh`: starts after `ccpo-refined` exits and GPUs
 0-3 / RAM / disk are free; the G2PO-harness arms follow it. Expected wall-clock ~15-17 h
 (G2PO's 100 steps took ~9.3 h on 4 GPUs; HGPO has 1.6x the steps and a 4096-token prompt cap).
+
+## Launch (2026-09-10 13:26) and resource footprint
+
+Launched by the queue after ccpo-refined was stopped at step 50 (resource check: host RAM
+265G, GPUs 0-3 free, disk 592G). No vLLM memory warnings in the log. At 13:30, GPU memory
+was 3.6-27 GB per card (of 96 GB).
+
+**Pid footprint: ~13.8k of the container's 20k pids.max**, against ~7.7k for one of our
+arms. It is nearly all threads: 256 `AlfworldWorker` actors (128 train + 128 val, both
+built at startup by `make_envs`, so evaluation adds no new environment workers) plus ~225
+`ray::IDLE` workers, each carrying dozens of threads. **No second arm can run
+alongside it in this container.** A monitor alerts at 16k, 18k and 19.5k.
