@@ -22,8 +22,10 @@ import datetime
 import json
 import os
 import shlex
+import shutil
 import subprocess
 import sys
+import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -511,6 +513,21 @@ def main():
     if a.dry_run:
         print("[exp] dry run; not launching")
         return
+
+    # Disk guard (2026-09-10): the filesystem is shared and another tenant had it at
+    # 69 GB free. An arm holds best + last (~50 GB) and briefly a third during a save,
+    # so a launch into a nearly full disk dies at its first checkpoint, hours in.
+    # Wait (up to 6h) instead. No train.pid is written until launch, so a queue's
+    # wait_done simply keeps waiting.
+    need_gb = int(os.environ.get("EXP_MIN_FREE_GB", "80"))
+    for _ in range(72):
+        free_gb = shutil.disk_usage(ROOT).free // 2**30
+        if free_gb >= need_gb:
+            break
+        print(f"[exp] waiting for disk: {free_gb} GB free, need {need_gb}", flush=True)
+        time.sleep(300)
+    else:
+        sys.exit(f"[exp] ABORT: disk never reached {need_gb} GB free in 6h")
 
     log = os.path.join(exp_dir, "outputs", "train.log")
     full = dict(os.environ, **env)
