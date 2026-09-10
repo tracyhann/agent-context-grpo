@@ -130,3 +130,31 @@ against base's 50.0, and ultimately against `g2po-aff`.
 measure does not move: `lam_eb_obs` mean 0.0413 (0.0424 over steps 1-10, 0.0402 over
 11-20), max 0.0956, 0.037-0.060 across steps 16-20. Below the ~0.2 exception by a factor
 of four. **`ccpo-refined-eb` stays cancelled.**
+
+## VERDICT at step 50: FAIL. Forcing context onto G2PO's partition hurts.
+
+| step | 5 | 10 | 15 | 20 | 25 | 30 | 35 | 40 | 45 | 50 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| ccpo-refined | 7.8 | 7.0 | 14.1 | 14.8 | 22.7 | 25.0 | 28.9 | 20.3 | 25.8 | **36.7** |
+| base | 10.2 | 10.9 | 17.2 | 21.1 | 21.1 | 30.5 | 35.9 | 22.7 | 41.4 | **50.0** |
+| diff | -2.3 | -3.9 | -3.1 | -6.2 | +1.6 | -5.5 | -7.0 | -2.3 | -15.6 | **-13.3** |
+
+* Pooled over all 10 evaluations: **-5.8**, with 9 of 10 negative. Over the window of
+  steps 30-50: **-8.7**. Steps 45 and 50 individually exceed 2SE (±11.6 and ±12.3).
+* The G2PO reference was at 79.7 by step 50, so the gap to SOTA is far larger than the gap to base.
+* By task type, the losses concentrate in clean, cool and heat (-18 to -24 at step 50), plus
+  pick_two (-18). Only look_at_obj is ahead (+7).
+* Validity held throughout: lam = 1.000 on every step, and context carries 17.6% of |A|.
+  So this is a genuine test of the context term, and it did not help.
+* tau2 was positive on 34/50 steps (68%), against 0/130 under the observation-only
+  partition. Once the partition is right, context has real structure to explain. But
+  empirical Bayes would weight it at ~4% (`lam_eb_obs`), and forcing it to 100% costs
+  success rate. **The context structure exists, but it is too weak to act on at full
+  weight.**
+
+**Stopped at step 50** (total_epochs was 100, and early stopping would not fire because
+step 50 was the best yet). This was the pre-registered judgement point, and the user
+queued HGPO to follow it. The trainer and Ray tree were SIGKILLed after
+`latest_checkpointed_iteration.txt` read 50. Checkpoints kept: `step50-best` and
+`step50-last`, the same step. To resume: `resume_from=.../global_step_50` under a NEW
+name, because `launch()` rm -rf's its target directory.

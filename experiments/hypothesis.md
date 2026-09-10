@@ -3310,3 +3310,17 @@ split `eval_in_distribution`, 128 episodes, val temperature 0.4, `do_sample=True
 * **`phi_is_hidden` had an exact-match bug** (`== "hidden"` vs `hidden+ctx`), which
   silently ran `bow` and made the guard metric report a φ failure that was really a
   gating failure. Same bug in the capture gate in `fsdp_workers.py`.
+
+
+### H-AL / ccpo-refined -- FINAL (2026-09-10, step 50): refuted, and harmful at full weight
+
+Forcing lam = 1 on the refined partition (hard gate + anchor_aff + obs_repair) trails base
+at 9 of 10 evaluations: pooled -5.8, window 30-50 -8.7, step 50 36.7 vs 50.0 (-13.3,
+beyond 2SE). The test was valid (lam = 1.000 and context share 17.6% throughout), and the
+refinement did give context something to explain (tau2 > 0 on 68% of steps vs 0% before).
+Empirical Bayes' own weight of ~4% was the right answer: the structure is real but weak,
+and imposing it at full weight replaces a good baseline with a noisier one. **This closes
+the "context conditioning on top of G2PO's partition" route at full weight.** The only
+untested variant is the EB-weighted one (`shrink=eb`), which by construction would stay
+within ~4% of G2PO and cannot beat it by much. The comparator for any future
+partition-side idea is `g2po-aff`, which is queued.

@@ -2,10 +2,12 @@
 
 ## CURRENT STATE — 2026-09-10 (read this before anything below)
 
-**Running** — `ccpo-refined-20260910` on GPUs 0-3: CCPO with context REFINING the
-partition (`gate=hard`, `anchor_aff=1`, `obs_repair=1`) and lambda forced to 1
-(`ccpo_shrink=one`). See its NOTES for why the forced lambda is required and for the
-step-1 validity check.
+**Finished** — `ccpo-refined-20260910` **FAILED** at its step-50 judgement: 36.7 vs base 50.0
+(-13.3, beyond 2SE), pooled -5.8 over 10 evaluations. It was stopped at step 50 by SIGKILL
+after the step-50 save; `step50-best` and `step50-last` are kept. See its NOTES and H-AL FINAL.
+
+**Running / next** — `hgpo-ref-4gpu-20260910` launches from the queue on GPUs 0-3.
+`scripts/snapshot_ckpt.sh` is waiting to preserve its step-100 weights as `step100-budget`.
 
 **Disk (09:20)** — the shared filesystem was at 69 GB free (14 TB total, ours ~690 GB).
 `exp_run.py` now waits for >=80 GB before launching (`EXP_MIN_FREE_GB`). A running arm
