@@ -18,13 +18,20 @@ wait_done() {   # $1 pidfile: wait until it exists and its process has exited
   while kill -0 "$(cat "$1" 2>/dev/null)" 2>/dev/null; do sleep 300; done
   sleep 120
 }
-wait_ram() {    # wait (up to 2h) for >=100G free; abort the queue rather than skip an arm
-  for i in $(seq 1 24); do
+wait_ram() {    # wait for >=100G host RAM AND GPUs 0-3 genuinely free, then return.
+  # GPU check added 2026-09-10: earlier that day another tenant grabbed GPUs 0/1/2/4 the
+  # moment our run released them, and an HGPO run in another container now shares this
+  # host on GPUs 4-5. RAM alone cannot tell us whether 0-3 are ours to take.
+  # Up to 6h: waiting is cheap, and an abort drops every remaining arm.
+  for i in $(seq 1 72); do
     a=$(free -g | awk '/^Mem:/{print $7}')
-    [ "${a:-0}" -ge 100 ] && { echo "host RAM ${a}G ok"; return 0; }
-    echo "host RAM ${a}G < 100, waiting"; sleep 300
+    g=$(nvidia-smi --query-gpu=memory.free --format=csv,noheader,nounits -i 0,1,2,3 | awk '$1>=80000' | wc -l)
+    if [ "${a:-0}" -ge 100 ] && [ "${g:-0}" -ge 4 ]; then
+      echo "resources ok: host RAM ${a}G, GPUs 0-3 free"; return 0
+    fi
+    echo "waiting: host RAM ${a}G (need 100), GPUs 0-3 free ${g}/4"; sleep 300
   done
-  echo "ABORT: host RAM never drained"; exit 1
+  echo "ABORT: resources never drained in 6h"; exit 1
 }
 launch() {      # $1 name, rest = exp_run args
   local n=$1; shift
