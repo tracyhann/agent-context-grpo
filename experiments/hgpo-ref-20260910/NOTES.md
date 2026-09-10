@@ -44,3 +44,12 @@ invalid-action penalty, batch/group sizes, history_length 2, val temperature, te
 
 **Queued, not launched.** Host RAM was 55 GB against the ~90–105 GiB a second arm needs.
 Runs when the queue ahead of it drains.
+
+## Status update 2026-09-10: executed in ANOTHER container
+
+Removed from this container's queue at the user's direction. This directory remains as
+the configuration record (`run.sh`, `config.json`, the deviation list above); the run
+itself is happening elsewhere, so `outputs/` here will not be populated by this
+container. Compare against it only once its metrics are brought back with the same
+evaluation protocol (128-game `eval_in_distribution`, T=0.4) -- and remember its
+headline is at 160 iterations, not 100.

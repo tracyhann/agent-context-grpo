@@ -11,7 +11,8 @@ step-1 validity check.
 completion marker, so **resume by explicit path only** (command in its NOTES).
 
 **Queued** (`scripts/queue_anchor_aff.sh`, one watcher, waits on ccpo-refined):
-`g2po-harness-resume` -> `g2po-aff` -> `g2po-affonly` -> `hgpo-ref`. Each waits for the
+`g2po-harness-resume` -> `g2po-aff` -> `g2po-affonly`. (`hgpo-ref` is being
+run in another container, not here -- its results will not land via this queue.) Each waits for the
 previous to exit and host RAM to drain; aborts rather than skipping an arm.
 
 **The standing results**

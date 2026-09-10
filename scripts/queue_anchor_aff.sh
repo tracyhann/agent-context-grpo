@@ -7,7 +7,7 @@
 #                          G2PO estimator + our plain anchor: estimator vs harness.
 #  2. g2po-aff             + obs_repair=1 anchor_aff=1
 #  3. g2po-affonly         + anchor_aff=1 only -- fully generic, no borrowed PATTERNS
-#  4. hgpo-ref             HGPO from baselines/verl-agent, 160 iterations
+#  (hgpo-ref removed 2026-09-10: running in another container)
 #
 # Names use a fixed --date so the pidfiles waited on are deterministic across midnight.
 set -u
@@ -49,9 +49,4 @@ wait_done experiments/g2po-aff-${D8}/outputs/train.pid
 
 wait_ram
 launch g2po-affonly "${COMMON[@]}" --set obs_repair=0 --set anchor_aff=1
-wait_done experiments/g2po-affonly-${D8}/outputs/train.pid
-
-wait_ram
-GPUS=0,1,2,3 bash experiments/hgpo-ref-${D8}/run.sh &
-echo $! > experiments/hgpo-ref-${D8}/outputs/train.pid
-echo "LAUNCHED hgpo-ref-${D8} (published 92.77 @160 iters)"
+echo "queue complete: last arm (g2po-affonly) launched"
