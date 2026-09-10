@@ -58,6 +58,22 @@ tau2         1.10e-03                          see below -- interpretation pendi
 `g2po-affonly` in disguise: the context term carries ~117x the weight it did under the
 obs-only hard gate.
 
-**tau2 is nonzero here** (obs-only hard-gate arms averaged exactly 0). Not yet interpreted:
-it is one batch from an untrained policy, and has to be compared like-for-like against
-the other arms' own early steps before it can mean anything.
+**tau2 is nonzero here, and the like-for-like comparison says it is not step-1 noise.**
+
+| arm | gate | anchor | tau2@1 | tau2 > 0 on |
+|---|---|---|---|---|
+| **ccpo-refined** | hard | obs + aff + repair | **1.10e-03** | 1/1 steps so far |
+| ccpo-hardedge | hard | obs only | 0 | **0 / 50** |
+| ccpo-long | hard | obs only | 0 | **0 / 80** |
+| ccpo-global | global | obs only | 0 | 1% |
+| ccpo-anchor | global | obs + aff + repair | 0 | 19% |
+
+Every other arm read exactly 0 at step 1. **Compare within a gate**, since tau2 is estimated
+ACROSS buckets and the gate changes what a bucket is (a node under `hard`, a whole task
+under `global`). Within the hard gate: obs-only anchor -> positive on none of 130 steps;
+refined anchor -> positive on step 1. The global-gate arms move the same way (1% -> 19%
+when affordances are added).
+
+**Only one step. Tracked automatically; do not quote until it has run 20+.**
+
+See H-AL in `experiments/hypothesis.md` for what it would imply.

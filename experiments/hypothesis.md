@@ -59,6 +59,44 @@ before the action exists.
 
 ## Open — ranked by expected value
 
+### [EARLY — 1 step] H-AL. The EB shrinkage may have been RIGHT: on a refined partition it could switch context ON itself
+
+H-AK read `tau^2 = 0` as "CCPO's own shrinkage refutes CCPO": under the obs-only hard gate
+the empirical-Bayes lambda collapses to ~0.01 because there is no between-bucket variance
+for context to explain. **That reading assumed the partition was fine.** The first step of
+`ccpo-refined` suggests the partition was the problem:
+
+```
+hard gate, obs-only anchor        tau2 > 0 on   0 / 130 steps   (hardedge + long)
+hard gate, obs+aff+repair anchor  tau2 > 0 on   1 / 1   steps   (ccpo-refined, 1.10e-03)
+global gate, obs only             1% of steps
+global gate, obs+aff+repair       19% of steps
+```
+
+Compared within a gate, since tau2 is estimated across buckets and the gate defines what
+a bucket is.
+
+**If it holds, the conclusion inverts.** The shrinkage was not refuting context
+conditioning; it was correctly reporting that an obs-only partition gives context nothing
+to explain. On a partition that carries the admissible-action structure (29.1% of
+within-node variance, H-AJ), `shrink=eb` would yield a nonzero, *data-driven* lambda --
+context switched on by the estimator itself, at a weight the data supports.
+
+That makes **`ccpo_shrink=eb` on the refined partition the defensible corrected CCPO**,
+and the running `shrink=one` arm the probe. They answer different questions:
+`one` asks whether context helps when forced on; `eb` asks whether the method, run as
+designed, finds and uses the signal.
+
+**Pre-registered criterion for launching `ccpo-refined-eb`:** tau2 > 0 on a majority of
+`ccpo-refined`'s first 20 steps. If tau2 falls back to ~0 after step 1, H-AL is dead and
+H-AK stands as written.
+
+**Caveat that stays attached:** tau2 > 0 is necessary, not sufficient. It says there is
+between-node structure; it does not say phi captures it. H-Q measured phi-weighting inside
+a bucket at 2-10 R^2 points worse than uniform on the obs-only partition, and that has not
+been re-measured on the refined one.
+
+
 ### [!!! REFUTED — five ways] H-AK. Inferred state equivalence carries no signal on ALFWorld
 
 The CCPO thesis is that state equivalence should be **inferred** rather than asserted by
