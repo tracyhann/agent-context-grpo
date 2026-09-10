@@ -117,6 +117,10 @@ Per step 0.015-0.096, no upward trend.
 comes out at step 20 -- unless `lam_eb_obs` rises above ~0.2 by then, which nothing in its
 trend suggests.
 
+**Confirmed at step 20.** The tau2 proxy passed (13/20, 65%). `lam_eb_obs` stayed flat --
+mean 0.0413, 0.0424 over steps 1-10 against 0.0402 over 11-20, max 0.0956 -- a factor of
+four below the ~0.2 exception. The eb arm stays cancelled.
+
 **This departs from the pre-registered criterion, and it should be said plainly.** tau2 > 0
 is necessary for EB to switch context on, not sufficient; I wrote down the proxy instead of
 the quantity it stood for. The correction runs toward NOT spending 13 GPU-hours, and is

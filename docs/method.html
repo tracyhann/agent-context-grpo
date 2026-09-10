@@ -1113,7 +1113,8 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
         <tr><td class="dim">GiGPO (published)</td><td class="num">150</td><td class="num">86.7 &plusmn; 1.7</td><td>different budget &mdash; not matched</td></tr>
         <tr style="background:rgba(200,60,50,.07)"><td class="dim"><b>G&sup2;PO &mdash; THEIR TREE, OUR HARDWARE</b></td><td class="num"><b>100</b></td><td class="num"><b>91.4</b></td><td><b>reproduction</b> &mdash; window mean 86.8, peak 95.3 @95; <span class="m">g2po-ref-20260909</span></td></tr>
         <tr class="ourrow"><td class="dim"><b>CCPO &mdash; global gate + edge term</b></td><td class="num"><b>100</b></td><td class="num"><b>79.7</b></td><td><b>ours, 1 seed</b> &mdash; <span class="m">ccpo-global-20260907</span></td></tr>
-        <tr><td class="dim">CCPO &mdash; &plus; G&sup2;PO anchor repair &amp; admissible-action key</td><td class="num">100</td><td class="num" style="opacity:.6">running</td><td>single-variable change from the row above &mdash; <span class="m">ccpo-anchor-20260909</span>, see 05b-bis</td></tr>
+        <tr><td class="dim">CCPO &mdash; global gate &plus; G&sup2;PO-style anchor</td><td class="num">31</td><td class="num">20.3 @30</td><td>stopped, unconverted &mdash; 6/6 evaluations behind base; <span class="m">ccpo-anchor-20260909</span></td></tr>
+        <tr><td class="dim">CCPO &mdash; <b>hard gate</b> &plus; G&sup2;PO-style anchor, &lambda; forced to 1</td><td class="num">100</td><td class="num" style="opacity:.6">running</td><td>the design-error fix: context <em>refines</em> the partition; 14.8 @20 vs base 21.1; <span class="m">ccpo-refined-20260910</span></td></tr>
         <tr><td class="dim">CCPO &mdash; same arm extended to 145</td><td class="num">145</td><td class="num">79.7</td><td>mean of 9 evals &mdash; <b>+0.00 over step 100</b>; <span class="m">ccpo-global-ext-20260908</span></td></tr>
         <tr><td class="dim">GRPO (published)</td><td class="num">100</td><td class="num">72.8 &plusmn; 3.6</td><td>&mdash;</td></tr>
         <tr><td class="dim">CCPO &mdash; hard gate, no edge term</td><td class="num">100</td><td class="num">70.3</td><td>ours &mdash; <span class="m">ccpo-long-20260906</span></td></tr>
@@ -1261,12 +1262,29 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
     G&sup2;PO's key: the key was right, the anchor feeding it was too coarse.</p>
   </div>
 
-  <p style="margin-top:16px"><b>What is under test now.</b> Two arms, back to back:
-  <span class="m">g2po-harness</span> (their estimator, our un-refined anchor) isolates estimator from harness;
-  <span class="m">g2po-aff</span> adds our anchor refinement. The second is the only place a contribution over
-  G&sup2;PO still plausibly sits &mdash; their invisible-state repair is hand-written ALFWorld vocabulary
-  (<span class="m">"You heat"</span>, <span class="m">"You cool"</span>), while ours derives failures generically
-  from <span class="m">obs<sub>t+1</sub> == obs<sub>t</sub></span>.</p>
+  <p style="margin-top:16px"><b>What is under test now.</b> <span class="m">ccpo-refined</span> fixes the design
+  error: context conditioning <em>refines</em> G&sup2;PO's partition (hard gate on observation &plus; admissible
+  actions &plus; failure repair) instead of replacing it, with &lambda; forced to 1 so the context term genuinely
+  operates &mdash; under the hard gate the empirical-Bayes &lambda; would otherwise collapse to ~0.01. It is valid
+  (&lambda; = 1.000, context carries 16.5% of |A|), passed its kill rule at step 20, and runs to 50. All four
+  evaluations so far trail base, each within noise.</p>
+
+  <div class="callout">
+    <div class="lbl">What it has already shown &mdash; context carries a little signal once the state is right</div>
+    <p>On the observation-only partition the between-node variance &tau;&sup2; that context exists to explain was
+    positive on <b>0 of 130</b> steps. On the refined partition it is positive on <b>65%</b>. So the refinement does
+    give context real structure &mdash; the shrinkage was partly responding to a bad partition, not only to a bad
+    idea.</p>
+    <p>But the &lambda; that empirical Bayes <em>would</em> assign, logged throughout, is flat at <b>~0.04</b>:
+    about 4% of the advantage on context, 96% on the plain node baseline. The structure is real and far too small to
+    matter, so the principled <span class="m">shrink=eb</span> follow-up was cancelled.</p>
+  </div>
+
+  <p style="margin-top:14px"><b>Queued behind it:</b> <span class="m">g2po-harness</span> (paused at step 5,
+  resumable), then <span class="m">g2po-aff</span> and <span class="m">g2po-affonly</span>. The last is the only
+  fully domain-agnostic test: our failure repair and admissible-action key are generic, but our invisible-state
+  carry-forward copies G&sup2;PO's ALFWorld strings (<span class="m">"You heat"</span>,
+  <span class="m">"You cool"</span>, &hellip;) verbatim.</p>
 </section>
 
 <section>

@@ -111,3 +111,22 @@ The tau2 proxy (9/15 positive) will likely pass at step 20, but the direct measu
 the admission that the pre-registered proxy was the wrong quantity, in H-AL.
 
 This does not affect this arm's own kill rule at step 20.
+
+## Step 20: kill rule PASSED; H-AL proxy passed but the eb arm stays cancelled
+
+| step | ccpo-refined | base | diff |
+|---|---|---|---|
+| 5 | 7.8 | 10.2 | -2.3 |
+| 10 | 7.0 | 10.9 | -3.9 |
+| 15 | 14.1 | 17.2 | -3.1 |
+| 20 | 14.8 | 21.1 | -6.2 |
+
+**Kill rule (fixed at step 10): stop below 11%. 14.8 -> PASS, runs to 50.** All four
+evaluations trail base, each within noise -- the same shape as `ccpo-anchor` (same refined
+partition, 15.6 at step 20), which went on to finish unconverted. Next judgement: step 50
+against base's 50.0, and ultimately against `g2po-aff`.
+
+**H-AL:** tau2 positive on 13/20 (65%), so the pre-registered proxy passes. The direct
+measure does not move: `lam_eb_obs` mean 0.0413 (0.0424 over steps 1-10, 0.0402 over
+11-20), max 0.0956, 0.037-0.060 across steps 16-20. Below the ~0.2 exception by a factor
+of four. **`ccpo-refined-eb` stays cancelled.**
