@@ -20,8 +20,11 @@ wait_done() {   # $1 pidfile: wait until it exists and its process has exited
 }
 wait_ram() {    # wait for >=100G host RAM AND GPUs 0-3 genuinely free, then return.
   # GPU check added 2026-09-10: earlier that day another tenant grabbed GPUs 0/1/2/4 the
-  # moment our run released them, and an HGPO run in another container now shares this
-  # host on GPUs 4-5. RAM alone cannot tell us whether 0-3 are ours to take.
+  # moment our run released them, and GPUs 4-5 carry a static footprint (12/24 GB) from
+  # an unidentified tenant. RAM alone cannot tell us whether 0-3 are ours to take.
+  # (An earlier version of this comment attributed the 4-5 footprint to the HGPO run in
+  # another container. Unverified and likely wrong: the footprint predates that handoff
+  # and sits near 0% utilization, unlike a live training run.)
   # Up to 6h: waiting is cheap, and an abort drops every remaining arm.
   for i in $(seq 1 72); do
     a=$(free -g | awk '/^Mem:/{print $7}')
