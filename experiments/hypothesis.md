@@ -2696,6 +2696,22 @@ self-corrected to 0.996 within three steps — RL fixed the format unaided.
 
 ## Measurement notes — things that will mislead you
 
+### The trainer IGNORES SIGTERM — any pause that waits on it will hang forever
+
+Second occurrence (the first blocked a launcher earlier in the project). Pausing
+`g2po-harness` at its step-5 checkpoint: `kill -TERM` was sent, the process stayed in
+state `Ssl` for 45 minutes of wall clock, and the pause chain sat in
+`until ! kill -0 $P; do sleep 3; done` indefinitely. It only proceeded after a manual
+`kill -9` on the trainer and its direct Ray children (gcs, dashboard, raylet).
+
+**Rule: every pause/stop path must escalate.** Send SIGTERM, wait a bounded time
+(~60 s), then SIGKILL the trainer AND its Ray process tree -- killing only the parent
+orphans the raylet and its workers, which keep GPU memory and pids.
+
+Do not edit a pause script while bash is executing it: bash reads scripts incrementally
+by file offset, so a mid-run edit can make it execute garbage. Stop it, edit, restart.
+
+
 ### tau^2 = 0: the estimator switches context OFF by itself, and that is the whole result
 
 The empirical-Bayes shrinkage is
