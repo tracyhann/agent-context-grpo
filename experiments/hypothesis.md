@@ -2647,6 +2647,48 @@ self-corrected to 0.996 within three steps — RL fixed the format unaided.
 
 ## Measurement notes — things that will mislead you
 
+### CORRECTION: the global gate does NOT average over the whole task
+
+I said repeatedly today that `ACG_CCPO_GATE=global` "compares each action against a
+task-wide average" and that phi being inert makes the kernel "effectively uniform".
+**Both are wrong, and the metric was logged all along.**
+
+```
+ccpo-global, mean over 100 steps:
+  bucket_size_mean   7.85     <- occurrences in the bucket
+  n_eff_mean         5.84     <- EFFECTIVE neighbours after exp(-d/tau) weighting
+  phi_rel_corr       0.011    <- phi-distance vs |value difference|
+  r_vs_g2po          0.891
+  effect_rel         0.119
+```
+
+`n_eff` 5.84 against a bucket of 7.85 means **the kernel concentrates**. It selects a
+small effective neighbourhood; it does not flatten to the task mean.
+
+**The real failure is sharper than the one I described.** The kernel picks ~6 of ~8
+neighbours *confidently*, and `phi_rel_corr` = 0.011 says that choice is uncorrelated
+with the quantity being baselined. **It is not vague, it is confidently wrong.**
+
+**What CCPO actually is, stated correctly.** Not a different idea from G2PO -- the SAME
+structure with a learned similarity substituted for an exact one:
+
+| | G2PO | CCPO global |
+|---|---|---|
+| partition | hard, by `obs + admissible` | soft kernel over one bucket/task |
+| similarity | string equality on a rich anchor | `exp(-d/tau)` on phi |
+| baseline | self-inclusive node mean | phi-weighted leave-one-out |
+| shrinkage | none | lambda, forced to 1 under global |
+
+As tau -> 0, `exp(-d/tau)` becomes an indicator on d = 0, i.e. **G2PO's hard grouping is
+the tau -> 0 limit of ours**. `r_vs_g2po` = 0.891 confirms the advantages are largely the
+same; the CC term moves 12% of |A| and that 12% measured at -0.01 points.
+
+**So the method's premise reduces to one claim: that a learned similarity beats an exact
+one.** On ALFWorld it does not, and H-AJ says why -- their "exact" similarity is on
+`obs + admissible-action set`, whose admissible component alone explains 29.1% of
+within-node value variance.
+
+
 ### The KL pre-clamp is a Qwen3 fix, inert on Qwen2.5 — and the obvious check is circular
 
 `core_algos.py` clamps `ref_logprob - logprob` to [-20, 20] before `exp()` in the k3 /
