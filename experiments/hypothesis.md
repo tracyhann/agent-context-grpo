@@ -59,7 +59,7 @@ before the action exists.
 
 ## Open — ranked by expected value
 
-### [EARLY — 1 step] H-AL. The EB shrinkage may have been RIGHT: on a refined partition it could switch context ON itself
+### [RESOLVED at step 15 — weak form holds, strong form fails] H-AL. The EB shrinkage may have been RIGHT: on a refined partition it could switch context ON itself
 
 H-AK read `tau^2 = 0` as "CCPO's own shrinkage refutes CCPO": under the obs-only hard gate
 the empirical-Bayes lambda collapses to ~0.01 because there is no between-bucket variance
@@ -90,6 +90,42 @@ designed, finds and uses the signal.
 **Pre-registered criterion for launching `ccpo-refined-eb`:** tau2 > 0 on a majority of
 `ccpo-refined`'s first 20 steps. If tau2 falls back to ~0 after step 1, H-AL is dead and
 H-AK stands as written.
+
+**RESOLUTION at step 15 — the proxy and the direct measure disagree, and the direct
+measure wins.**
+
+The pre-registered criterion was tau2 > 0 on a majority of the first 20 steps. At step 15
+it stands at 9/15 (60%) and will probably pass. **But tau2 was only ever a proxy** for the
+real question -- would `shrink=eb` switch context on by itself? -- and the metrics log the
+lambda EB *would* have produced (`lam_eb_obs`) even while `shrink=one` overrides it:
+
+| arm | anchor | lam_eb (mean) | frac lam_eb > 0 | tau2 > 0 on |
+|---|---|---|---|---|
+| **ccpo-refined** | obs + aff + repair | **0.0398** | 5.3% | 60% of steps |
+| ccpo-long | obs only | 0.0198 | 2.9% | 0% |
+| ccpo-hardedge | obs only | 0.0110 | 1.5% | 0% |
+
+Per step 0.015-0.096, no upward trend.
+
+* **Weak form HOLDS:** the refined partition gives context real between-node structure --
+  tau2 goes from never-positive to positive on 60% of steps, and lam_eb rises 2-4x.
+* **Strong form FAILS:** EB would still put ~4% of the advantage on context and ~96% on
+  the plain node baseline. lambda = tau2 / (tau2 + noise), and the noise term swamps the
+  structure. A `ccpo-refined-eb` arm would be `g2po-affonly` with a 4% context term.
+
+**Decision: `ccpo-refined-eb` will NOT be launched**, regardless of how the tau2 proxy
+comes out at step 20 -- unless `lam_eb_obs` rises above ~0.2 by then, which nothing in its
+trend suggests.
+
+**This departs from the pre-registered criterion, and it should be said plainly.** tau2 > 0
+is necessary for EB to switch context on, not sufficient; I wrote down the proxy instead of
+the quantity it stood for. The correction runs toward NOT spending 13 GPU-hours, and is
+made on a measure that was logged all along, not on a new outcome.
+
+**Net effect on H-AK:** refined, not reversed. The EB shrinkage was partly responding to a
+bad partition (it does move, 2-4x, when the partition improves), but on a good partition
+it still finds context worth ~4%. Context conditioning carries a little signal once the
+state is right -- far too little to matter.
 
 **Caveat that stays attached:** tau2 > 0 is necessary, not sufficient. It says there is
 between-node structure; it does not say phi captures it. H-Q measured phi-weighting inside

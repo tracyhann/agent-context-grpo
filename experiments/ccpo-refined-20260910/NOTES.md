@@ -100,3 +100,14 @@ and H-AK stands as written. Currently 5/10.
 These decisions are independent: the arm can fail its kill rule and still pass H-AL (the
 partition carries structure even if forced lambda=1 misuses it), which would be the
 strongest possible argument for the `eb` arm.
+
+## H-AL resolved at step 15: the eb follow-up is cancelled
+
+The tau2 proxy (9/15 positive) will likely pass at step 20, but the direct measure of what
+`shrink=eb` would do -- `lam_eb_obs`, logged throughout -- averages **0.0398** (per step
+0.015-0.096, no trend). EB would put ~4% of the advantage on context. A
+`ccpo-refined-eb` arm would therefore be `g2po-affonly` with a 4% context term, and is
+**not being launched** unless `lam_eb_obs` exceeds ~0.2 by step 20. Full reasoning, and
+the admission that the pre-registered proxy was the wrong quantity, in H-AL.
+
+This does not affect this arm's own kill rule at step 20.
