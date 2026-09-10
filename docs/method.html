@@ -210,10 +210,15 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
         <div class="v">Refuted, 3 arms</div>
         <div class="n">All three digest variants finished below base (16.4 / 15.6 / 9.4 vs 21.1 @20). Its stated mechanism is refuted: responses got <em>longer</em> at 15/15 paired steps.</div>
       </div>
+      <div class="st crit">
+        <div class="k">HEAD-TO-HEAD</div>
+        <div class="v">G²PO 91.4, ours 79.7</div>
+        <div class="n">Their tree run on OUR hardware reaches 91.4 endpoint / 86.8 converged mean / 95.3 peak against a published 95.0. CCPO loses by 11.7 endpoint, 20.0 on the window.</div>
+      </div>
       <div class="st ok">
-        <div class="k">WHAT SURVIVED</div>
-        <div class="v">A harness gap</div>
-        <div class="n">G²PO repairs the grouping anchor; we never did. 42.8% of observations conflated. Nodes 758→1172 once fixed. Under test.</div>
+        <div class="k">THE MEASURED CAUSE</div>
+        <div class="v">Admissible actions</div>
+        <div class="n">Their anchor is obs + admissible-action set; ours is obs alone. That split explains <b>29.1%</b> of within-node variance in V(next) — 5× context conditioning's 6.1% ICC.</div>
       </div>
       <div class="st warn">
         <div class="k">LEARNED COMPONENTS</div>
@@ -229,8 +234,8 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
     <div class="mast-meta">
       <span>ALFWorld</span>
       <span>Qwen2.5-1.5B-Instruct</span>
-      <span>79.7% held-out @ 100 iters</span>
-      <span>2026-09-09</span>
+      <span>ours 79.7% · G²PO 91.4% on the same box</span>
+      <span>2026-09-10</span>
     </div>
   </div>
 </header>
@@ -1106,6 +1111,7 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
         <tr><td class="dim">G&sup2;PO (published)</td><td class="num">100</td><td class="num">95.0 &plusmn; 0.8</td><td>3 seeds</td></tr>
         <tr><td class="dim">HGPO (published, K=2)</td><td class="num">160</td><td class="num">92.77</td><td>different budget &mdash; not matched</td></tr>
         <tr><td class="dim">GiGPO (published)</td><td class="num">150</td><td class="num">86.7 &plusmn; 1.7</td><td>different budget &mdash; not matched</td></tr>
+        <tr style="background:rgba(200,60,50,.07)"><td class="dim"><b>G&sup2;PO &mdash; THEIR TREE, OUR HARDWARE</b></td><td class="num"><b>100</b></td><td class="num"><b>91.4</b></td><td><b>reproduction</b> &mdash; window mean 86.8, peak 95.3 @95; <span class="m">g2po-ref-20260909</span></td></tr>
         <tr class="ourrow"><td class="dim"><b>CCPO &mdash; global gate + edge term</b></td><td class="num"><b>100</b></td><td class="num"><b>79.7</b></td><td><b>ours, 1 seed</b> &mdash; <span class="m">ccpo-global-20260907</span></td></tr>
         <tr><td class="dim">CCPO &mdash; &plus; G&sup2;PO anchor repair &amp; admissible-action key</td><td class="num">100</td><td class="num" style="opacity:.6">running</td><td>single-variable change from the row above &mdash; <span class="m">ccpo-anchor-20260909</span>, see 05b-bis</td></tr>
         <tr><td class="dim">CCPO &mdash; same arm extended to 145</td><td class="num">145</td><td class="num">79.7</td><td>mean of 9 evals &mdash; <b>+0.00 over step 100</b>; <span class="m">ccpo-global-ext-20260908</span></td></tr>
@@ -1209,6 +1215,58 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
     lifted <span class="m">effect_rel</span> from exactly 0.000 &mdash; the estimator being numerically identical to
     the uniform baseline &mdash; to 0.119, and bought no performance.</p>
   </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">05a — 2026-09-10: the head-to-head that settles it</div>
+    <h2>We ran their code on our hardware. It reaches 91.4.</h2>
+    <p>Every explanation for the gap was eliminated in turn. The one that survived was
+    the simplest: run <span class="m">baselines/G&sup2;PO</span> itself, unmodified, on this box.</p>
+  </div>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th>&nbsp;</th><th>G&sup2;PO (their tree, our box)</th><th>CCPO (best arm)</th><th>difference</th></tr></thead>
+      <tbody>
+        <tr><td class="dim">endpoint, step 100</td><td class="num"><b>91.4</b></td><td class="num">79.7</td><td class="num">+11.7</td></tr>
+        <tr><td class="dim">converged window, 60&ndash;100</td><td class="num"><b>86.8</b></td><td class="num">66.8</td><td class="num">+20.0</td></tr>
+        <tr><td class="dim">window sd</td><td class="num">5.0</td><td class="num">13.7</td><td class="dim">ours is also far less stable</td></tr>
+        <tr><td class="dim">peak <span style="opacity:.6">(recorded, never quoted)</span></td><td class="num">95.3 @95</td><td class="num">79.7</td><td class="dim">max-of-20 vs an endpoint &mdash; the H-Z bias</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="tbl-cap">Trajectory: 12 12 29 36 47 55 65 67 72 80 82 85 87 86 82 78 89 88 <b>95</b> 91.
+  <b>Their published figure is 95.0 and the run touched 95.3 at step 95.</b> No deviation from their
+  configuration was needed. The reproduction question is closed: nothing about this stack caps performance.</p>
+
+  <div class="callout" style="border-left-color:#c0392b">
+    <div class="lbl">The design error, stated plainly</div>
+    <p><span class="m">ACG_CCPO_GATE=global</span> uses context conditioning to <b>replace</b> state grouping:
+    one bucket per task, with &phi; expected to recover the structure. &phi; measures inert four independent ways,
+    so in practice each action is scored against a <em>task-wide average</em>.</p>
+    <p>G&sup2;PO scores an action against other actions taken <b>from the same state</b> &mdash; the mechanism the
+    entire GiGPO/G&sup2;PO family rests on. <b>We swapped a working mechanism for one carrying no signal.</b></p>
+    <p style="color:var(--ink-2)">Context conditioning should have <em>refined</em> the state key, not replaced it.</p>
+  </div>
+
+  <div class="callout">
+    <div class="lbl">What the state key is missing, measured &mdash; 29.1%</div>
+    <p>G&sup2;PO's anchor is <b>observation + admissible-action set</b>. Ours is the observation alone. On 264,058
+    dumped occurrences from the hard-gate arm (whose key is exactly <span class="m">(task, observation)</span>),
+    the admissible set splits 31.1% of nodes and explains <b>29.1% of the within-node variance in V(next)</b>.</p>
+    <p><b>That is five times context conditioning's 6.1% ICC ceiling</b>, and it is the quantity the step term
+    predicts. Pooling states whose available actions differ destroys it.</p>
+    <p style="color:var(--ink-2)">It also explains why <span class="m">ccpo-hardedge</span> failed while using
+    G&sup2;PO's key: the key was right, the anchor feeding it was too coarse.</p>
+  </div>
+
+  <p style="margin-top:16px"><b>What is under test now.</b> Two arms, back to back:
+  <span class="m">g2po-harness</span> (their estimator, our un-refined anchor) isolates estimator from harness;
+  <span class="m">g2po-aff</span> adds our anchor refinement. The second is the only place a contribution over
+  G&sup2;PO still plausibly sits &mdash; their invisible-state repair is hand-written ALFWorld vocabulary
+  (<span class="m">"You heat"</span>, <span class="m">"You cool"</span>), while ours derives failures generically
+  from <span class="m">obs<sub>t+1</sub> == obs<sub>t</sub></span>.</p>
 </section>
 
 <section>
