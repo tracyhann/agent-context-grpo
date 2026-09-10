@@ -29,7 +29,10 @@ set -u
 D=/workspace/experiments/g2po-harness-20260910/outputs
 # wait for the step-5 checkpoint (save_freq=5) so the pause is resumable
 for i in $(seq 1 90); do
-  [ -d "$D/checkpoints/global_step_5" ] && break
+  # gate on the COMPLETION marker, not the directory: the directory appears when the
+  # save STARTS, so gating on it sent SIGTERM mid-save and left global_step_5 without
+  # its HF export, data.pt and marker (recorded in g2po-harness NOTES).
+  [ "$(cat $D/checkpoints/latest_checkpointed_iteration.txt 2>/dev/null)" = "5" ] && break
   kill -0 "$(cat $D/train.pid 2>/dev/null)" 2>/dev/null || break
   sleep 20
 done
@@ -37,7 +40,15 @@ echo "checkpoint state: $(ls $D/checkpoints 2>/dev/null | tr '\n' ' ')"
 P=$(cat $D/train.pid 2>/dev/null)
 if kill -0 "$P" 2>/dev/null; then
   echo "pausing g2po-harness (pid $P)"
-  kill -TERM "$P"; until ! kill -0 "$P" 2>/dev/null; do sleep 3; done
+  kill -TERM "$P"
+  for j in $(seq 1 20); do kill -0 "$P" 2>/dev/null || break; sleep 3; done
+  # the trainer IGNORES SIGTERM (two recorded occurrences): escalate, and take the
+  # Ray tree with it or the raylet and workers are orphaned holding GPU memory.
+  if kill -0 "$P" 2>/dev/null; then
+    echo "SIGTERM ignored; SIGKILL trainer + ray tree"
+    KIDS=$(pgrep -P "$P"); RL=$(pgrep -P "$P" -f raylet)
+    kill -9 "$P" $KIDS $( [ -n "$RL" ] && pgrep -P "$RL" ) 2>/dev/null
+  fi
 fi
 sleep 90
 echo "host RAM after pause: $(free -g | awk '/^Mem:/{print $7}')G"
