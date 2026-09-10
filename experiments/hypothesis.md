@@ -59,6 +59,55 @@ before the action exists.
 
 ## Open — ranked by expected value
 
+### [!!! REFUTED — five ways] H-AK. Inferred state equivalence carries no signal on ALFWorld
+
+The CCPO thesis is that state equivalence should be **inferred** rather than asserted by
+exact match. Every form of that claim has now been measured and every one fails.
+
+| form of the claim | measurement |
+|---|---|
+| phi as pairwise similarity across a task | r = **+0.011** with abs(target difference) |
+| affordance-Jaccard as pairwise similarity | r = **-0.013** (and the wrong sign) |
+| phi-weighting inside a bucket vs uniform (H-Q) | **2-10 R^2 points WORSE** than uniform |
+| ON/OFF ablation, end to end | **-0.01 points** over 9 paired evaluations |
+| soft rescue of orphaned occurrences (below) | closer **20.9%** of the time (50% = chance) |
+
+**The orphan test was the last surviving form**, and the most favourable one. Refining
+the key to `(task, obs, aff)` buys 29.1% of within-node variance but leaves 4.9% of
+occurrences in singleton nodes with no leave-one-out baseline -- a gap G2PO simply does
+not fill. Soft affordance-weighted rescue over the parent node against G2PO's only
+option, the parent mean:
+
+```
+orphaned occurrences tested            11,051
+(A) parent-node mean  [G2PO's option]  MAE 0.3952
+(B) affordance-soft neighbourhood      MAE 0.3949    +0.1%
+soft closer on                         2,312/11,051  = 20.9%
+```
+
+20.9% is *below* chance: the weighting is worse than uniform for most orphans.
+
+**The structural lesson, and it is the real result.** The signal lives in **partition
+refinement**, not in **metric learning**:
+
+* `aff` as a partition refinement inside an observation node -> **29.1% of variance**
+* `aff` as a similarity metric across a task -> **~0**
+
+Same feature, same data. Refining a hard partition works; softening it into a metric
+does not. **No better phi rescues this** -- the architecture is what fails, and two
+independent representations (hidden-state phi, affordance sets) reach the same place.
+
+**What this means for the project.** CCPO as designed will not reach SOTA on ALFWorld.
+The honest contribution is the negative result: a five-way refutation of a plausible
+idea, with a quantified account of why the exact method wins. The useful refinement
+(affordances) is free from the environment API and G2PO already takes it.
+
+**The one constructive thread left** is not CCPO's thesis: G2PO's invisible-state repair
+uses hand-written ALFWorld vocabulary (`"You heat"`, `"You cool"`), while ours derives
+failures generically from `obs_{t+1} == obs_t`. If the generic version matches the
+hand-coded one, that is a modest but real contribution. `g2po-aff` measures it.
+
+
 ### [!!! MEASURED] H-AJ. Admissible actions explain 29.1% of within-node value variance — 5x context
 
 Offline on `ccpo-hardedge`'s 264,058 dumped occurrences. That arm ran the HARD gate, so
