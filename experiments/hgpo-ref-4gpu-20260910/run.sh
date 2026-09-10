@@ -31,6 +31,8 @@
 #   9. 4 GPUs (0-3) instead of their 2: same GPU count as our arms and the G2PO
 #      reference. TP=1 -> 4 data-parallel ranks; train_batch 16 and val_batch 128 divide 4.
 #      Changes per-rank micro-batching, not the objective.
+#  10. global_step_100 is preserved as step100-budget by scripts/snapshot_ckpt.sh (outside
+#      this script) so the budget-matched weights survive rotation.
 #
 # UNCHANGED (everything that affects the objective): adv_estimator hgpo, weight_type
 # length, length_weight_alpha 1.0, base_group False, mode mean_std_norm, lr 1e-6,

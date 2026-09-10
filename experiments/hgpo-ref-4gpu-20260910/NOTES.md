@@ -28,6 +28,13 @@ console logger, prepare skipped, explicit checkpoint dir) are listed in `run.sh`
 * Same `test.parquet` (128 games, T=0.4, test_freq 5) as every arm and the G2PO reference.
 * **Budget:** headline at 160 iterations; our arms and G2PO run 100. Report **both** its
   step-100 held-out (budget-matched) and its 160 endpoint, labelled.
+* **Step-100 results and weights are kept (user requirement, 2026-09-10).** Results: step
+  100 is a test_freq=5 evaluation point, so its held-out numbers land in `metrics.jsonl`.
+  Weights: rotation (`max_actor_ckpt_to_keep=2`) would delete `global_step_100` at step
+  140, so `scripts/snapshot_ckpt.sh` (started 2026-09-10, log `outputs/snapshot.log`)
+  waits for the step-100 save to complete and hard-links it to
+  **`checkpoints/step100-budget`**. Final checkpoint set: `step100-budget`, plus
+  `stepX-best` / `stepX-last` from the retained 140/160.
 * Metrics: verl console output lands in the Ray worker log; `scripts/ref_metrics.sh`
   mirrors it to `outputs/metrics.jsonl` every 5 min and re-renders the plots.
 

@@ -37,7 +37,12 @@
     "tensor_model_parallel_size": 1,
     "gpu_memory_utilization": 0.3,
     "attn_backend": "TRITON_ATTN",
-    "max_actor_ckpt_to_keep": 2
+    "max_actor_ckpt_to_keep": 2,
+    "preserved_checkpoints": [
+      "step100-budget (budget-matched to 100-iter arms)",
+      "stepX-best",
+      "stepX-last"
+    ]
   },
   "deviations": [
     "XFORMERS->TRITON_ATTN (no sm_120 kernel)",
