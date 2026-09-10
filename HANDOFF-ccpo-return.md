@@ -16,6 +16,13 @@ The prediction is that this **restores the value of the grouping machinery**, wh
 
 ## 0. BLOCKING — the code this needs is not on `main`
 
+Get it from the **`ccpo-return`** branch (this file only exists there):
+
+```bash
+git clone https://github.com/tracyhann/agent-context-grpo
+cd agent-context-grpo && git checkout ccpo-return
+```
+
 Two changes made on 2026-09-09/10 are required and were uncommitted when this was
 written. **A fresh clone of `main` cannot run the launch command below**:
 
@@ -31,8 +38,7 @@ grep -c '"vllm_attn_backend"' scripts/exp_run.py   # must be >= 1
 grep -c 'g_next' ccpo/core_ccpo.py                  # must be >= 1
 ```
 
-If either prints `0`, check out the branch carrying this work (see the commit that
-added this file) rather than `main`.
+If either prints `0`, you are on `main` — run `git checkout ccpo-return`.
 
 ---
 
