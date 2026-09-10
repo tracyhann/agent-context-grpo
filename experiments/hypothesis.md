@@ -2696,6 +2696,41 @@ self-corrected to 0.996 within three steps — RL fixed the format unaided.
 
 ## Measurement notes — things that will mislead you
 
+### CORRECTION: our anchor repair is only HALF domain-agnostic
+
+I claimed repeatedly that G2PO's invisible-state repair uses hand-written ALFWorld
+vocabulary "while ours derives failures generically". **Half true, and the borrowed half
+is copied verbatim:**
+
+```
+ours:   _INVISIBLE_PATTERNS = ("You heat", "You cool", "You clean", "You turn on")
+theirs: PATTERNS           = ["You heat", "You cool", "You clean", "You turn on"]
+```
+
+| mechanism | ours | generic? |
+|---|---|---|
+| failed action does not advance the anchor | `obs_{t+1} == obs_t` | **YES** |
+| invisible-state carry-forward | copied `PATTERNS` | **NO — theirs, verbatim** |
+| admissible actions in the key (`aff`) | env API | **YES** |
+
+**Consequence for `g2po-aff`.** As configured (`obs_repair=1 anchor_aff=1`) it CANNOT
+support the claim "a domain-agnostic disambiguator matches a hand-coded one", because one
+of its three components IS the hand-coded one. If it reaches ~91.4 we will not know
+whether the generic parts or the borrowed vocabulary did the work.
+
+**Ablation required: `anchor_aff=1, obs_repair=0`.** That is fully generic -- admissible
+actions from the environment API, no vocabulary. Queued as `g2po-affonly`.
+
+* `affonly` ~ `aff` -> the generic component does the work; **the contribution is real**
+* `affonly` << `aff` -> the ALFWorld vocabulary carries it; **no generic contribution**
+
+**A genuinely generic replacement for PATTERNS may exist and is worth testing later:**
+heat/cool/clean/turn-on all CHANGE the admissible-action set, so an `aff` transition may
+detect exactly the state changes `PATTERNS` was written to catch. That would make the
+whole repair vocabulary-free. Not testable on the current dumps -- they carry no
+within-trajectory turn index -- so it needs an instrumented run.
+
+
 ### CORRECTION: the global gate does NOT average over the whole task
 
 I said repeatedly today that `ACG_CCPO_GATE=global` "compares each action against a
