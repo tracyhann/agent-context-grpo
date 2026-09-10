@@ -59,6 +59,50 @@ before the action exists.
 
 ## Open — ranked by expected value
 
+### [SETTLED] H-AH-FINAL. G2PO reproduces on our stack at 91.4/95.3; CCPO loses by 12-20 points
+
+`g2po-ref-20260909` ran their tree to step 100 on our hardware, no deviation from their
+published configuration.
+
+```
+trajectory: 12 12 29 36 47 55 65 67 72 80 82 85 87 86 82 78 89 88 95 91
+
+                      G2PO    ours    diff
+endpoint (step 100)   91.4    79.7   +11.7
+window (60-100)       86.8    66.8   +20.0
+window sd              5.0    13.7
+peak                  95.3    79.7      -     <- DO NOT QUOTE (max of 20 draws, H-Z)
+
+published G2PO 95.0; it touched 95.3 at step 95.
+```
+
+**The reproduction question is closed.** Their number is real on this hardware, this
+environment build, this evaluation draw. Nothing about our stack caps performance.
+
+**CCPO loses decisively.** +11.7 endpoint, +20.0 on the converged window -- far outside
+the run-to-run variance measured from the accidental replicate (mean 6.5, max 14.1).
+Our arm is also far less stable: window sd 13.7 against their 5.0.
+
+**Everything else is eliminated.** Config identical (H-AB); harness diff reduced to the
+two anchor mechanisms (H-AD/H-AE); KL clamp inert (Qwen3-era); our port of their
+estimator verified faithful (H-AF); eval split and protocol identical.
+
+**The design error, stated plainly.** `ACG_CCPO_GATE=global` uses context conditioning to
+REPLACE state grouping -- one bucket per task, with phi expected to recover structure.
+phi measures inert four ways, so in practice each action is compared against a task-wide
+average. G2PO compares an action against other actions *from the same state*, which is
+the mechanism the whole GiGPO/G2PO family rests on. **We swapped a working mechanism for
+one carrying no signal.**
+
+**But the grouping key alone does not explain it.** `ccpo-hardedge` uses the identical
+`(task, anchor)` key and still reaches 19.5/41.4 against G2PO's 46.9/79.7. Something
+beyond the key -- baseline form (leave-one-out + lambda shrinkage vs self-inclusive
+within-node standardisation), or the anchor conflation itself -- carries the rest.
+
+**Next: `--arm g2po`** (their estimator, vendored verbatim, in OUR harness) separates
+estimator from harness. Launched.
+
+
 ### [!!! CONFIRMED at step 50] H-AH-final. G2PO reaches our 100-step result in 50 steps
 
 ```
