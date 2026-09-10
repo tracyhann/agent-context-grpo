@@ -80,3 +80,19 @@ Monitoring note: two tqdm-tailing monitors never fired (the progress bar does no
 train.log as newline-terminated lines the pipe can see). Evaluations are now watched by
 polling `metrics.jsonl`, which the mirror writes every 5 minutes. That poll also flags
 the run ending, or train.log going unchanged for 30 minutes.
+
+## Progress through step 85 (23:02)
+
+| step | 35 | 40 | 45 | 50 | 55 | 60 | 65 | 70 | 75 | 80 | 85 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| hgpo-ref-4gpu | 37.5 | 30.5 | 34.4 | 34.4 | 46.1 | 53.1 | 65.6 | 71.9 | 67.2 | 64.8 | 66.4 |
+| G2PO reference | 64.8 | 67.2 | 71.9 | 79.7 | 82.0 | 85.2 | 86.7 | 85.9 | 82.0 | 78.1 | 89.1 |
+
+Window 70-85: **HGPO 67.6 vs G2PO 83.8.** HGPO climbed steeply from step 50 to step 70 and
+has held around 65-72 since. Pace has improved to 358 s/step, which puts step 100 around
+00:30 and the end around 06:30 on 2026-09-11.
+
+Rotation verified: `global_step_20` and `_40` keep only `data.pt` (6.5 KB, weights
+deleted), while `_60` and `_80` are 19 GB each. At most two weight sets exist at a time.
+The session restarted at ~23:00; the run, queue, snapshot watcher and metrics mirror all
+survived it (all were launched with setsid), and only the Claude-side monitors were re-armed.
