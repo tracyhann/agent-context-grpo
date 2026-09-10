@@ -1,5 +1,36 @@
 # Handoff — 2026-09-09
 
+## CURRENT STATE — 2026-09-10 (read this before anything below)
+
+**Running** — `ccpo-refined-20260910` on GPUs 0-3: CCPO with context REFINING the
+partition (`gate=hard`, `anchor_aff=1`, `obs_repair=1`) and lambda forced to 1
+(`ccpo_shrink=one`). See its NOTES for why the forced lambda is required and for the
+step-1 validity check.
+
+**Paused** — `g2po-harness-20260910` at `global_step_5`. The checkpoint lacks its
+completion marker, so **resume by explicit path only** (command in its NOTES).
+
+**Queued** (`scripts/queue_anchor_aff.sh`, one watcher, waits on ccpo-refined):
+`g2po-harness-resume` -> `g2po-aff` -> `g2po-affonly` -> `hgpo-ref`. Each waits for the
+previous to exit and host RAM to drain; aborts rather than skipping an arm.
+
+**The standing results**
+
+| | endpoint | converged window (60-100) |
+|---|---|---|
+| G2PO, their tree on OUR box | **91.4** | **86.8** |
+| CCPO `ccpo-global` | 79.7 | 66.8 |
+
+G2PO reproduces here (touched 95.3 vs a published 95.0). The CCPO mechanism is refuted
+five ways (H-AK), and its own EB shrinkage agrees: tau^2 = 0, so lambda collapses to 0.01
+under the hard gate. The signal that DOES exist is partition refinement by the
+admissible-action set (29.1% of within-node variance, H-AJ).
+
+**Before killing any run: the trainer ignores SIGTERM.** Escalate to SIGKILL on the
+trainer and its Ray tree, and gate any pause on `latest_checkpointed_iteration.txt`, not
+the checkpoint directory.
+
+
 State for a container rebuild. Everything below is committed; nothing lives only in a
 running process. Full reasoning for every entry is in `experiments/hypothesis.md`.
 
