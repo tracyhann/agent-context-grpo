@@ -167,6 +167,8 @@ DEFAULTS = {
     "ccpo_sim": 0.0,
     "ccpo_sim_backoff": 0.0,
     "ccpo_backoff_rho": 0.5,
+    "ccpo_backoff_task": 0,     # 1: hard-gate rows with no sibling fall back to the task baseline
+    "ccpo_jweight_c": 0.0,      # >0: step term *= J/(J+c); c=1 is the derived value. 0 = off
     "ccpo_edge_w": 0.0,
     # "hard" = the GiGPO/G2PO exact (task, observation) gate. "global" makes the
     # task one bucket and lets exp(-d/tau) gate softly; ccpo_tau is then the
@@ -221,6 +223,7 @@ ENV_KEYS = {
     "ccpo_target": "ACG_CCPO_TARGET", "ccpo_sim": "ACG_CCPO_SIM",
     "ccpo_sim_backoff": "ACG_CCPO_SIM_BACKOFF",
     "ccpo_backoff_rho": "ACG_CCPO_BACKOFF_RHO", "ccpo_edge_w": "ACG_CCPO_EDGE_W",
+    "ccpo_backoff_task": "ACG_CCPO_BACKOFF_TASK", "ccpo_jweight_c": "ACG_CCPO_JWEIGHT_C",
     "ccpo_gate": "ACG_CCPO_GATE", "ccpo_tau": "ACG_CCPO_TAU",
     "ccpo_std": "ACG_CCPO_STD", "ccpo_std_floor": "ACG_CCPO_STD_FLOOR",
     "ccpo_step_norm": "ACG_CCPO_STEP_NORM",

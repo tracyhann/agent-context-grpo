@@ -1277,7 +1277,30 @@ R² 0.00013 — but it is the one remaining channel the current φ cannot see, s
 minutes to measure beats 11 hours to guess.
 
 
-### [MIS-SPECIFIED under the shipped gate — see H-AG] H-S. **Uncertainty as a weight on A_CC, not a choice between baselines** — the reframing that survives
+### [LIVE under a hard gate; weight VERIFIED offline, small; arm queued] H-S. **Uncertainty as a weight on A_CC, not a choice between baselines** — the reframing that survives
+
+> **2026-09-10 — revived and tested offline.** Under the global gate J is constant at 7
+> and the weight is a no-op (H-AG). Under a **hard gate + return-to-go** J varies, so it
+> becomes live. Measured on `gate-probe` and projected onto `ccpo-return-hard` on-policy:
+>
+> * **The noise model holds.** The baseline-noise share of an advantage matches
+>   **1/(J+1)** bin by bin: J=1 0.469 (theory 0.500), J=2 0.335 (0.333), J=4-5 0.189
+>   (0.181), J=6-9 0.124 (0.129). So the reliability weight is **J/(J+1)**, c=1, derived.
+> * **The weight works and is nearly free:** on-policy it cuts the baseline-noise share
+>   of the step term **0.206 -> 0.173 (-16%)** at 98.4% effective sample.
+>   `(J-1)/J` (drops J=1) gives -26% at 91.3%.
+> * **But it is small.** Baseline noise is ~20% of step-term variance; the weight removes
+>   3-5 points of it, in one of two advantage terms. Likely below single-arm detection.
+> * **The bigger problem it cannot touch:** ~9.6% of occurrences on-policy have no
+>   sibling under the hard gate and get **no step credit at all**. A weight only
+>   rescales rows that already have a baseline.
+>
+> Implemented as `ACG_CCPO_JWEIGHT_C` (default 0 = off) together with a task-level
+> fallback `ACG_CCPO_BACKOFF_TASK` for the zero-credit rows. Verified: flags off is
+> bit-identical to the prior estimator under both gates; fallback lifts live_frac
+> 0.913 -> 1.000 leaving level-0 rows untouched; weight exact (0.0 error in float64).
+> Queued as `ccpo-return-hard-fbjw`, paired against `ccpo-return-hard`.
+
 
 > **Read H-AG first.** The weight below is `w_u = J_u/(J_u + c)`, and under the shipped
 > `ccpo_gate=global` **`J_u` is constant at 7 on every occurrence of every step**

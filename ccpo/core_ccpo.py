@@ -271,6 +271,19 @@ _SIM = float(os.environ.get("ACG_CCPO_SIM", "0.0"))
 # would largely restate A^EP -- the trajectory-level credit this method exists
 # to refine. A looser state match keeps the "same-ish situation" semantics.
 _SIM_BACKOFF = float(os.environ.get("ACG_CCPO_SIM_BACKOFF", "0.0"))
+# Task-level fallback for the hard gate. An occurrence whose exact node holds no
+# other trajectory has no leave-one-out baseline and gets NO step credit -- 8-13% of
+# occurrences on-policy under hard gate + return-to-go. With this set, those rows
+# (and only those) are credited against the whole task bucket instead, the same key
+# the global gate uses. O(n); unlike a near-zero sim_backoff it runs no
+# SequenceMatcher calls. Default off.
+_BACKOFF_TASK = os.environ.get("ACG_CCPO_BACKOFF_TASK", "0") != "0"
+# Reliability weight on the step term: A_CC *= J / (J + c), J = distinct sibling
+# trajectories behind the baseline. The baseline-noise share of an advantage is
+# ~1/(J+1) (verified bin-by-bin offline, gate-probe and on-policy), so c=1 is the
+# derived value. Down-weights thinly supported baselines; the edge term is untouched.
+# 0 disables. Default off.
+_JW_C = float(os.environ.get("ACG_CCPO_JWEIGHT_C", "0.0"))
 
 # rho discount applied at the coarse level: a looser gate is a less trustworthy
 # metric, and rho is exactly where metric confidence enters lambda*.
@@ -593,6 +606,13 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
         if sim_backoff > 0.0:
             levels.append((1, cluster_keys(anchor_obs, index, sim_backoff),
                            rho * _BACKOFF_RHO))
+        if _BACKOFF_TASK and _GATE != "global":
+            # last-resort level: the whole task. Credits only rows every finer
+            # level left unassigned, so level-0 rows are untouched.
+            _kt = np.empty(n, dtype=object)
+            for _i in range(n):
+                _kt[_i] = (str(index[_i]),)
+            levels.append((len(levels), _kt, rho * _BACKOFF_RHO))
 
     assigned = np.zeros(n, dtype=bool)
     level_of = np.full(n, -1, dtype=np.int64)
@@ -784,6 +804,8 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
             # sets the scale. The floor keeps a degenerate all-identical
             # neighbourhood from exploding the credit.
             adv[i] = adv[i] / max(_r["sig"], _STD_FLOOR * _tgt_sd)
+        if _JW_C > 0.0:
+            adv[i] *= _r["J"] / (_r["J"] + _JW_C)
         lam_all.append(lam)
         neff_all.append(_r["ne"])
         # effect: how far our credit departs from the uniform baseline. If this is
