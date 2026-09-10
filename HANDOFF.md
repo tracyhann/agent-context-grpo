@@ -23,9 +23,13 @@ previous to exit and host RAM to drain; aborts rather than skipping an arm.
 | CCPO `ccpo-global` | 79.7 | 66.8 |
 
 G2PO reproduces here (touched 95.3 vs a published 95.0). The CCPO mechanism is refuted
-five ways (H-AK), and its own EB shrinkage agrees: tau^2 = 0, so lambda collapses to 0.01
-under the hard gate. The signal that DOES exist is partition refinement by the
-admissible-action set (29.1% of within-node variance, H-AJ).
+five ways (H-AK). Its own EB shrinkage agrees, with one refinement (H-AL): on the
+obs-only partition tau^2 = 0 and lambda collapses to ~0.01; on the refined partition
+(`anchor_aff=1 obs_repair=1`) tau^2 is positive on ~60% of steps, yet EB would still set
+lambda ~0.04. Context carries a little real structure once the state is right -- far too
+little to matter. The follow-up `ccpo-refined-eb` arm is therefore cancelled. The signal
+that DOES exist is partition refinement by the admissible-action set (29.1% of within-node
+variance, H-AJ).
 
 **Before killing any run: the trainer ignores SIGTERM.** Escalate to SIGKILL on the
 trainer and its Ray tree, and gate any pause on `latest_checkpointed_iteration.txt`, not
