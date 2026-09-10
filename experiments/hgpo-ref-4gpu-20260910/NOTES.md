@@ -63,3 +63,20 @@ alongside it in this container.** A monitor alerts at 16k, 18k and 19.5k.
 2026-09-11**. That is slower than the ~15-17 h estimated from G2PO (~335 s/step): HGPO
 uses a 4096-token prompt cap against G2PO's 2048. The first three metric rows parsed
 cleanly (73 fields per step: KL loss, pg loss, rewards, advantages, valid-action ratio).
+
+## Early held-out (16:00, step 19)
+
+| step | 5 | 10 | 15 |
+|---|---|---|---|
+| hgpo-ref-4gpu | 11.7 | 10.9 | 17.2 |
+| G2PO reference | 12.5 | 11.7 | 28.9 |
+| our base | 10.2 | 10.9 | 17.2 |
+
+Level with base and behind G2PO at step 15, but these are the noisiest evaluations there
+are (±7-9 at 2SE). HGPO's published curve is only judged at 100 and 160. Pace has
+settled at 431 s/step.
+
+Monitoring note: two tqdm-tailing monitors never fired (the progress bar does not reach
+train.log as newline-terminated lines the pipe can see). Evaluations are now watched by
+polling `metrics.jsonl`, which the mirror writes every 5 minutes. That poll also flags
+the run ending, or train.log going unchanged for 30 minutes.
