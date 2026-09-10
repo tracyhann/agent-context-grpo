@@ -2696,6 +2696,42 @@ self-corrected to 0.996 within three steps — RL fixed the format unaided.
 
 ## Measurement notes — things that will mislead you
 
+### Why our anchor is observation-only: we treated the hard key as the baseline to BEAT
+
+Not an oversight. Traced 2026-09-10:
+
+* `aff` was added **2026-09-03** with the comment *"so the credit assigner can label
+  states the observation text conflates (42.8% of observations map to >1 admissible
+  set)"*. **The conflation was measured and known.**
+* But it was threaded through as `aff_labels`, and reaches exactly one use:
+  `core_ccpo.py:795`, writing a column into the diagnostic CSV. **It never enters a node
+  key.**
+
+**The word "label" is the tell.** The intent was to MEASURE the conflation, to show phi
+was resolving it -- not to FIX it in the grouping. In CCPO's design phi was supposed to do
+that job: a soft kernel over a task-wide bucket would find the right neighbours, so
+enriching the hard anchor looked redundant. **The anchor was the fallback we expected to
+outperform.**
+
+That inverted the dependency. G2PO puts affordances INTO the state identity, where they
+partition. We kept them BESIDE it, where they only annotate.
+
+```
+aff as a partition refinement  ->  29.1% of within-node value variance
+aff as a similarity metric     ->  ~0   (r = -0.013)
+phi as a similarity metric     ->  ~0   (r = +0.011)
+```
+
+**We had the right feature from the start and put it where it does nothing**, because the
+architecture assumed the learned component would make the hard key irrelevant. That
+assumption is exactly what H-AK refutes five ways.
+
+**Transferable lesson:** when a method proposes to replace an existing mechanism, the
+existing mechanism is the thing to build on until the replacement is *demonstrated*
+superior -- not the thing to leave un-improved so the replacement looks better. Every
+enrichment we withheld from the anchor was an enrichment withheld from our own step term.
+
+
 ### CORRECTION: our anchor repair is only HALF domain-agnostic
 
 I claimed repeatedly that G2PO's invisible-state repair uses hand-written ALFWorld
