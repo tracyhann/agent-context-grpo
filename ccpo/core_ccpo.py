@@ -284,6 +284,24 @@ _BACKOFF_TASK = os.environ.get("ACG_CCPO_BACKOFF_TASK", "0") != "0"
 # derived value. Down-weights thinly supported baselines; the edge term is untouched.
 # 0 disables. Default off.
 _JW_C = float(os.environ.get("ACG_CCPO_JWEIGHT_C", "0.0"))
+# Credibility shrinkage of the step baseline toward the task prior (hard gate only).
+# A node baseline built from J other trajectories becomes
+#     b = (J * b_node + kappa * b_task) / (J + kappa)
+# with b_task the leave-own-trajectory-out task mean. This is the Buhlmann /
+# empirical-Bayes credibility form, kappa = within-node noise / between-node signal:
+# a thinly supported node leans on the task prior, a well supported one keeps its own
+# evidence. The plain normalised mean discards support entirely -- one sibling reads
+# as confidently as forty. Offline on ccpo-return-hard (411,669 credited rows):
+# baseline MSE -6.0% at kappa=2, better on 100/100 steps, -29% on single-match
+# nodes; the variance-component estimate lands at kappa ~3 in turn units, ~2 in
+# rollout units. Support is J (distinct trajectories), not the occurrence count:
+# revisits inside one trajectory are correlated (+6.0% vs +5.2% offline).
+# Not applied under the global gate: every row there sees all siblings, and the
+# N_eff-based variant measured +0.08% at best on ccpo-global-fa. Rows with no
+# sibling at all (J=0, the kappa-only limit) are what ACG_CCPO_BACKOFF_TASK serves.
+# Leakage check: b_task, J and the node key use only other trajectories and the
+# pre-action observation. 0 disables. Default off.
+_PRIOR_KAPPA = float(os.environ.get("ACG_CCPO_PRIOR_KAPPA", "0.0"))
 
 # rho discount applied at the coarse level: a looser gate is a less trustworthy
 # metric, and rho is exactly where metric confidence enters lambda*.
@@ -537,8 +555,27 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
     # we find out whether it should. Terminal successors have no node -> -1.
     _node_sz = Counter(NODE) if NODE is not None else Counter()
 
+    # Leave-own-trajectory-out task mean of the target: the credibility prior.
+    B_TASK = None
+    if _PRIOR_KAPPA > 0.0 and _GATE != "global":
+        _ts, _tn = defaultdict(float), defaultdict(int)
+        _js, _jn = defaultdict(float), defaultdict(int)
+        for _i in range(n):
+            _t, _j = str(index[_i]), str(traj_index[_i])
+            _ts[_t] += TGT[_i]
+            _tn[_t] += 1
+            _js[(_t, _j)] += TGT[_i]
+            _jn[(_t, _j)] += 1
+        B_TASK = np.full(n, np.nan, dtype=np.float64)
+        for _i in range(n):
+            _t, _j = str(index[_i]), str(traj_index[_i])
+            _m = _tn[_t] - _jn[(_t, _j)]
+            if _m > 0:
+                B_TASK[_i] = (_ts[_t] - _js[(_t, _j)]) / _m
+
     adv = np.zeros(n, dtype=np.float64)
     lam_all, neff_all, w_all, _rec = [], [], [], []
+    lamk_all = []
     _rel_all, _rel_slope = [], []
     _eff_all = []
     _dump = os.environ.get("ACG_CCPO_DUMP")
@@ -798,7 +835,14 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
             _vd1 = s2 * var_gain
             lam = 0.0 if abs(_d) < 1e-12 else float(1.0 - _vd1 / (_d * _d))
         lam = min(1.0, max(0.0, lam))
-        adv[i] = TGT[i] - (lam * b_loo + (1 - lam) * b_obs)
+        _base = lam * b_loo + (1 - lam) * b_obs
+        _lk = 1.0
+        if B_TASK is not None and _r["lvl"] == 0 and np.isfinite(B_TASK[i]):
+            # credibility: trust the node in proportion to its sibling support J
+            _lk = _r["J"] / (_r["J"] + _PRIOR_KAPPA)
+            _base = _lk * _base + (1.0 - _lk) * B_TASK[i]
+        lamk_all.append(_lk)
+        adv[i] = TGT[i] - _base
         if _STD_MODE == "local":
             # Coherent standardisation: the kernel that chose the neighbourhood also
             # sets the scale. The floor keeps a degenerate all-identical
@@ -823,7 +867,33 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
                 "" if aff_labels is None else str(aff_labels[i]),
                 int(_node_sz.get(NODE[i], 0)) if NODE is not None else -1,
                 int(_node_sz.get(NEXT[i], -1)) if NEXT is not None else -1,
+                "" if B_TASK is None else float(B_TASK[i]), float(_lk),
             ))
+
+    # Credibility constant implied by this batch, in rollout units: mean within-node
+    # variance of per-trajectory means over the variance of true node means around
+    # the task mean. Diagnostic only -- the shrinkage uses the fixed kappa above.
+    kappa_hat = float("nan")
+    if B_TASK is not None:
+        _tmean = {}
+        for _t in {str(x) for x in index}:
+            _tmean[_t] = float(TGT[[k for k in range(n) if str(index[k]) == _t]].mean())
+        _wv, _d2, _vj = [], [], []
+        for (_t, _o), _ids in _exact.items():
+            _pm = defaultdict(list)
+            for k in _ids:
+                _pm[str(traj_index[k])].append(TGT[k])
+            if len(_pm) < 2:
+                continue
+            _mu = np.array([np.mean(v) for v in _pm.values()])
+            _v = float(_mu.var(ddof=1))
+            _wv.append(_v)
+            _d2.append((float(_mu.mean()) - _tmean[_t]) ** 2)
+            _vj.append(_v / len(_mu))
+        if _wv:
+            _between = float(np.mean(_d2)) - float(np.mean(_vj))
+            if _between > 1e-12:
+                kappa_hat = float(np.mean(_wv)) / _between
 
     # ---- edge term (G2PO component 2), off by default -----------------------
     # V(next) - V(current), standardised per task. This is the half of G2PO that
@@ -890,7 +960,7 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
                 if _new:
                     _fh.write("step,uid,traj_uid,bucket,level,G,target,lam,b_loo,"
                               "b_obs,n_eff,J,adv_cc,adv_gigpo,adv_g2po,effect,aff,"
-                              "g_cur,g_next\n")
+                              "g_cur,g_next,b_task,lam_k\n")
                 for _r in _rows:
                     _fh.write(str(step_tag) + "," + ",".join(str(x) for x in _r) + "\n")
         except OSError:
@@ -940,4 +1010,6 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
         effect_rel=float(_eff.mean() / _adv_scale)
         if _adv_scale and np.isfinite(_adv_scale) and _adv_scale > 1e-12 else float("nan"),
         r_vs_gigpo=_r_gigpo, r_vs_g2po=_r_g2po,
+        lam_k_mean=float(np.mean(lamk_all)) if lamk_all else 1.0,
+        kappa_hat=kappa_hat,
     )

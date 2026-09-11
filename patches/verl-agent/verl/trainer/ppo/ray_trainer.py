@@ -429,7 +429,7 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
                       'effect_rel', 'r_vs_gigpo', 'r_vs_g2po', 'acc_len_corr', 'lam_pooled',
                       'lam_pooled_obs', 'lam_eb_obs', 'lam_eb_obs_gt0',
                       'phi_rel_corr', 'phi_rel_gt0', 'phi_rel_slope', 'tau2',
-                      'rho', 'edge_cov')
+                      'rho', 'edge_cov', 'lam_k_mean', 'kappa_hat')
         _m = {f'ccpo/{k}': float(diag[k]) for k in _diag_keys
               if k in diag and diag[k] is not None}
         # phi_mode is a string, so it would not survive into the numeric metrics.
@@ -1484,10 +1484,15 @@ class RayPPOTrainer:
                                            open(_os.path.join(_root, "best.json"), "w"))
                                 self._acg_pending_best = None
                             # prune rolling checkpoints (vendored verl ignores max_ckpt_to_keep):
-                            # keep the two newest global_step dirs; best-* survives via hardlinks
+                            # keep the ACG_KEEP_CKPTS newest global_step dirs (default 2);
+                            # best-* survives via hardlinks. Pruning runs AFTER the save, so
+                            # a run transiently holds keep + 1 + best. 1 is enough to resume
+                            # (resume reads only the newest) and saves 25 GB per run on the
+                            # 1.5B model -- the disk-full crash of fbjw at step 15 is why.
+                            _keep = max(1, int(_os.environ.get("ACG_KEEP_CKPTS", "2")))
                             _gs = sorted(_glob.glob(_os.path.join(_root, "global_step_*")),
                                          key=lambda d: int(d.rsplit("_", 1)[1]))
-                            for _old in _gs[:-2]:
+                            for _old in _gs[:-_keep]:
                                 _sp.run(["rm", "-rf", _old], check=False)
 
                 _cd = (batch.meta_info or {}).get('ccpo_diag')

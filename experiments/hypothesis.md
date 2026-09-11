@@ -357,6 +357,7 @@ says which is which, so the section can be read without opening every one.
 
 | | what it is | state |
 |---|---|---|
+| **H-AK** | credibility shrinkage of the node baseline toward the task prior | **offline +6.0%; arm queued after `fbjw`** |
 | **H-AC** | `ccpo-cheapmem`, digest at 192 tok / replace mode | **running** |
 | **H-S / H-X** | epistemic weighting `w_u = J_u/(J_u+c)` — the ONE untested uncertainty variant | **open** |
 | **H-AB** | G2PO on our harness — the only remaining way to attribute 79.7% | **open, declined twice** |
@@ -373,6 +374,70 @@ divided A_CC by sigma, damping HIGH-VARIANCE neighbourhoods. H-S weights by reli
 damping POORLY-SAMPLED ones. The two disagree precisely where variance and support are
 both high, so -2.08 on the first says nothing about the second.
 
+
+### [OFFLINE-CONFIRMED; arm queued after `fbjw`] H-AK. **Credibility shrinkage of the step baseline** — the node mean discards how much evidence it has
+
+**Framing.** The step baseline is a read from an episodic *return* memory: key = state,
+value = a sibling's return-to-go, read = mean over other trajectories at the node. (A
+critic stores value in parameters; this stores real returns and retrieves them. Closest
+prior art: Neural Episodic Control, Pritzel et al. 2017.) The plain normalised mean is
+invariant to how much evidence backs it -- one sibling reads as confidently as forty.
+Fix: shrink toward the leave-own-trajectory-out task mean with the credibility weight
+
+    b = lam * b_node + (1 - lam) * b_task,     lam = J / (J + kappa)
+
+J = distinct other trajectories at the node. kappa = within-node noise / between-node
+signal (Buhlmann credibility), so it is estimable, not a free knob.
+
+**Offline, `ccpo-return-hard-20260910` dump, 411,669 credited rows, residual
+MSE of the baseline against the target (lower = cleaner step signal):**
+
+| baseline | MSE | vs current |
+|---|---|---|
+| current (uniform node mean, other trajectories) | 4.474 | -- |
+| dedup: one vote per sibling trajectory | 4.778 | **-6.8% (worse on 93/100 steps)** |
+| first-visit only | 4.535 | -1.4% |
+| like-with-like (first visits vs first visits, revisits as now) | ~4.427 | ~+1.0% (derived) |
+| **credibility, support = occurrences, kappa=3** | 4.240 | **+5.2%** |
+| **credibility, support = J, kappa=2** | **4.207** | **+6.0%, better on 100/100 steps** |
+
+The gain sits where the hypothesis says: 1 matching occurrence 7.43 -> 5.27, 2: 6.40 ->
+5.30, 3: 5.83 -> 5.12; 40+: 2.50 -> 2.50. Variance components put kappa* at 3.0 in
+occurrence units (within 3.36, between 1.11); the per-batch estimate on a gate-probe
+batch is 2.7 in rollout units -- the searched optimum (2) and the estimate agree.
+
+**Where it does NOT apply.** Under the global gate every row sees all 7 siblings;
+N_eff-based shrinkage on `ccpo-global-fa` gave +0.08% at best, -1.9% at kappa=8.
+Raw kernel mass S_i is not logged, so that variant is untested, not refuted.
+
+**Ceiling, for scale.** Within a task only 15% of target variance is between-state
+(oracle node baseline 3.07 vs oracle task 3.60); the current baseline's excess over the
+node oracle (1.41, 31% of its MSE) is estimation noise. Credibility shrinkage attacks
+that 31%; better keys can at most reach the 15%. Neither touches the 85% within-state
+variance, i.e. neither fixes exploration (the held-out failures are loops, see the
+2026-09-11 traces).
+
+**Leakage check (asked by a reviewer of the framing).** phi = reference-model hidden
+state at the last PROMPT token; ctx features use observations up to the current one;
+node key = pre-action observation; b_task and J use other trajectories only. No term
+depends on the action being credited.
+
+**Implemented** as `ACG_CCPO_PRIOR_KAPPA` (default 0 = off; hard gate only; level-0 rows
+only -- J=0 rows are `ACG_CCPO_BACKOFF_TASK`'s). Verified on a real gate-probe batch
+(3,584 rows): flag off bit-identical to the committed estimator under hard, global and
+fbjw flags; global + kappa inert; b_task matches an independent computation; every
+level-0 row equals target - [lam*b_node + (1-lam)*b_task] with lam = J/(J+2); fallback
+rows untouched; kappa -> 0 recovers the unshrunk advantage. Logged: `ccpo/lam_k_mean`,
+`ccpo/kappa_hat`, and `b_task, lam_k` per row in the dump.
+
+**Arm (pre-registered): `ccpo-return-hard-cred`.** `ccpo-return-hard`'s config +
+`ccpo_backoff_task=1` + `ccpo_prior_kappa=2.0`, J-weight OFF (one mechanism: shrinkage
+toward the task prior, whose J=0 limit is the fallback). `keep_ckpts=1` (disk).
+Primary comparator `ccpo-return-hard` (does shrinkage help?); secondary `fbjw` (does it
+beat fallback + advantage weight?). Read on the steps 70-100 window and the mean over all
+20 evaluations. Single-seed resolution is ~5 pts and the offline effect predicts less;
+promote to a 3-seed comparison vs `ret-hard` only if it matches or beats both comparators
+at 50 and 100. Abort at step 20 below ~11% held-out, as for every arm.
 
 ### [OPEN — untested, measured on `ccpo-anchor-2gpu-20260909`] H-AG. **The uncertainty apparatus is inert in the shipped config** — λ is pinned and J is constant
 
