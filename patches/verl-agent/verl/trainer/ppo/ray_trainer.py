@@ -803,6 +803,8 @@ class RayPPOTrainer:
         data_source_lst = []
         tool_calling_list = []
         traj_uid_list = []
+        episode_length_list = []
+        episode_reward_list = []
         success_rate_dict = {}
 
         # Lists to collect samples for the table
@@ -884,6 +886,8 @@ class RayPPOTrainer:
             data_source_lst.append(test_batch.non_tensor_batch.get('data_source', ['unknown'] * reward_tensor.shape[0]))
             tool_calling_list.append(test_output_gen_batch.non_tensor_batch['tool_callings'])
             traj_uid_list.append(test_output_gen_batch.non_tensor_batch['traj_uid'])
+            episode_length_list.append(test_output_gen_batch.non_tensor_batch['episode_lengths'])
+            episode_reward_list.append(test_output_gen_batch.non_tensor_batch['episode_rewards'])
             # success rate
             for k in test_batch.non_tensor_batch.keys():
                 if 'success_rate' in k:
@@ -900,6 +904,8 @@ class RayPPOTrainer:
         data_sources = np.concatenate(data_source_lst, axis=0)
         tool_callings = np.concatenate(tool_calling_list, axis=0)
         traj_uids = np.concatenate(traj_uid_list, axis=0)
+        episode_lengths = np.concatenate(episode_length_list, axis=0)
+        episode_rewards = np.concatenate(episode_reward_list, axis=0)
         success_rate = {k: np.mean(v) for k, v in success_rate_dict.items()}
 
         # evaluate test_score based on data source
@@ -931,6 +937,15 @@ class RayPPOTrainer:
             metric_dict[f'val/{data_source}/tool_call_count/mean'] = np.mean(tool_calls)
             # metric_dict[f'val/{data_source}/tool_call_count/max'] = np.max(tool_calls)
             # metric_dict[f'val/{data_source}/tool_call_count/min'] = np.min(tool_calls)
+
+        # turns per held-out game: every row of a trajectory carries that game's total
+        # episode_lengths/episode_rewards (gather_rollout_data keeps active steps only), so
+        # take one per traj_uid. ALFWorld's text reward is 10*won, so reward > 0 marks a success.
+        game_lengths = episode_lengths[unique_idx].astype(float)
+        game_won = episode_rewards[unique_idx].astype(float) > 0
+        metric_dict['val/episode_length/mean'] = float(game_lengths.mean())
+        metric_dict['val/episode_length/success_mean'] = (
+            float(game_lengths[game_won].mean()) if game_won.any() else float('nan'))
 
         for k, v in success_rate.items():
             metric_dict[f'val/{k}'] = v

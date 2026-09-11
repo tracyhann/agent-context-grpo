@@ -452,6 +452,8 @@ def main():
         if k not in cfg:
             sys.exit(f"unknown config key: {k}\nknown: {', '.join(sorted(cfg))}")
         cfg[k] = _coerce(v)
+    # `--set gpus=5` coerces to int; build_command splits it and CUDA_VISIBLE_DEVICES needs a str
+    cfg["gpus"] = str(cfg["gpus"])
 
     cfg["exp_id"] = f"{a.name}-{a.date}"
     exp_dir = os.path.join(ROOT, "experiments", cfg["exp_id"])

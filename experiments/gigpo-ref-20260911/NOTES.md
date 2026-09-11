@@ -38,3 +38,14 @@ queue watcher read that as "GiGPO finished" and could have launched `g2po-aff` o
 0-3 during GiGPO's low-memory startup. It was killed before it did. `train.pid` was
 rewritten to the real `run.sh` pid (**238169**, trainer 238180), and the metrics mirror
 and queue were restarted on it with `setsid -f`. Nothing else was affected.
+
+## Progress through step 50 (2026-09-11)
+
+| held-out % | 0 | 5 | 10 | 15 | 20 | 25 | 30 | 35 | 40 | 45 | 50 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| gigpo-ref | 10.2 | 6.2 | 14.8 | 14.1 | 14.8 | 18.8 | 25.8 | 23.4 | 28.1 | 37.5 | 35.9 |
+| G2PO ref | - | 12.5 | 11.7 | 28.9 | 35.9 | 46.9 | 54.7 | 64.8 | 67.2 | 71.9 | 79.7 |
+| HGPO | - | 11.7 | 10.9 | 17.2 | 14.1 | 23.4 | 22.7 | 37.5 | 30.5 | 34.4 | 34.4 |
+
+Window 35-50: **GiGPO 31.2**, HGPO 34.2, G2PO 70.9. GiGPO tracks HGPO closely and trails G2PO
+by ~40 points at this stage; HGPO's big climb came at steps 50-70. Pace ~454 s/step.
