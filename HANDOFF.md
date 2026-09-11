@@ -14,11 +14,11 @@ ccpo-global and trailing G2PO's 91.4. Kept: `step100-budget` and `step160-best`/
 **Stopped** — `g2po-harness-resume` at step 6 (2026-09-11, user decision), so the GPUs
 could go to GiGPO.
 
-**Running** — `gigpo-ref-20260911` on GPUs 0-3 since 05:49 (run.sh pid 238169): GiGPO's own
-trainer, unmodified, 150 iters, published 86.7. `step100-budget` is preserved by
-`snapshot_ckpt.sh` (done 16:31, verified 19 GB).
-**Step-100 result (budget-matched): GiGPO 76.6 (window 85-100: 74.2).** At 100 iterations:
-G2PO 90.8 >> ccpo-global 77.2 ≈ HGPO 76.0 ≈ GiGPO 74.2 (windowed). Ends around 22:00.
+**Finished** — `gigpo-ref-20260911`: **86.7 at step 150 (published 86.7), so it is
+reproduced exactly**; window 135-150 is 85.4. Budget-matched at step 100: 76.6 (window 74.2).
+Kept: `step100-budget` and `step150-best`/`-last`. `global_step_125` (19 GB) awaits the
+user's OK to delete, like HGPO's `global_step_140`.
+**All three baselines reproduce on our stack: G2PO 91.4 @100, HGPO 93.0 @160, GiGPO 86.7 @150.**
 
 **Queued** (`scripts/queue_anchor_aff.sh`, waits on GiGPO) — `g2po-aff` -> `g2po-affonly`.
 

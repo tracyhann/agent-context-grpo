@@ -66,3 +66,20 @@ around 50-55 over steps 55-75, then climbed again from step 80.
 Weights: `checkpoints/step100-budget` (snapshot 16:31:06, 19 GB counting links, 2 links
 per shard, so it survives the trainer's rotation at step 150). Pace over the first 100
 steps is ~385 s/step, so the run should end around 22:00, when the queue starts `g2po-aff`.
+
+## FINAL (2026-09-11 20:18): GiGPO reproduces its published number exactly
+
+| held-out % | 105 | 110 | 115 | 120 | 125 | 130 | 135 | 140 | 145 | **150** |
+|---|---|---|---|---|---|---|---|---|---|---|
+| gigpo-ref | 76.6 | 68.8 | 81.2 | 79.7 | 81.2 | 88.3 | 82.8 | 83.6 | 88.3 | **86.7** |
+
+* **Endpoint 86.7 vs published 86.7. Reproduced.** Window 135-150: **85.4**.
+* **Budget-matched at step 100: 76.6** (window 85-100: 74.2), in the HGPO/ccpo-global
+  cluster, ~14-17 points below G2PO.
+* Finished normally (150/150, "Final validation metrics", step-150 checkpoint saved).
+  Wall-clock 14.3 h.
+
+Checkpoints: `step100-budget` (budget-matched), plus `step150-best` = `step150-last` ->
+`global_step_150` (best over the retained 125/150: 81.2 vs 86.7; `best.json` records it).
+`global_step_125` (19 GB) is neither best nor last. As with HGPO's `global_step_140`,
+deleting it waits for the user's OK. `global_step_25`-`_100` hold only `data.pt`.

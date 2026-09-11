@@ -3346,3 +3346,8 @@ iterations, windowed: **G2PO 90.8 >> ccpo-global 77.2 ≈ HGPO 76.0 ≈ GiGPO 74
 GiGPO/HGPO/ours are within noise of each other; G2PO is the lone outlier, ~14 points up.
 So the question for SOTA at this budget is still what G2PO does that the other three do
 not. `g2po-aff` (queued) isolates the state-grouping part of that.
+
+**GiGPO final (2026-09-11):** 86.7 at step 150 (window 135-150: 85.4) against a published
+86.7, so it reproduces exactly. **All three baselines now reproduce on our stack**: G2PO 91.4
+@100, HGPO 93.0 @160, GiGPO 86.7 @150. So our stack is faithful, and the gap between our
+79.7 and G2PO's 91.4 at matched budget belongs to the method, not the harness.
