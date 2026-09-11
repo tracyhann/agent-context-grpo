@@ -37,7 +37,11 @@ wait_ram() {    # wait for >=100G host RAM, GPUs 0-3 genuinely free AND >=80G di
   ok=0
   for i in $(seq 1 1440); do
     a=$(free -g | awk '/^Mem:/{print $7}')
-    g=$(nvidia-smi --query-gpu=memory.free --format=csv,noheader,nounits -i 0,1,2,3 | awk '$1>=80000' | wc -l)
+    # Memory alone cannot distinguish an idle GPU from the neighbour's trough: sampled
+    # 2026-09-11 22:36-22:38, GPUs 0-3 cycled every 30-60 s between ~12.6-20 GB used
+    # (>=78 GB free, i.e. PASSING a memory-only test) and ~36-38 GB, at 72-100% util
+    # throughout. Utilization is the discriminator -- a genuinely free card sits near 0%.
+    g=$(nvidia-smi --query-gpu=memory.free,utilization.gpu --format=csv,noheader,nounits -i 0,1,2,3 | awk -F', *' '$1>=80000 && $2<15' | wc -l)
     d=$(df -B1G --output=avail /workspace | tail -1 | tr -d ' ')
     if [ "${a:-0}" -ge 100 ] && [ "${g:-0}" -ge 4 ] && [ "${d:-0}" -ge 80 ]; then
       ok=$((ok+1))
@@ -48,7 +52,7 @@ wait_ram() {    # wait for >=100G host RAM, GPUs 0-3 genuinely free AND >=80G di
     fi
     [ "$ok" -gt 0 ] && echo "streak broken at ${ok}/${CONSEC}"
     ok=0
-    echo "waiting: host RAM ${a}G (need 100), GPUs 0-3 free ${g}/4, disk ${d}G (need 80)"; sleep 60
+    echo "waiting: host RAM ${a}G (need 100), GPUs 0-3 idle+free ${g}/4, disk ${d}G (need 80)"; sleep 60
   done
   echo "ABORT: resources never drained in 24h"; exit 1
 }

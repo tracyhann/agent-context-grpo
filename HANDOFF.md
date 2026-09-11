@@ -33,9 +33,12 @@ to be free (>=80 GB each), then relaunches as `g2po-aff-r2-20260911` from
 **The neighbour's load fluctuates.** At 22:35:28 all four GPUs read >=80 GB free; 35 s
 later they were back to 36-38 GB used at 42-65% util, none of it ours. A single-sample
 check mistakes a trough for an idle GPU -- almost certainly how the resume launched into
-one and died in vLLM's `sleep()`. `wait_ram` now requires **5 consecutive free samples,
-60 s apart**; watch for "free sample N/5" and "streak broken" lines in
-`experiments/queue_anchor_aff.log`.
+one and died in vLLM's `sleep()`. Sampling every 10 s showed it cycling every 30-60 s between 12.6-20 GB used
+(78-85 GB free, which PASSES a memory-only test) and 36-38 GB, at 72-100% util throughout.
+So `wait_ram` now requires **>=80 GB free AND util <15% on all four cards, for 5
+consecutive samples 60 s apart**; watch for "free sample N/5" and "streak broken" lines in
+`experiments/queue_anchor_aff.log`. **Utilization, not memory, is what distinguishes an
+idle GPU from a gap in a neighbour's job.**
 
 **If a run dies with no error again:** check `/proc/vmstat oom_kill` and
 `/sys/fs/cgroup/memory.events` first, then whether unrelated watcher processes died at the

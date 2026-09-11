@@ -47,3 +47,18 @@ likely how the resume came to launch at 22:31 and then hit vLLM's
 "Memory usage increased after sleeping" -- it started in a gap and the neighbour
 re-allocated during rollout init. `wait_ram` in `scripts/queue_anchor_aff.sh` now requires
 **5 consecutive free samples 60 s apart** before launching.
+
+## The neighbour's cycle, sampled (22:36:32-22:38:24, every 10 s)
+
+| used (GB, GPUs 0-3) | util % |
+|---|---|
+| 27.8 / 27.9 / 27.9 / 27.8 | 100 100 100 100 |
+| 36.2 / 38.1 / 38.1 / 38.2 | 22 24 44 53 |
+| 12.6 / 14.8 / 14.8 / 14.6 | 0 0 0 0 |
+| 19.9 / 20.1 / 20.1 / 19.9 | 98 98 99 98 |
+| 36.2 / 38.4 / 38.4 / 38.2 | 74-100 |
+
+It cycles every 30-60 s. **The troughs pass a memory-only test**: at 12.6-20 GB used there
+is 78-85 GB free, over our 80 GB bar. Utilization, however, is 72-100% nearly throughout.
+So `wait_ram` now requires **>=80 GB free AND utilization <15%** on all four cards, for 5
+consecutive samples. That is what distinguishes an idle GPU from a gap in someone's job.
