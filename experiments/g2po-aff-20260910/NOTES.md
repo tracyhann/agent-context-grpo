@@ -43,3 +43,23 @@ After it launched, a LOGGING-ONLY block was added to the G2PO branch of `ray_tra
 feeds back into the advantage. It was checked against hand-computed values on a mock batch.
 This process imported `ray_trainer` at startup, so the change does not affect it;
 **`g2po-affonly` will be the first arm with these metrics.**
+
+## KILLED EXTERNALLY at step 16 (2026-09-11 22:27:32) — cause unexplained
+
+Held-out before the kill: 11.7 @5, 18.8 @10, 25.0 @15 (G2PO ref: 12.5, 11.7, 28.9).
+
+**What the evidence shows.** `train.log` stops mid-rollout with no traceback and no
+non-zero exit. Ray's raylet/worker logs contain no fatal error and no signal (the only
+"terminated" lines are routine worker shutdowns at 20:22 startup). `/proc/vmstat oom_kill`
+is **0** and the cgroup's `memory.events` shows `oom 0`, so neither the host nor our
+cgroup killed anything for memory; RAM was at 271 GB free afterwards, disk 336 GB.
+**The queue watcher (a plain bash `sleep` loop) and the plot watcher died at the same
+moment** — a crash inside training cannot do that, so this was an external SIGKILL of the
+process tree. Processes started before 05:35 survived. Cause not identifiable from inside
+the container; recorded as unexplained rather than guessed.
+
+**Recovery.** `global_step_15` contains `data.pt`, so the dataloader state is intact and
+the resume is clean (unlike `g2po-harness-resume`, whose checkpoint lacked it). Relaunched
+as **`g2po-aff-resume-20260911`** from that checkpoint, via `exp_run.py` (which records
+`Popen.pid` correctly). At most one training step was lost. The queue was rewritten to
+wait on the resumed arm before `g2po-affonly`.

@@ -20,9 +20,16 @@ Kept: `step100-budget` and `step150-best`/`-last`. `global_step_125` (19 GB) awa
 user's OK to delete, like HGPO's `global_step_140`.
 **All three baselines reproduce on our stack: G2PO 91.4 @100, HGPO 93.0 @160, GiGPO 86.7 @150.**
 
-**Running** — `g2po-aff-20260910` on GPUs 0-3 since 2026-09-11 20:22 (pid 305250): G2PO's
-estimator + our obs_repair + anchor_aff. It is the direct test of whether our state-grouping
-fixes beat G2PO (91.4 @100).
+**Running** — `g2po-aff-resume-20260911` on GPUs 0-3: G2PO's estimator + our obs_repair +
+anchor_aff, the direct test of whether our state-grouping fixes beat G2PO (91.4 @100).
+It resumes `g2po-aff-20260910`, which was **killed externally at step 16 on 2026-09-11
+22:27:32** — no traceback, no OOM (global `oom_kill` 0), and a bash watcher died with it.
+Cause unexplained; see that arm's NOTES. Held-out before the kill: 11.7/18.8/25.0 at
+steps 5/10/15 against G2PO's 12.5/11.7/28.9.
+
+**If a run dies with no error again:** check `/proc/vmstat oom_kill` and
+`/sys/fs/cgroup/memory.events` first, then whether unrelated watcher processes died at the
+same second (that distinguishes an external kill from a crash).
 
 **Queued** (`scripts/queue_anchor_aff.sh`) — `g2po-affonly` after it.
 `ray_trainer.py` now logs `g2po/*` node diagnostics (logging only, added after g2po-aff

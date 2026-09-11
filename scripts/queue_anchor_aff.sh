@@ -47,12 +47,12 @@ launch() {      # $1 name, rest = exp_run args
 COMMON=(--arm g2po --set gpus=0,1,2,3 --set total_epochs=100 --set compact_budget=0
         --set early_stop_min_steps=40 --set early_stop_patience=8)
 
-wait_done experiments/gigpo-ref-20260911/outputs/train.pid
-echo "gigpo-ref finished"
-
-wait_ram
-launch g2po-aff "${COMMON[@]}" --set obs_repair=1 --set anchor_aff=1
-wait_done experiments/g2po-aff-${D8}/outputs/train.pid
+# 2026-09-11 22:27: g2po-aff was killed externally at step 16 (no error, no OOM; a bash
+# watcher died with it). It was relaunched by hand as g2po-aff-resume-20260911, resumed
+# from its own global_step_15 (which has data.pt, so the dataloader state is intact).
+# This queue now waits on THAT arm.
+wait_done experiments/g2po-aff-resume-20260911/outputs/train.pid
+echo "g2po-aff-resume finished"
 
 wait_ram
 launch g2po-affonly "${COMMON[@]}" --set obs_repair=0 --set anchor_aff=1
