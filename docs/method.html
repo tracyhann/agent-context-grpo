@@ -1112,6 +1112,7 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
         <tr><td class="dim">HGPO (published, K=2)</td><td class="num">160</td><td class="num">92.77</td><td>different budget &mdash; not matched</td></tr>
         <tr><td class="dim">HGPO &mdash; <b>reproduced</b>, their code, our stack</td><td class="num">100</td><td class="num">79.7</td><td>budget-matched checkpoint of the 160-step run; window 85&ndash;100 = 76.0; <span class="m">hgpo-ref-4gpu-20260910</span></td></tr>
         <tr><td class="dim">HGPO &mdash; <b>reproduced</b>, same run, full protocol</td><td class="num">160</td><td class="num">93.0</td><td>matches published 92.77; window 145&ndash;160 = 91.1</td></tr>
+        <tr><td class="dim">GiGPO &mdash; <b>reproduced</b>, their code, our stack</td><td class="num">100</td><td class="num">76.6</td><td>budget-matched checkpoint of the 150-step run; window 85&ndash;100 = 74.2; <span class="m">gigpo-ref-20260911</span></td></tr>
         <tr><td class="dim">GiGPO (published)</td><td class="num">150</td><td class="num">86.7 &plusmn; 1.7</td><td>different budget &mdash; not matched</td></tr>
         <tr style="background:rgba(200,60,50,.07)"><td class="dim"><b>G&sup2;PO &mdash; THEIR TREE, OUR HARDWARE</b></td><td class="num"><b>100</b></td><td class="num"><b>91.4</b></td><td><b>reproduction</b> &mdash; window mean 86.8, peak 95.3 @95; <span class="m">g2po-ref-20260909</span></td></tr>
         <tr class="ourrow"><td class="dim"><b>CCPO &mdash; global gate + edge term</b></td><td class="num"><b>100</b></td><td class="num"><b>79.7</b></td><td><b>ours, 1 seed</b> &mdash; <span class="m">ccpo-global-20260907</span></td></tr>
@@ -1286,7 +1287,9 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
   <p style="margin-top:14px"><b>HGPO reproduced:</b> its own code, unmodified, reaches <b>93.0 at 160
   iterations</b> (published 92.77). At the matched 100-iteration budget it scores 79.7 (window 85&ndash;100:
   76.0), which ties our best arm and sits ~14 points behind G&sup2;PO. So per iteration, G&sup2;PO is the baseline
-  to beat. <b>Now queued:</b> <span class="m">g2po-harness</span> (paused at step 5,
+  to beat. <b>GiGPO</b> (its own code, running to its published 150 iterations) scores 76.6 at step 100
+  (window 74.2): at this budget GiGPO, HGPO and our best arm form one cluster within noise, and G&sup2;PO sits ~14
+  points above it. <b>Now queued:</b> <span class="m">g2po-harness</span> (paused at step 5,
   resumable), then <span class="m">g2po-aff</span> and <span class="m">g2po-affonly</span>. The last is the only
   fully domain-agnostic test: our failure repair and admissible-action key are generic, but our invisible-state
   carry-forward copies G&sup2;PO's ALFWorld strings (<span class="m">"You heat"</span>,

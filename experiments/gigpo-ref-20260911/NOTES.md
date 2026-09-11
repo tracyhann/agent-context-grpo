@@ -49,3 +49,20 @@ and queue were restarted on it with `setsid -f`. Nothing else was affected.
 
 Window 35-50: **GiGPO 31.2**, HGPO 34.2, G2PO 70.9. GiGPO tracks HGPO closely and trails G2PO
 by ~40 points at this stage; HGPO's big climb came at steps 50-70. Pace ~454 s/step.
+
+## BUDGET-MATCHED RESULT at step 100 (2026-09-11 16:31)
+
+| held-out % | 85 | 90 | 95 | **100** | window 85-100 |
+|---|---|---|---|---|---|
+| **gigpo-ref** | 69.5 | 68.8 | 82.0 | **76.6** | **74.2** |
+| HGPO (reproduced) | 66.4 | 76.6 | 81.2 | 79.7 | 76.0 |
+| ccpo-global (ours, best) | 75.8 | 75.0 | 78.1 | 79.7 | 77.2 |
+| G2PO (reproduced) | 89.1 | 87.5 | 95.3 | 91.4 | 90.8 |
+
+**At 100 iterations, GiGPO, HGPO and our ccpo-global form one cluster (74-77 windowed,
+within noise of each other), and G2PO sits ~14 points above all three.** GiGPO plateaued
+around 50-55 over steps 55-75, then climbed again from step 80.
+
+Weights: `checkpoints/step100-budget` (snapshot 16:31:06, 19 GB counting links, 2 links
+per shard, so it survives the trainer's rotation at step 150). Pace over the first 100
+steps is ~385 s/step, so the run should end around 22:00, when the queue starts `g2po-aff`.

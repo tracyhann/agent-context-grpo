@@ -3337,3 +3337,12 @@ there. SOTA at matched budget is G2PO, so any claim of ours has to beat ~91.
 **HGPO final (2026-09-11):** 93.0 at step 160 (window 145-160: 91.1) against a published
 92.77, so the reproduction holds. Two protocols now bracket SOTA: **at 100 iterations G2PO leads
 (91.4)**, and **at 160 HGPO reaches 93.0**. Our best (79.7 at 100) is behind both.
+
+### Measurement: GiGPO reproduced at a matched 100-iteration budget (2026-09-11)
+
+GiGPO's own trainer (`baselines/verl-agent`, unmodified, 4 GPUs) scores **76.6** held-out
+at step 100 (window 85-100: **74.2**). All three reproduced baselines plus ours at 100
+iterations, windowed: **G2PO 90.8 >> ccpo-global 77.2 ≈ HGPO 76.0 ≈ GiGPO 74.2.**
+GiGPO/HGPO/ours are within noise of each other; G2PO is the lone outlier, ~14 points up.
+So the question for SOTA at this budget is still what G2PO does that the other three do
+not. `g2po-aff` (queued) isolates the state-grouping part of that.

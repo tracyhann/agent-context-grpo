@@ -16,7 +16,9 @@ could go to GiGPO.
 
 **Running** — `gigpo-ref-20260911` on GPUs 0-3 since 05:49 (run.sh pid 238169): GiGPO's own
 trainer, unmodified, 150 iters, published 86.7. `step100-budget` is preserved by
-`snapshot_ckpt.sh`.
+`snapshot_ckpt.sh` (done 16:31, verified 19 GB).
+**Step-100 result (budget-matched): GiGPO 76.6 (window 85-100: 74.2).** At 100 iterations:
+G2PO 90.8 >> ccpo-global 77.2 ≈ HGPO 76.0 ≈ GiGPO 74.2 (windowed). Ends around 22:00.
 
 **Queued** (`scripts/queue_anchor_aff.sh`, waits on GiGPO) — `g2po-aff` -> `g2po-affonly`.
 
