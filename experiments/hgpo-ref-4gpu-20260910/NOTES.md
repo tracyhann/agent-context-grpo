@@ -96,3 +96,18 @@ Rotation verified: `global_step_20` and `_40` keep only `data.pt` (6.5 KB, weigh
 deleted), while `_60` and `_80` are 19 GB each. At most two weight sets exist at a time.
 The session restarted at ~23:00; the run, queue, snapshot watcher and metrics mirror all
 survived it (all were launched with setsid), and only the Claude-side monitors were re-armed.
+
+## BUDGET-MATCHED RESULT at step 100 (2026-09-11 00:18)
+
+| held-out % | 85 | 90 | 95 | **100** | window 85-100 |
+|---|---|---|---|---|---|
+| **hgpo-ref-4gpu** | 66.4 | 76.6 | 81.2 | **79.7** | **76.0** |
+| G2PO reference | 89.1 | 87.5 | 95.3 | 91.4 | 90.8 |
+| ccpo-global (ours, best) | 75.8 | 75.0 | 78.1 | 79.7 | 77.2 |
+
+**At our 100-iteration budget, HGPO ties our best arm (window 76.0 vs 77.2, endpoint 79.7
+vs 79.7), and both trail G2PO by ~14 points.** G2PO is the baseline to beat at this
+budget. HGPO continues to 160 for its published protocol (92.77).
+
+Weights saved: `checkpoints/step100-budget` (snapshot 00:18:23, 19 GB, hard-linked so it
+survives the trainer's rotation at step 140).

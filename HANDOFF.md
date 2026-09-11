@@ -12,6 +12,8 @@ It uses **~13.8k of 20k pids** (256 env actors, with val envs pre-built, plus id
 workers), so nothing else can share the container while it runs.
 Pace is **442 s/step**: it ends around **09:00 on 2026-09-11**, with step 100 around
 01:30. The g2po arms queue behind it.
+**Step-100 result (budget-matched): HGPO 79.7 (window 85-100: 76.0)**, tying ccpo-global
+(79.7 / 77.2), with G2PO at 91.4 / 90.8. Weights are in `step100-budget`.
 
 **Disk (09:20)** — the shared filesystem was at 69 GB free (14 TB total, ours ~690 GB).
 `exp_run.py` now waits for >=80 GB before launching (`EXP_MIN_FREE_GB`). A running arm

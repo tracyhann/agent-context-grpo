@@ -3324,3 +3324,12 @@ the "context conditioning on top of G2PO's partition" route at full weight.** Th
 untested variant is the EB-weighted one (`shrink=eb`), which by construction would stay
 within ~4% of G2PO and cannot beat it by much. The comparator for any future
 partition-side idea is `g2po-aff`, which is queued.
+
+
+### Measurement: HGPO reproduced at a matched 100-iteration budget (2026-09-11)
+
+HGPO's own code (`recipe/hgpo`, unmodified, 4 GPUs) at step 100 scores held-out **79.7**
+(window 85-100: **76.0**). That is level with our best arm, ccpo-global (79.7, window 77.2),
+and ~14 points behind G2PO (91.4, window 90.8). **Ranking at 100 iterations: G2PO >> HGPO
+≈ CCPO-global.** HGPO's published 92.77 is a 160-iteration number, and this run continues
+there. SOTA at matched budget is G2PO, so any claim of ours has to beat ~91.
