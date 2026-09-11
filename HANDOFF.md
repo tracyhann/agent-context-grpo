@@ -6,14 +6,12 @@
 (-13.3, beyond 2SE), pooled -5.8 over 10 evaluations. It was stopped at step 50 by SIGKILL
 after the step-50 save; `step50-best` and `step50-last` are kept. See its NOTES and H-AL FINAL.
 
-**Running / next** — `hgpo-ref-4gpu-20260910` launches from the queue on GPUs 0-3.
-`scripts/snapshot_ckpt.sh` is waiting to preserve its step-100 weights as `step100-budget`.
-It uses **~13.8k of 20k pids** (256 env actors, with val envs pre-built, plus idle Ray
-workers), so nothing else can share the container while it runs.
-Pace is **442 s/step**: it ends around **09:00 on 2026-09-11**, with step 100 around
-01:30. The g2po arms queue behind it.
-**Step-100 result (budget-matched): HGPO 79.7 (window 85-100: 76.0)**, tying ccpo-global
-(79.7 / 77.2), with G2PO at 91.4 / 90.8. Weights are in `step100-budget`.
+**Finished** — `hgpo-ref-4gpu-20260910`: **93.0 at step 160 (published 92.77), so it is
+reproduced**; window 145-160 is 91.1. Budget-matched at step 100: 79.7 (window 76.0), tying
+ccpo-global and trailing G2PO's 91.4. Kept: `step100-budget` and `step160-best`/`-last`.
+`global_step_140` (19 GB) awaits the user's OK to delete.
+
+**Next (queue)** — `g2po-harness-resume` -> `g2po-aff` -> `g2po-affonly` on GPUs 0-3.
 
 **Disk (09:20)** — the shared filesystem was at 69 GB free (14 TB total, ours ~690 GB).
 `exp_run.py` now waits for >=80 GB before launching (`EXP_MIN_FREE_GB`). A running arm

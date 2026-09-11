@@ -111,3 +111,20 @@ budget. HGPO continues to 160 for its published protocol (92.77).
 
 Weights saved: `checkpoints/step100-budget` (snapshot 00:18:23, 19 GB, hard-linked so it
 survives the trainer's rotation at step 140).
+
+## FINAL (2026-09-11 05:32): HGPO reproduces its published number
+
+| held-out % | 100 | 105 | 110 | 115 | 120 | 125 | 130 | 135 | 140 | 145 | 150 | 155 | **160** |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| hgpo-ref-4gpu | 79.7 | 74.2 | 84.4 | 74.2 | 82.8 | 84.4 | 85.9 | 88.3 | 79.7 | 88.3 | 89.1 | 93.8 | **93.0** |
+
+* **Endpoint 93.0 vs published 92.77. Reproduced.** Window 145-160: **91.1**.
+* **Budget-matched at step 100: 79.7** (window 85-100: 76.0). It ties our ccpo-global
+  (79.7 / 77.2) and trails G2PO (91.4 / 90.8).
+* So HGPO needs its extra 60 iterations to reach G2PO's 100-iteration level.
+  **Per iteration, G2PO is the stronger baseline.**
+
+Checkpoints: `step100-budget` (budget-matched), and `step160-best` = `step160-last` ->
+`global_step_160` (best over retained 140/160: 93.0 vs 79.7; `best.json` says so).
+`global_step_140` (19 GB) is neither best nor last and awaits the user's OK to delete.
+`global_step_20`-`_120` hold only `data.pt` (6.5 KB each).

@@ -3333,3 +3333,7 @@ HGPO's own code (`recipe/hgpo`, unmodified, 4 GPUs) at step 100 scores held-out 
 and ~14 points behind G2PO (91.4, window 90.8). **Ranking at 100 iterations: G2PO >> HGPO
 ≈ CCPO-global.** HGPO's published 92.77 is a 160-iteration number, and this run continues
 there. SOTA at matched budget is G2PO, so any claim of ours has to beat ~91.
+
+**HGPO final (2026-09-11):** 93.0 at step 160 (window 145-160: 91.1) against a published
+92.77, so the reproduction holds. Two protocols now bracket SOTA: **at 100 iterations G2PO leads
+(91.4)**, and **at 160 HGPO reaches 93.0**. Our best (79.7 at 100) is behind both.
