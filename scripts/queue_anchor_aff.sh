@@ -13,7 +13,7 @@
 # Names use a fixed --date so the pidfiles waited on are deterministic across midnight.
 set -u
 cd /workspace
-D8=20260910
+D8=20260911
 wait_done() {   # $1 pidfile: wait until it exists and its process has exited
   while [ ! -f "$1" ]; do sleep 60; done
   while kill -0 "$(cat "$1" 2>/dev/null)" 2>/dev/null; do sleep 300; done
@@ -27,7 +27,7 @@ wait_ram() {    # wait for >=100G host RAM, GPUs 0-3 genuinely free AND >=80G di
   # another container. Unverified and likely wrong: the footprint predates that handoff
   # and sits near 0% utilization, unlike a live training run.)
   # Up to 6h: waiting is cheap, and an abort drops every remaining arm.
-  for i in $(seq 1 72); do
+  for i in $(seq 1 288); do
     a=$(free -g | awk '/^Mem:/{print $7}')
     g=$(nvidia-smi --query-gpu=memory.free --format=csv,noheader,nounits -i 0,1,2,3 | awk '$1>=80000' | wc -l)
     d=$(df -B1G --output=avail /workspace | tail -1 | tr -d ' ')
@@ -36,7 +36,7 @@ wait_ram() {    # wait for >=100G host RAM, GPUs 0-3 genuinely free AND >=80G di
     fi
     echo "waiting: host RAM ${a}G (need 100), GPUs 0-3 free ${g}/4, disk ${d}G (need 80)"; sleep 300
   done
-  echo "ABORT: resources never drained in 6h"; exit 1
+  echo "ABORT: resources never drained in 24h"; exit 1
 }
 launch() {      # $1 name, rest = exp_run args
   local n=$1; shift
@@ -51,8 +51,15 @@ COMMON=(--arm g2po --set gpus=0,1,2,3 --set total_epochs=100 --set compact_budge
 # watcher died with it). It was relaunched by hand as g2po-aff-resume-20260911, resumed
 # from its own global_step_15 (which has data.pt, so the dataloader state is intact).
 # This queue now waits on THAT arm.
-wait_done experiments/g2po-aff-resume-20260911/outputs/train.pid
-echo "g2po-aff-resume finished"
+# 2026-09-11 22:33: the resume died in vLLM's sleep() with "Memory usage increased after
+# sleeping" -- ANOTHER TENANT had taken GPUs 0-3 (36-38 GB each at 72-90% util) while our
+# rollout was measuring its own memory. Nothing of ours was on the GPUs. So this queue now
+# WAITS for 0-3 to be genuinely free (>=80 GB each) and relaunches the resume itself.
+wait_ram
+launch g2po-aff-r2 "${COMMON[@]}" --set obs_repair=1 --set anchor_aff=1 \
+  --set resume_from=/workspace/experiments/g2po-aff-20260910/outputs/checkpoints/global_step_15
+wait_done experiments/g2po-aff-r2-${D8}/outputs/train.pid
+echo "g2po-aff-r2 finished"
 
 wait_ram
 launch g2po-affonly "${COMMON[@]}" --set obs_repair=0 --set anchor_aff=1
