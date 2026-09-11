@@ -11,7 +11,18 @@ reproduced**; window 145-160 is 91.1. Budget-matched at step 100: 79.7 (window 7
 ccpo-global and trailing G2PO's 91.4. Kept: `step100-budget` and `step160-best`/`-last`.
 `global_step_140` (19 GB) awaits the user's OK to delete.
 
-**Next (queue)** — `g2po-harness-resume` -> `g2po-aff` -> `g2po-affonly` on GPUs 0-3.
+**Stopped** — `g2po-harness-resume` at step 6 (2026-09-11, user decision), so the GPUs
+could go to GiGPO.
+
+**Running** — `gigpo-ref-20260911` on GPUs 0-3 since 05:49 (run.sh pid 238169): GiGPO's own
+trainer, unmodified, 150 iters, published 86.7. `step100-budget` is preserved by
+`snapshot_ckpt.sh`.
+
+**Queued** (`scripts/queue_anchor_aff.sh`, waits on GiGPO) — `g2po-aff` -> `g2po-affonly`.
+
+**Launch pitfall:** from the Claude shell, `setsid cmd &` FORKS (job control is on), so `$!`
+is a dead wrapper. Use `setsid -f` and find the real pid with `ps`, or launch via
+`exp_run.py` (it records `Popen.pid`). A wrong pid makes the queue think a run has finished.
 
 **Disk (09:20)** — the shared filesystem was at 69 GB free (14 TB total, ours ~690 GB).
 `exp_run.py` now waits for >=80 GB before launching (`EXP_MIN_FREE_GB`). A running arm

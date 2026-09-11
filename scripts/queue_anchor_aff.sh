@@ -1,17 +1,14 @@
 #!/bin/bash
-# Post-ccpo-refined queue: one arm at a time on GPUs 0-3, each only after the previous
-# has exited AND host RAM has drained (a second concurrent arm OOMs this host).
+# Post-GiGPO queue: one arm at a time on GPUs 0-3, each only after the previous has
+# exited AND host RAM / GPUs 0-3 / disk are free (a second concurrent arm OOMs this host,
+# and one reference arm alone uses ~14k of the 20k pids).
 #
-#  0. hgpo-ref-4gpu        HGPO reference (recipe/hgpo, unmodified), 160 iters, GPUs 0-3.
-#                          Added 2026-09-10 at the user's request, FIRST after ccpo-refined.
-#                          Not exp_run.py (their tree), so metrics are mirrored by
-#                          scripts/ref_metrics.sh from the Ray worker log.
-#  1. g2po-harness-resume  paused diagnostic, resumed from global_step_5 via EXPLICIT
-#                          path (that checkpoint lacks its marker, so auto-resume fails).
-#                          G2PO estimator + our plain anchor: estimator vs harness.
-#  2. g2po-aff             + obs_repair=1 anchor_aff=1
-#  3. g2po-affonly         + anchor_aff=1 only -- fully generic, no borrowed PATTERNS
-#  (hgpo-ref removed 2026-09-10: running in another container)
+#  1. g2po-aff      G2PO estimator + obs_repair=1 anchor_aff=1 (our state-grouping fixes)
+#  2. g2po-affonly  + anchor_aff=1 only -- fully generic, no borrowed PATTERNS
+#
+# History: ccpo-refined (done, FAILED @50) and hgpo-ref-4gpu (done, 93.0 @160) ran ahead of
+# this. g2po-harness-resume was stopped at step 6 on 2026-09-11 at the user's request, and
+# gigpo-ref-20260911 took its GPUs; this queue waits on it.
 #
 # Names use a fixed --date so the pidfiles waited on are deterministic across midnight.
 set -u
@@ -50,23 +47,8 @@ launch() {      # $1 name, rest = exp_run args
 COMMON=(--arm g2po --set gpus=0,1,2,3 --set total_epochs=100 --set compact_budget=0
         --set early_stop_min_steps=40 --set early_stop_patience=8)
 
-wait_done experiments/ccpo-refined-${D8}/outputs/train.pid
-echo "ccpo-refined finished"
-
-H=experiments/hgpo-ref-4gpu-${D8}
-wait_ram
-GPUS=0,1,2,3 setsid nohup bash "$H/run.sh" >/dev/null 2>&1 < /dev/null &
-echo $! > "$H/outputs/train.pid"
-echo "LAUNCHED hgpo-ref-4gpu-${D8} (pid $(cat "$H/outputs/train.pid"))"
-setsid nohup bash scripts/ref_metrics.sh "/workspace/$H" /tmp/ray_hgpo4 "$(cat "$H/outputs/train.pid")" \
-  > "$H/outputs/ref_metrics.log" 2>&1 < /dev/null &
-wait_done "$H/outputs/train.pid"
-echo "hgpo-ref-4gpu finished"
-
-wait_ram
-launch g2po-harness-resume "${COMMON[@]}" --set obs_repair=0 --set anchor_aff=0 \
-  --set resume_from=/workspace/experiments/g2po-harness-${D8}/outputs/checkpoints/global_step_5
-wait_done experiments/g2po-harness-resume-${D8}/outputs/train.pid
+wait_done experiments/gigpo-ref-20260911/outputs/train.pid
+echo "gigpo-ref finished"
 
 wait_ram
 launch g2po-aff "${COMMON[@]}" --set obs_repair=1 --set anchor_aff=1

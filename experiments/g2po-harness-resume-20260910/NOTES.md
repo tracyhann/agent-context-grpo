@@ -28,3 +28,12 @@ batches out of 100), and it should be named whenever this arm is compared step-f
 
 GPUs at launch: ours on 0-3 (~25 GB each at startup); the other tenant is on 4 (17 GB)
 and 5 (28 GB).
+
+## STOPPED at step 6 (2026-09-11 ~05:50), user decision
+
+The user asked for this arm not to run and for the GiGPO reference to take GPUs 0-3
+instead. The queue watcher was stopped first, so it could not hand the GPUs to `g2po-aff`,
+and then the trainer and Ray tree were SIGKILLed. No checkpoint beyond the source's
+`global_step_5` exists, so nothing was lost. The harness-vs-estimator question this arm
+was meant to answer stays open. `g2po-aff` / `g2po-affonly` (still queued, behind GiGPO)
+answer the more useful version of it.
