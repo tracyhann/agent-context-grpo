@@ -30,6 +30,13 @@ interfere). `scripts/queue_anchor_aff.sh` is running and waits up to **24 h** fo
 to be free (>=80 GB each), then relaunches as `g2po-aff-r2-20260911` from
 `g2po-aff-20260910/.../global_step_15`, then `g2po-affonly`.
 
+**The neighbour's load fluctuates.** At 22:35:28 all four GPUs read >=80 GB free; 35 s
+later they were back to 36-38 GB used at 42-65% util, none of it ours. A single-sample
+check mistakes a trough for an idle GPU -- almost certainly how the resume launched into
+one and died in vLLM's `sleep()`. `wait_ram` now requires **5 consecutive free samples,
+60 s apart**; watch for "free sample N/5" and "streak broken" lines in
+`experiments/queue_anchor_aff.log`.
+
 **If a run dies with no error again:** check `/proc/vmstat oom_kill` and
 `/sys/fs/cgroup/memory.events` first, then whether unrelated watcher processes died at the
 same second (that distinguishes an external kill from a crash).

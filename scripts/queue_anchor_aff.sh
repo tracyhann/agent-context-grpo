@@ -27,14 +27,28 @@ wait_ram() {    # wait for >=100G host RAM, GPUs 0-3 genuinely free AND >=80G di
   # another container. Unverified and likely wrong: the footprint predates that handoff
   # and sits near 0% utilization, unlike a live training run.)
   # Up to 6h: waiting is cheap, and an abort drops every remaining arm.
-  for i in $(seq 1 288); do
+  # SUSTAINED check (2026-09-11): a single sample is not enough. The neighbour that took
+  # GPUs 0-3 cycles between phases -- at 22:35:28 all four reported >=80 GB free, 35 s
+  # later they were back at 36-38 GB used with 42-65% util and none of it ours. Launching
+  # into such a trough is what killed g2po-aff-resume in vLLM's sleep(). So require the
+  # GPUs to stay free across CONSEC consecutive samples (5 x 60 s = 5 min) before
+  # returning. RAM and disk are checked in the same window.
+  CONSEC=5
+  ok=0
+  for i in $(seq 1 1440); do
     a=$(free -g | awk '/^Mem:/{print $7}')
     g=$(nvidia-smi --query-gpu=memory.free --format=csv,noheader,nounits -i 0,1,2,3 | awk '$1>=80000' | wc -l)
     d=$(df -B1G --output=avail /workspace | tail -1 | tr -d ' ')
     if [ "${a:-0}" -ge 100 ] && [ "${g:-0}" -ge 4 ] && [ "${d:-0}" -ge 80 ]; then
-      echo "resources ok: host RAM ${a}G, GPUs 0-3 free, disk ${d}G"; return 0
+      ok=$((ok+1))
+      if [ "$ok" -ge "$CONSEC" ]; then
+        echo "resources ok for ${CONSEC} consecutive samples: host RAM ${a}G, GPUs 0-3 free, disk ${d}G"; return 0
+      fi
+      echo "free sample ${ok}/${CONSEC} (RAM ${a}G, disk ${d}G)"; sleep 60; continue
     fi
-    echo "waiting: host RAM ${a}G (need 100), GPUs 0-3 free ${g}/4, disk ${d}G (need 80)"; sleep 300
+    [ "$ok" -gt 0 ] && echo "streak broken at ${ok}/${CONSEC}"
+    ok=0
+    echo "waiting: host RAM ${a}G (need 100), GPUs 0-3 free ${g}/4, disk ${d}G (need 80)"; sleep 60
   done
   echo "ABORT: resources never drained in 24h"; exit 1
 }

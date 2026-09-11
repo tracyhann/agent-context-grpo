@@ -34,3 +34,16 @@ unproven, so it stays recorded as unexplained.
 users. Our arm peaks at ~45-60 GB per GPU and only ~60 GB is free per card, so sharing
 risks OOMing their job and ours. The queue now waits for GPUs 0-3 to be genuinely free
 (>=80 GB each, up to 24 h) and then relaunches the resume as `g2po-aff-r2-20260911`.
+
+## Correction (22:36): the neighbour's load FLUCTUATES
+
+At 22:35:28 all four of GPUs 0-3 reported **>=80 GB free**; 35 s later they were back at
+36-38 GB used with 42-65% utilization, with **zero compute processes of ours**. So the
+tenant is real (the load is not our dying run), but it cycles between phases the way our
+own arms do between rollout and training.
+
+**Consequence:** a single-sample resource check can be fooled by a trough, which is very
+likely how the resume came to launch at 22:31 and then hit vLLM's
+"Memory usage increased after sleeping" -- it started in a gap and the neighbour
+re-allocated during rollout init. `wait_ram` in `scripts/queue_anchor_aff.sh` now requires
+**5 consecutive free samples 60 s apart** before launching.
