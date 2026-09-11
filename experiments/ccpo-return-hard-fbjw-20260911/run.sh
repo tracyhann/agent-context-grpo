@@ -125,4 +125,5 @@ exec /workspace/.venv/bin/python3 -m \
   trainer.test_freq=5 \
   trainer.total_epochs=100 \
   trainer.val_before_train=False \
-  trainer.resume_mode=disable
+  trainer.resume_mode=resume_path \
+  trainer.resume_from_path=/workspace/experiments/ccpo-return-hard-fbjw-20260911/outputs/checkpoints/global_step_10

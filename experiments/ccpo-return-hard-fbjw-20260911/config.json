@@ -57,7 +57,7 @@
     "ppo_mini_batch_size": 256,
     "ray_num_cpus": 64,
     "remove_padding": true,
-    "resume_from": "",
+    "resume_from": "/workspace/experiments/ccpo-return-hard-fbjw-20260911/outputs/checkpoints/global_step_10",
     "save_freq": 5,
     "seed": 0,
     "step_advantage_w": 1.0,
@@ -76,7 +76,7 @@
     "venv_python": "/workspace/.venv/bin/python3",
     "vllm_attn_backend": "FLASH_ATTN"
   },
-  "created": "2026-09-11T04:16:33",
+  "created": "2026-09-11T08:23:15",
   "env": {
     "ACG_ADV_ESTIMATOR": "ccpo",
     "ACG_ALIGN_VAL_ON_RESUME": "1",
@@ -135,7 +135,7 @@
   "experiment": "ccpo-return-hard-fbjw-20260911",
   "git": {
     "branch": "ccpo-return",
-    "commit": "27af9febe0ce57c1c90524ba12b0d7a899eea7ff",
+    "commit": "deee0c51b120427928995a7b7eab2307e7bdf1e1",
     "dirty": true
   },
   "hydra_overrides": [
@@ -206,7 +206,8 @@
     "trainer.test_freq=5",
     "trainer.total_epochs=100",
     "trainer.val_before_train=False",
-    "trainer.resume_mode=disable"
+    "trainer.resume_mode=resume_path",
+    "trainer.resume_from_path=/workspace/experiments/ccpo-return-hard-fbjw-20260911/outputs/checkpoints/global_step_10"
   ],
   "reference_protocol": {
     "deltas": [

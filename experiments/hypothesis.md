@@ -1342,7 +1342,20 @@ R² 0.00013 — but it is the one remaining channel the current φ cannot see, s
 minutes to measure beats 11 hours to guess.
 
 
-### [LIVE under a hard gate; weight VERIFIED offline, small; arm queued] H-S. **Uncertainty as a weight on A_CC, not a choice between baselines** — the reframing that survives
+### [RESULT 2026-09-11 — faster, not higher; `fbjw` ran] H-S. **Uncertainty as a weight on A_CC, not a choice between baselines** — the reframing that survives
+
+> **On-policy, 2026-09-11: `ccpo-return-hard-fbjw-20260911` (fallback + J/(J+1)) vs
+> `ccpo-return-hard`, same box, seed, config otherwise.** Held-out window 70-100:
+> **78.2% vs 76.3% (+1.9, t 1.0, 4/7 evals)**; over all 20 evaluations **+3.9 (t 3.0,
+> 14/20)** -- the gain is in the middle of training (+10 pts at steps 35-55, where
+> `ret-hard` stalled), not in the final level. Train success by phase 18.1/47.6/71.9 vs
+> 15.9/43.0/72.0. Best A100 arm on the window (`global-fa` 74.9, `anchor` 73.0).
+> Fallback rows are 8-10% of occurrences throughout; their raw credit is ~1.45x the
+> node rows' and grows more negative with training (-0.05 -> -0.62): the task-mean
+> baseline sits above off-path states. A turn-matched prior did NOT fix that offline
+> (dead-row MSE 8.14 vs 7.59). Single seed: the within-window gap is inside the
+> same-config spread (1.79). Next rung replaces the advantage weight with credibility
+> shrinkage of the baseline -- H-AK, `ccpo-return-hard-cred`.
 
 > **2026-09-10 — revived and tested offline.** Under the global gate J is constant at 7
 > and the weight is a no-op (H-AG). Under a **hard gate + return-to-go** J varies, so it

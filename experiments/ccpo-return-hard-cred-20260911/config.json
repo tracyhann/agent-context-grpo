@@ -78,7 +78,7 @@
     "venv_python": "/workspace/.venv/bin/python3",
     "vllm_attn_backend": "FLASH_ATTN"
   },
-  "created": "2026-09-11T15:13:40",
+  "created": "2026-09-11T22:05:59",
   "env": {
     "ACG_ADV_ESTIMATOR": "ccpo",
     "ACG_ALIGN_VAL_ON_RESUME": "1",
@@ -139,7 +139,7 @@
   "experiment": "ccpo-return-hard-cred-20260911",
   "git": {
     "branch": "ccpo-return",
-    "commit": "deee0c51b120427928995a7b7eab2307e7bdf1e1",
+    "commit": "d0076f138aba9e666575bbe09b79ffd91c8934b4",
     "dirty": true
   },
   "hydra_overrides": [
