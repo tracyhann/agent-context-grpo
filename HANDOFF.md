@@ -20,7 +20,11 @@ Kept: `step100-budget` and `step150-best`/`-last`. `global_step_125` (19 GB) awa
 user's OK to delete, like HGPO's `global_step_140`.
 **All three baselines reproduce on our stack: G2PO 91.4 @100, HGPO 93.0 @160, GiGPO 86.7 @150.**
 
-**Queued** (`scripts/queue_anchor_aff.sh`, waits on GiGPO) — `g2po-aff` -> `g2po-affonly`.
+**Running** — `g2po-aff-20260910` on GPUs 0-3 since 2026-09-11 20:22 (pid 305250): G2PO's
+estimator + our obs_repair + anchor_aff. It is the direct test of whether our state-grouping
+fixes beat G2PO (91.4 @100).
+
+**Queued** (`scripts/queue_anchor_aff.sh`) — `g2po-affonly` after it.
 
 **Launch pitfall:** from the Claude shell, `setsid cmd &` FORKS (job control is on), so `$!`
 is a dead wrapper. Use `setsid -f` and find the real pid with `ps`, or launch via
