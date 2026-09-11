@@ -251,16 +251,22 @@ step          5    10    15    20    25    30    35    40    45    50    55
 global-fa   3.9   6.2  10.2  18.8  21.1  34.4  34.4  43.8  46.1  46.9  53.9
 anchor      9.4  14.1  18.0  19.5  21.1  21.9  33.6  38.3  45.3  43.8  49.2
 blackwell  10.2  10.9  17.2  21.1  21.1  30.5  35.9  22.7  41.4  50.0  35.2
+ret-hard    3.9   8.6  18.0  20.3  22.7  32.8  31.2  37.5  36.7  49.2  50.0
 
 step         60    65    70    75    80    85    90    95   100
 global-fa  50.8  65.6  71.9  70.3  74.2  75.8  75.8  74.2  82.0
 anchor     49.2  57.0  61.7  60.9  76.6  70.3  78.9  79.7  82.8
 blackwell  41.4  47.7  63.3  68.0  71.9  75.8  75.0  78.1  79.7
+ret-hard   58.6  62.5  69.5  64.1  80.5  76.6  78.1  81.2  84.4
 ```
 
 * `global-fa` = `ccpo-global-fa-20260909`: the comparator. 2×A100, FLASH_ATTN.
   **Finished: converged mean 74.9% (sd 3.7), step 100 82.0%.** This is the number
   `ccpo-return` is judged against.
+* `ret-hard` = `ccpo-return-hard-20260910`: **the same config as `ccpo-return` except
+  hard gate + uniform weighting (`ccpo_gate=hard`, `ccpo_rho=0.0`) instead of global gate
+  + phi.** Converged mean **76.3%**, step 100 84.4%. **`ccpo-return` vs this arm is the
+  phi-isolating comparison** -- valid only on matched hardware (2xA100, FLASH_ATTN).
 * **Same-config spread:** `global-fa` and `blackwell` run the identical config, yet differed
   by **-3.9 to +21.1 points** at matched steps >= 20 (+1.8 on the converged mean). Treat any
   single-run difference under ~5 points as unresolved.

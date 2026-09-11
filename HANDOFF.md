@@ -300,7 +300,8 @@ alongside a running arm.
 | `ccpo-anchor-20260909` | 1 (stopped) | — | anchor repair; stopped for the host move, no checkpoint |
 | `ccpo-anchor-2gpu-20260909` | 100 | 82.8% @100 | H-AD/H-AE, both anchor flags. **NULL: converged 73.0% vs paired comparator 74.9% (-1.9, t -0.8).** |
 | `ccpo-global-fa-20260909` | 100 | 82.0% @100 | base config, 2xA100/FLASH — the paired comparator. **Converged 74.9%; the 79.7 config reproduces.** |
-| `ccpo-return-hard-20260910` | **RUNNING** | — | **ladder step 1: hard gate + return + uniform (rho=0), raw anchor. The live arm.** |
+| `ccpo-return-hard-20260910` | 100 | 84.4% @100 | ladder step 1: hard gate + return + uniform (rho=0), raw anchor. **Converged 76.3% vs paired `global-fa` 74.9% (+1.45, t 0.8): within same-config spread.** |
+| `ccpo-return-hard-fbjw-20260911` | **RUNNING** | — | **ladder step 3: + task-level fallback + J/(J+1) weight. Paired vs `ccpo-return-hard`. The live arm.** |
 
 Published at the same protocol (Qwen2.5-1.5B, ALFWorld, 100 iters, 3 seeds):
 **G²PO 95.0**, GiGPO 86.7 (at *150* iters), HGPO 92.77 (at 160), GRPO 72.8, RLOO 69.7,

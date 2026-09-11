@@ -1774,6 +1774,31 @@ earlier from the opposite direction (great ICC, 95% dead).
 
 ### [MEASURED 2026-09-10 — confirmed, and it explains both structural nulls] H-K. **The nextnode target hollows out the anchor gate** — the real finding
 
+> **On-policy, ladder step 1 (2026-09-11).** `ccpo-return-hard-20260910`: hard gate +
+> return-to-go + uniform within-node weighting (rho=0), raw anchor, edge 1.0, 2xA100 /
+> FLASH_ATTN, 100 steps. Converged window (steps 70-100, n=7):
+>
+> | arm | converged mean | sd | step 100 |
+> |---|---|---|---|
+> | **`ccpo-return-hard`** | **76.34%** | 7.14 | 84.4% |
+> | `ccpo-global-fa` (nextnode, global gate) | 74.89% | 3.73 | 82.0% |
+> | `ccpo-global` Blackwell | 73.10% | 5.83 | 79.7% |
+> | `ccpo-anchor-2gpu` | 72.99% | 8.84 | 82.8% |
+>
+> **Paired vs `global-fa`: +1.45 pts (SE 1.76, t +0.82); over all 20 evals +0.31.** The
+> highest converged mean of the four variants, but **smaller than the same-config gap**
+> (`global-fa` - Blackwell = +1.79). Not established. H-K's on-policy prediction -- that
+> return-to-go restores the gate's value into a detectable gain -- is **neither confirmed
+> nor refuted** at single-run resolution. (`ret-hard` vs anchor +3.35, t 3.0, changes four
+> things at once and ignores seed variance; do not read it as a result.)
+>
+> A mid-run stall (31-37% over steps 30-45, gap to `global-fa` reaching -9.4 at step 45)
+> fully recovered by step 50 -- another instance of single-run trajectories swinging 10+
+> points. **The phi-isolating comparison is `ccpo-return` (global gate + phi) vs this arm
+> (hard gate, uniform); it needs matched hardware.** Next rung running:
+> `ccpo-return-hard-fbjw-20260911` (+ task fallback + J/(J+1) weight).
+
+
 > **RESULT.** Re-measured offline on `gate-probe-20260907/outputs/grouping.jsonl`
 > (6,912 occurrences, 6,410 usable) with the **leave-one-TRAJECTORY-out** rule the
 > estimator actually uses — the dump carries both targets, `G` (return-to-go) and
