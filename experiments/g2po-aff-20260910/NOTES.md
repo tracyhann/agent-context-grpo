@@ -30,3 +30,16 @@ process environment and command line:
 **What it answers:** whether our anchor refinement (failure repair + admissible-action
 key), on top of G2PO's own estimator, beats G2PO. Judge it on windowed held-out against
 the G2PO reference at matched steps, never on stepN-best.
+
+## Step 1 healthy (20:29); G2PO diagnostics added for the NEXT arm only
+
+Step 1: train success 5.5%, valid-action 0.84, KL 0.016. About 7.8 GB per GPU and 7.6k pids.
+
+**This arm logs no method-specific G2PO terms**: its 74 metrics are verl's standard set.
+After it launched, a LOGGING-ONLY block was added to the G2PO branch of `ray_trainer.py`
+(mirrored in `patches/`). It writes `g2po/node_size_mean`, `node_size_p90`, `nodes_per_task`,
+`singleton_sample_frac` (comp1 is zero for these), `terminal_success_frac`,
+`terminal_failure_frac`, `invalid_action_frac` and `adv_absmean`. It reads only; nothing
+feeds back into the advantage. It was checked against hand-computed values on a mock batch.
+This process imported `ray_trainer` at startup, so the change does not affect it;
+**`g2po-affonly` will be the first arm with these metrics.**

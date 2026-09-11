@@ -25,6 +25,9 @@ estimator + our obs_repair + anchor_aff. It is the direct test of whether our st
 fixes beat G2PO (91.4 @100).
 
 **Queued** (`scripts/queue_anchor_aff.sh`) — `g2po-affonly` after it.
+`ray_trainer.py` now logs `g2po/*` node diagnostics (logging only, added after g2po-aff
+launched), so g2po-affonly is the first arm to carry them. The `patches/` mirror of
+ray_trainer had been stale (it lacked the whole G2PO integration) and is now synced.
 
 **Launch pitfall:** from the Claude shell, `setsid cmd &` FORKS (job control is on), so `$!`
 is a dead wrapper. Use `setsid -f` and find the real pid with `ps`, or launch via

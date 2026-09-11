@@ -61,6 +61,7 @@ from verl.utils.torch_functional import masked_mean
 from verl.utils.tracking import ValidationGenerationsLogger
 from verl.workers.rollout.async_server import AsyncLLMServerManager
 from gigpo import core_gigpo
+from g2po import core_g2po
 
 from agent_system.multi_turn_rollout import TrajectoryCollector, adjust_batch
 
@@ -95,6 +96,7 @@ class AdvantageEstimator(str, Enum):
     GRPO_PASSK = "grpo_passk"
     GiGPO = 'gigpo'
     CCPO = 'ccpo'          # context-conditioned predictive grouping
+    G2PO = 'g2po'          # BASELINE: the reference implementation, vendored verbatim
 
 
 @dataclass
@@ -453,6 +455,48 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
         _m['ccpo/bucket_singleton_frac'] = float((_sz <= 1).mean())
         data.meta_info = dict(data.meta_info or {})
         data.meta_info['ccpo_diag'] = _m
+    elif adv_estimator == AdvantageEstimator.G2PO:
+        # BASELINE arm. Calls the vendored reference implementation unmodified, so a
+        # difference from the published 95.0 cannot be a transcription error.
+        advantages, returns = core_g2po.compute_g2po_outcome_advantage(
+            token_level_rewards=data.batch['token_level_rewards'],
+            step_rewards=data.non_tensor_batch['step_rewards'],
+            response_mask=data.batch['response_mask'],
+            index=data.non_tensor_batch['uid'],
+            traj_index=data.non_tensor_batch['traj_uid'],
+            group_idx=data.non_tensor_batch['group_idx'],
+            next_group_idx=data.non_tensor_batch['next_group_idx'],
+            is_action_valid=data.non_tensor_batch['is_action_valid'],
+            step_advantage_w=step_advantage_w,
+            mode=gigpo_mode,
+            )
+        data.batch['advantages'] = advantages
+        data.batch['returns'] = returns
+        # LOGGING ONLY (added 2026-09-11): the reference G2PO has no diagnostics, so its
+        # node structure was invisible. Nothing below feeds back into the advantage.
+        # A node is (task uid, group_idx); comp1 is zero for singleton nodes.
+        _gi = np.asarray(data.non_tensor_batch['group_idx'])
+        _ngi = np.asarray(data.non_tensor_batch['next_group_idx'])
+        _uid = [str(u) for u in data.non_tensor_batch['uid']]
+        _bk = defaultdict(int)
+        for _u, _g in zip(_uid, _gi):
+            _bk[(_u, int(_g))] += 1
+        _sz = np.array(list(_bk.values()), dtype=float) if _bk else np.zeros(1)
+        _per = np.array([_bk[(_u, int(_g))] for _u, _g in zip(_uid, _gi)], dtype=float)
+        _rm = data.batch['response_mask'].bool()
+        _valid = np.asarray(data.non_tensor_batch['is_action_valid']).astype(float)
+        _m = {
+            'g2po/node_size_mean': float(_sz.mean()),
+            'g2po/node_size_p90': float(np.percentile(_sz, 90)),
+            'g2po/nodes_per_task': float(len(_bk) / max(len(set(_uid)), 1)),
+            'g2po/singleton_sample_frac': float((_per <= 1).mean()) if _per.size else 0.0,
+            'g2po/terminal_success_frac': float((_ngi == -1).mean()),
+            'g2po/terminal_failure_frac': float((_ngi == -2).mean()),
+            'g2po/invalid_action_frac': float(1.0 - _valid.mean()) if _valid.size else 0.0,
+            'g2po/adv_absmean': float(advantages[_rm].abs().mean()) if bool(_rm.any()) else 0.0,
+        }
+        data.meta_info = dict(data.meta_info or {})
+        data.meta_info['ccpo_diag'] = _m   # the channel the fit loop already merges into metrics
     elif adv_estimator == AdvantageEstimator.GiGPO:
         advantages, returns = core_gigpo.compute_gigpo_outcome_advantage(
             token_level_rewards=data.batch['token_level_rewards'], # for episode group reward computing
@@ -563,7 +607,8 @@ class RayPPOTrainer:
             AdvantageEstimator.RLOO,
             AdvantageEstimator.REINFORCE_PLUS_PLUS_BASELINE,
             AdvantageEstimator.GiGPO,
-            AdvantageEstimator.CCPO
+            AdvantageEstimator.CCPO,
+            AdvantageEstimator.G2PO,
         ]:
             self.use_critic = False
         else:
@@ -1276,6 +1321,13 @@ class RayPPOTrainer:
                             gamma=self.config.algorithm.gamma
                         )
                         batch.batch['step_rewards'] = step_rewards_tensor
+                    elif self.config.algorithm.adv_estimator == AdvantageEstimator.G2PO:
+                        # G2PO needs its own group ids, not GiGPO's discounted step
+                        # returns. Same call and ordering as the reference trainer.
+                        _sr, _gi, _ngi = core_g2po.compute_group_aggregation_values(batch=batch)
+                        batch.non_tensor_batch['step_rewards'] = _sr
+                        batch.non_tensor_batch['group_idx'] = _gi
+                        batch.non_tensor_batch['next_group_idx'] = _ngi
                     
                     batch = adjust_batch(self.config, batch)
 
