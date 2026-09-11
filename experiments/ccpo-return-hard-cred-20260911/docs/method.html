@@ -1,0 +1,475 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
+<title>The Credibility Baseline</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+:root{
+  color-scheme: light;
+  --ground:#f7f8f7; --surface:#ffffff; --surface-2:#f1f4f3; --sunk:#eaeeed;
+  --ink:#14181a; --ink-2:#525c5e; --ink-3:#8b9599;
+  --rule:#dfe4e3; --rule-2:#c9d2d0;
+  --accent:#0f5d63; --accent-soft:#e2eeee;
+  --ok:#1a6b4d; --ok-soft:#e2efe9;
+  --warn:#8a5d0f; --warn-soft:#f5ecda;
+  --crit:#9a3229; --crit-soft:#f6e6e3;
+  --shadow:0 1px 2px rgba(20,24,26,.05), 0 8px 24px -16px rgba(20,24,26,.25);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --ground:#0e1213; --surface:#161b1c; --surface-2:#1b2122; --sunk:#111617;
+    --ink:#edf2f1; --ink-2:#a4afae; --ink-3:#6b7776;
+    --rule:#252f30; --rule-2:#354041;
+    --accent:#5cb9c0; --accent-soft:#12292b;
+    --ok:#4dbb8d; --ok-soft:#12261e;
+    --warn:#d2a24f; --warn-soft:#2a2113;
+    --crit:#e07a6f; --crit-soft:#2c1917;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -18px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --ground:#0e1213; --surface:#161b1c; --surface-2:#1b2122; --sunk:#111617;
+  --ink:#edf2f1; --ink-2:#a4afae; --ink-3:#6b7776;
+  --rule:#252f30; --rule-2:#354041;
+  --accent:#5cb9c0; --accent-soft:#12292b;
+  --ok:#4dbb8d; --ok-soft:#12261e;
+  --warn:#d2a24f; --warn-soft:#2a2113;
+  --crit:#e07a6f; --crit-soft:#2c1917;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -18px rgba(0,0,0,.8);
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  font-size:16px; line-height:1.62; margin:0;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1080px; margin:0 auto; padding:0 28px 96px}
+
+h1,h2,h3{font-family:"Newsreader", Georgia, serif; text-wrap:balance; margin:0}
+h1{font-size:clamp(2.3rem,5.2vw,3.4rem); font-weight:500; letter-spacing:-.018em; line-height:1.08}
+h2{font-size:1.72rem; font-weight:500; letter-spacing:-.01em}
+h3{font-size:1.12rem; font-weight:600; font-family:"IBM Plex Sans",sans-serif; letter-spacing:-.005em}
+p{margin:0}
+a{color:var(--accent)}
+
+.eyebrow{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:.7rem; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--ink-3); font-weight:500;
+}
+code,.mono,.m{font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:.86em}
+.num{font-variant-numeric:tabular-nums}
+
+/* ---------- masthead ---------- */
+header.mast{border-bottom:1px solid var(--rule); background:var(--surface)}
+.mast-in{max-width:1080px; margin:0 auto; padding:56px 28px 40px; display:flex; flex-direction:column; gap:22px}
+.thesis{font-family:"Newsreader",Georgia,serif; font-size:1.3rem; line-height:1.5; color:var(--ink-2); max-width:62ch}
+.thesis b{color:var(--ink); font-weight:600}
+.mast-meta{display:flex; flex-wrap:wrap; gap:8px 26px; padding-top:6px; border-top:1px solid var(--rule); color:var(--ink-3); font-size:.83rem}
+
+/* ---------- status strip ---------- */
+.status{display:grid; grid-template-columns:repeat(auto-fit,minmax(178px,1fr)); gap:10px; margin-top:6px}
+.st{border:1px solid var(--rule); border-radius:3px; padding:12px 14px; background:var(--surface); display:flex; flex-direction:column; gap:5px}
+.st .k{font-family:"IBM Plex Mono",monospace; font-size:.74rem; letter-spacing:.06em; color:var(--ink-3)}
+.st .v{font-weight:600; font-size:.95rem; line-height:1.25}
+.st.ok{border-left:3px solid var(--ok)}      .st.ok .v{color:var(--ok)}
+.st.warn{border-left:3px solid var(--warn)}  .st.warn .v{color:var(--warn)}
+.st.crit{border-left:3px solid var(--crit)}  .st.crit .v{color:var(--crit)}
+.st .n{font-size:.79rem; color:var(--ink-2); line-height:1.4}
+
+section{padding-top:60px}
+.sec-head{display:flex; flex-direction:column; gap:9px; margin-bottom:26px}
+.sec-head p{color:var(--ink-2); max-width:70ch}
+
+/* ---------- ladder ---------- */
+.ladder{display:flex; flex-direction:column; gap:0; border:1px solid var(--rule); border-radius:4px; overflow:hidden; background:var(--surface)}
+.rung{display:grid; grid-template-columns:150px 1fr 260px; gap:20px; align-items:center;
+      padding:15px 18px; border-bottom:1px solid var(--rule)}
+.rung:last-child{border-bottom:none}
+.rung.ours{background:var(--accent-soft)}
+.rung .who{font-weight:600; font-size:.95rem; display:flex; flex-direction:column; gap:2px}
+.rung .who span{font-weight:400; font-size:.74rem; color:var(--ink-3); font-family:"IBM Plex Mono",monospace}
+.rung.ours .who{color:var(--accent)}
+.key{font-family:"IBM Plex Mono",monospace; font-size:.88rem; color:var(--ink);
+     background:var(--sunk); border:1px solid var(--rule); border-radius:3px; padding:7px 11px; display:inline-block}
+.rung.ours .key{background:var(--surface); border-color:var(--accent)}
+.rung .note{font-size:.83rem; color:var(--ink-2); line-height:1.45}
+
+/* ---------- equations ---------- */
+.eqs{display:flex; flex-direction:column; gap:12px}
+.eq{background:var(--surface); border:1px solid var(--rule); border-radius:4px; padding:16px 18px;
+    display:grid; grid-template-columns:26px 1fr; gap:16px; align-items:start}
+.eq .i{font-family:"IBM Plex Mono",monospace; font-size:.78rem; color:var(--ink-3); padding-top:3px; font-weight:500}
+.eq .body{display:flex; flex-direction:column; gap:8px; min-width:0}
+.eq .math{font-family:"IBM Plex Mono",monospace; font-size:.94rem; line-height:1.75; color:var(--ink);
+          overflow-x:auto; padding-bottom:2px; white-space:nowrap}
+.eq .gloss{font-size:.87rem; color:var(--ink-2); line-height:1.5}
+.eq.flag{border-left:3px solid var(--warn)}
+
+/* ---------- tables ---------- */
+.scroll{overflow-x:auto; border:1px solid var(--rule); border-radius:4px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:.86rem; min-width:720px}
+th,td{text-align:left; padding:11px 14px; border-bottom:1px solid var(--rule); vertical-align:top; line-height:1.45}
+thead th{background:var(--surface-2); font-weight:600; font-size:.76rem;
+         letter-spacing:.05em; text-transform:uppercase; color:var(--ink-2); white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+td.dim{font-weight:600; color:var(--ink); white-space:nowrap}
+col.ourcol{background:var(--accent-soft)}
+th.ourhead{color:var(--accent)}
+td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
+.yes{color:var(--ok); font-weight:600} .no{color:var(--crit); font-weight:600}
+.up{color:var(--crit); font-weight:600} .down{color:var(--ok); font-weight:600}
+.tbl-cap{font-size:.79rem; color:var(--ink-3); margin-top:9px; line-height:1.5}
+
+/* ---------- cards / callouts ---------- */
+.ev{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:12px}
+.card{background:var(--surface); border:1px solid var(--rule); border-radius:4px; padding:16px 18px;
+      display:flex; flex-direction:column; gap:9px}
+.card .tag{display:flex; align-items:center; gap:9px; flex-wrap:wrap}
+.card .id{font-family:"IBM Plex Mono",monospace; font-size:.74rem; font-weight:600; color:var(--ink-3)}
+.card .verdict{font-family:"IBM Plex Mono",monospace; font-size:.68rem; letter-spacing:.08em; text-transform:uppercase;
+               padding:2px 7px; border-radius:2px; font-weight:600}
+.v-ok{color:var(--ok); background:var(--ok-soft); border:1px solid var(--ok)}
+.v-warn{color:var(--warn); background:var(--warn-soft); border:1px solid var(--warn)}
+.v-crit{color:var(--crit); background:var(--crit-soft); border:1px solid var(--crit)}
+.card h3{font-size:1rem}
+.card p{font-size:.87rem; color:var(--ink-2)}
+.card .fig{font-family:"IBM Plex Mono",monospace; font-size:.8rem; color:var(--ink);
+           background:var(--sunk); border-radius:3px; padding:8px 11px; line-height:1.6}
+
+.callout{border:1px solid var(--rule-2); border-left:3px solid var(--accent); background:var(--surface);
+         border-radius:3px; padding:16px 20px; display:flex; flex-direction:column; gap:8px}
+.callout.warn{border-left-color:var(--warn)}
+.callout.crit{border-left-color:var(--crit)}
+.callout .lbl{font-family:"IBM Plex Mono",monospace; font-size:.7rem; letter-spacing:.12em;
+              text-transform:uppercase; color:var(--accent); font-weight:600}
+.callout.warn .lbl{color:var(--warn)} .callout.crit .lbl{color:var(--crit)}
+.callout p{color:var(--ink-2); font-size:.92rem}
+.callout b{color:var(--ink)}
+
+/* ---------- figures ---------- */
+.figgrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(430px,1fr)); gap:14px}
+.fig2{background:var(--surface); border:1px solid var(--rule); border-radius:4px; padding:14px 16px 16px}
+.plabel{font-family:"IBM Plex Mono",monospace; font-size:.68rem; letter-spacing:.09em;
+        text-transform:uppercase; color:var(--ink-3); margin:0 0 8px}
+.cap{font-size:.8rem; color:var(--ink-2); line-height:1.5; margin-top:9px}
+svg{width:100%; height:auto; display:block}
+svg text{font-family:"IBM Plex Sans",sans-serif; fill:var(--ink)}
+svg .mono{font-family:"IBM Plex Mono",monospace}
+svg .dim{fill:var(--ink-3)}
+
+/* ---------- demo ---------- */
+.demo{border:1px solid var(--rule); border-radius:4px; overflow:hidden; background:var(--surface)}
+.drow{display:grid; grid-template-columns:52px 1fr 1fr; gap:0; border-bottom:1px solid var(--rule); font-size:.83rem}
+.drow:last-child{border-bottom:none}
+.drow.head{background:var(--surface-2); font-family:"IBM Plex Mono",monospace; font-size:.7rem;
+           letter-spacing:.06em; text-transform:uppercase; color:var(--ink-2); font-weight:600}
+.drow .t{padding:10px 12px; font-family:"IBM Plex Mono",monospace; color:var(--ink-3); border-right:1px solid var(--rule)}
+.drow .raw,.drow .rep{padding:10px 13px; line-height:1.5; font-family:"IBM Plex Mono",monospace; font-size:.78rem}
+.drow .raw{border-right:1px solid var(--rule); color:var(--ink-2)}
+.drow.diff{background:var(--accent-soft)}
+.drow.diff .rep{color:var(--ink); font-weight:500}
+.drow.collapse .raw{color:var(--crit); font-weight:600}
+.badge{display:inline-block; font-family:"IBM Plex Mono",monospace; font-size:.62rem; letter-spacing:.07em;
+       text-transform:uppercase; padding:1px 5px; border-radius:2px; margin-left:6px; vertical-align:middle}
+.b-b{color:var(--crit); background:var(--crit-soft); border:1px solid var(--crit)}
+.b-a{color:var(--warn); background:var(--warn-soft); border:1px solid var(--warn)}
+.ins{color:var(--accent); font-weight:600}
+
+.pipe{display:flex;flex-direction:column;gap:0;max-width:880px}
+.pstep{display:grid;grid-template-columns:44px 1fr;gap:14px;align-items:stretch}
+.pnum{display:flex;flex-direction:column;align-items:center}
+.pnum .n{width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;
+         font-family:"IBM Plex Mono",monospace;font-size:.82rem;font-weight:600;
+         display:flex;align-items:center;justify-content:center;flex:none}
+.pnum .stem{width:2px;flex:1;background:var(--rule-2);min-height:14px}
+.pstep:last-child .stem{display:none}
+.pbox{background:var(--surface);border:1px solid var(--rule);border-radius:4px;
+      padding:12px 16px 13px;margin-bottom:14px}
+.pbox h4{margin:0 0 4px;font-size:.95rem;font-family:"IBM Plex Sans",sans-serif}
+.pbox p{font-size:.85rem;color:var(--ink-2);line-height:1.5}
+.pbox.ours{border-left:3px solid var(--accent)}
+
+.foot{margin-top:70px; padding-top:22px; border-top:1px solid var(--rule); color:var(--ink-3); font-size:.81rem; line-height:1.6}
+
+@media (max-width:820px){
+  .rung{grid-template-columns:1fr; gap:9px}
+  .rung .note{border-top:1px solid var(--rule); padding-top:9px}
+  .drow{grid-template-columns:38px 1fr}
+  .drow .rep{grid-column:2; border-top:1px dashed var(--rule)}
+  .drow.head .rep{display:none}
+}
+
+.curve-legend{display:flex;gap:18px;flex-wrap:wrap;font-size:.8rem;color:var(--ink-2);margin-top:6px}
+.curve-legend i{display:inline-block;width:18px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
+.pos{color:var(--ok);font-weight:600} .neg{color:var(--crit);font-weight:600}
+.barrow{display:grid;grid-template-columns:120px 1fr 66px;gap:10px;align-items:center;font-size:.83rem;margin:5px 0}
+.bar{height:14px;background:var(--sunk);border-radius:2px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent)}
+.bar i.alt{background:var(--warn)}
+</style>
+<header class="mast">
+  <div class="mast-in">
+    <div class="eyebrow">Group-relative RL · credit assignment · arm note · LIVE</div>
+    <h1>The Credibility Baseline</h1>
+    <p class="thesis">The step baseline is a read from an episodic <b>return</b> memory: key = state,
+    value = a sibling rollout's return, read = their mean. A plain mean is <b>invariant to how much evidence
+    backs it</b> &mdash; one sibling reads as confidently as forty. This arm restores that information by
+    shrinking each state's baseline toward the task prior in proportion to its support:
+    <span class="m">&lambda; = J/(J+&kappa;)</span>.</p>
+    <div class="status">
+      <div class="st ok">
+        <div class="k">OFFLINE EVIDENCE</div>
+        <div class="v">&minus;6.0% baseline error</div>
+        <div class="n">On its own control's 411,669 credited turns, and better on <b>100 of 100</b> training steps.</div>
+      </div>
+      <div class="st ok">
+        <div class="k">WHERE IT BITES</div>
+        <div class="v">&minus;29% at J=1</div>
+        <div class="n">Single-match turns 7.43 &rarr; 5.27; turns with 40+ matches are untouched. The effect localises exactly as predicted.</div>
+      </div>
+      <div class="st ok">
+        <div class="k">&kappa; IS ESTIMATED</div>
+        <div class="v">2, from variance</div>
+        <div class="n">within-state noise / between-state signal = 3.0 in turn units &asymp; 2 in rollout units. Not a tuned knob.</div>
+      </div>
+      <div class="st warn">
+        <div class="k">ONE MECHANISM</div>
+        <div class="v">Replaces two flags</div>
+        <div class="n">J=0 is the &kappa;-only limit, i.e. <span class="m">fbjw</span>'s fallback. The J/(J+1) advantage weight is OFF.</div>
+      </div>
+      <div class="st warn">
+        <div class="k">EXPECTED SIZE</div>
+        <div class="v">Below one seed</div>
+        <div class="n">A single run resolves ~5 pts; this predicts less. Pre-registered: promote to 3 seeds only if it matches or beats both comparators.</div>
+      </div>
+    </div>
+    <div class="mast-meta">
+      <span>ccpo-return-hard-cred-20260911</span>
+      <span>ALFWorld &middot; Qwen2.5-1.5B-Instruct</span>
+      <span>2 &times; A100-SXM4-80GB &middot; FLASH_ATTN</span>
+      <span>H-AK</span>
+      <span>launched 2026-09-11 22:06 UTC</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">01 &mdash; the framing</div>
+    <h2>An episodic return memory, not a critic</h2>
+    <p>Write the step baseline as a memory read and the whole method reads differently &mdash; and the defect
+    becomes obvious.</p>
+  </div>
+  <div class="eqs">
+    <div class="eq"><div class="i">M</div><div class="body">
+      <div class="math">memory = { (k_j, v_j) },  k_j = state of turn j,  v_j = that rollout's return from j</div>
+      <div class="gloss">Keys are states in this batch; values are <b>real Monte-Carlo returns</b>, not
+      predictions.</div>
+    </div></div>
+    <div class="eq"><div class="i">R</div><div class="body">
+      <div class="math">V&#770;(s_i) = &Sigma;_j w_ij v_j / &Sigma;_j w_ij,   w_ij = 1 if same state and different rollout, else 0</div>
+      <div class="gloss">Under the hard gate the kernel is an indicator, so the read is a plain mean over the
+      other rollouts at that state. <span class="m">A = G &minus; V&#770;(s)</span>.</div>
+    </div></div>
+    <div class="eq flag"><div class="i">!</div><div class="body">
+      <div class="math">&Sigma;w cancels &rArr; the read cannot tell 1 neighbour from 40</div>
+      <div class="gloss"><b>The defect.</b> Normalisation destroys support density. A state visited once by one
+      sibling produces a baseline as authoritative as one visited forty times &mdash; and 17% of turns have
+      three or fewer supporting rollouts.</div>
+    </div></div>
+    <div class="eq"><div class="i">&rarr;</div><div class="body">
+      <div class="math">b = &lambda;&middot;V&#770;(s) + (1&minus;&lambda;)&middot;b_task,   &lambda; = J/(J+&kappa;),   &kappa; = 2</div>
+      <div class="gloss">Credibility (B&uuml;hlmann) shrinkage: trust recollection in proportion to the evidence
+      behind it, otherwise fall back on the prior. <span class="m">b_task</span> is the
+      leave-own-trajectory-out task mean; J is the number of distinct other rollouts at the state.</div>
+    </div></div>
+  </div>
+  <div class="callout" style="margin-top:18px">
+    <div class="lbl">Why this is not a critic in disguise</div>
+    <p>A parametric critic stores value <b>in weights</b> and predicts it. This stores <b>actual returns</b> and
+    retrieves them by state identity; nothing is learned or bootstrapped. The nearest published relative is
+    Neural Episodic Control (Pritzel et al., 2017), which reads value from a differentiable dictionary of
+    embeddings and returns. PPO with a learned critic is in the same published table as our comparators, at
+    <b>54.4</b>.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">02 &mdash; the offline case</div>
+    <h2>Four candidate baselines, one winner, measured on 411,669 turns</h2>
+    <p>All computed on <span class="m">ccpo-return-hard</span>'s own per-occurrence dump, as the squared error
+    of the baseline against the target it has to predict. Lower is a cleaner step signal.</p>
+  </div>
+  <div class="scroll">
+    <table style="min-width:700px">
+      <colgroup><col><col><col><col></colgroup>
+      <thead><tr><th>baseline</th><th>error</th><th>vs current</th><th>steps better</th></tr></thead>
+      <tbody>
+        <tr><td class="dim">current: uniform mean over other rollouts' turns</td><td><span class="m">4.474</span></td><td>&mdash;</td><td>&mdash;</td></tr>
+        <tr><td class="dim">dedup: one vote per sibling rollout</td><td><span class="m">4.778</span></td><td><span class="up">&minus;6.8%</span></td><td>7/100</td></tr>
+        <tr><td class="dim">first visits only</td><td><span class="m">4.535</span></td><td><span class="up">&minus;1.4%</span></td><td>35/100</td></tr>
+        <tr><td class="dim">like-with-like (first vs first, revisits as now)</td><td><span class="m">~4.427</span></td><td><span class="down">+1.0%</span></td><td>derived</td></tr>
+        <tr><td class="dim">credibility, support = turns, &kappa;=3</td><td><span class="m">4.240</span></td><td><span class="down">+5.2%</span></td><td>96/100</td></tr>
+        <tr style="background:var(--accent-soft)"><td class="dim">credibility, support = rollouts (J), &kappa;=2</td><td><span class="m"><b>4.207</b></span></td><td><span class="down"><b>+6.0%</b></span></td><td><b>100/100</b></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="tbl-cap"><b>Deduplicating makes it worse</b>, decisively: 62.5% of credited turns are revisits, so
+  one-vote-per-rollout over-represents first arrivals and mis-prices exactly the majority population. Support
+  counted in <em>rollouts</em> beats support counted in <em>turns</em>, because revisits inside one rollout are
+  correlated.</div>
+
+  <h3 style="margin-top:34px">The effect localises where the hypothesis says it must</h3>
+  <div style="margin-top:14px;background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:16px 18px">
+    <div class="barrow"><span class="mono">1 match</span><span class="bar"><i style="width:100%"></i></span><span class="mono">7.43</span></div>
+    <div class="barrow"><span class="mono dim">&rarr; shrunk</span><span class="bar"><i class="alt" style="width:71%"></i></span><span class="mono">5.27</span></div>
+    <div class="barrow"><span class="mono">2 matches</span><span class="bar"><i style="width:86%"></i></span><span class="mono">6.40</span></div>
+    <div class="barrow"><span class="mono dim">&rarr; shrunk</span><span class="bar"><i class="alt" style="width:71%"></i></span><span class="mono">5.30</span></div>
+    <div class="barrow"><span class="mono">6&ndash;8 matches</span><span class="bar"><i style="width:67%"></i></span><span class="mono">4.96</span></div>
+    <div class="barrow"><span class="mono dim">&rarr; shrunk</span><span class="bar"><i class="alt" style="width:65%"></i></span><span class="mono">4.83</span></div>
+    <div class="barrow"><span class="mono">40+ matches</span><span class="bar"><i style="width:34%"></i></span><span class="mono">2.50</span></div>
+    <div class="barrow"><span class="mono dim">&rarr; shrunk</span><span class="bar"><i class="alt" style="width:34%"></i></span><span class="mono">2.50</span></div>
+  </div>
+  <div class="tbl-cap">Baseline error before and after shrinkage, by how many turns from other rollouts share the
+  state. Thin support improves by up to 29%; rich support is untouched. This is not a tuning win that could have
+  landed anywhere &mdash; it lands exactly on the regime the diagnosis names.</div>
+
+  <div class="ev" style="margin-top:22px">
+    <div class="card">
+      <div class="tag"><span class="id">&kappa;</span><span class="verdict v-ok">estimated, not tuned</span></div>
+      <h3>Two independent routes agree</h3>
+      <div class="fig">within-state variance&nbsp;&nbsp;3.36<br>between-state variance&nbsp;1.11<br>&kappa;* = 3.36/1.11 = <b>3.0</b> (turn units)<br>&asymp; <b>2</b> in rollout units = the searched optimum</div>
+      <p>B&uuml;hlmann credibility gives &kappa; as a variance ratio. A gate-probe batch's own estimate is
+      <b>2.7</b>; this run logs its per-batch estimate every step.</p>
+    </div>
+    <div class="card">
+      <div class="tag"><span class="id">ceiling</span><span class="verdict v-warn">know the size</span></div>
+      <h3>What any baseline can win</h3>
+      <div class="fig">oracle task baseline&nbsp;&nbsp;3.60<br>oracle state baseline&nbsp;3.07&nbsp;&nbsp;(15% of variance)<br>current baseline&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;4.47&nbsp;&nbsp;(31% is estimation noise)</div>
+      <p>Only 15% of return variance within a task is explained by <em>which</em> state you are in. Shrinkage
+      attacks the 31% estimation noise; better keys could at most reach the 15%. Neither touches the 85%
+      that lives in what happens after the turn.</p>
+    </div>
+    <div class="card">
+      <div class="tag"><span class="id">rejected</span><span class="verdict v-crit">tested, null</span></div>
+      <h3>A turn-matched prior</h3>
+      <p>Since the target depends on turns remaining, a prior matched on turn number looked principled. On the
+      dump that records turn index it is <b>worse</b> on the turns that need it most (dead-row error 7.59
+      &rarr; 8.14) and only 1.7% better elsewhere. Not adopted; the arm keeps one change.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">03 &mdash; verification before launch</div>
+    <h2>Ten checks on a real batch, all passing</h2>
+    <p>Run on 3,584 real occurrences from the gate-probe dump, comparing the new estimator against the exact
+    committed one (<span class="m">scratchpad/test_prior_kappa.py</span>).</p>
+  </div>
+  <div class="scroll">
+    <table style="min-width:700px">
+      <thead><tr><th>check</th><th>result</th></tr></thead>
+      <tbody>
+        <tr><td class="dim">flag off, hard gate &mdash; bit-identical to committed estimator</td><td class="yes">PASS</td></tr>
+        <tr><td class="dim">flag off, global gate &mdash; bit-identical</td><td class="yes">PASS</td></tr>
+        <tr><td class="dim">flag off, with fbjw's flags &mdash; bit-identical</td><td class="yes">PASS</td></tr>
+        <tr><td class="dim">global gate + &kappa;=2 &mdash; inert by construction</td><td class="yes">PASS</td></tr>
+        <tr><td class="dim">b_task equals an independently computed leave-own-trajectory-out task mean</td><td class="yes">PASS</td></tr>
+        <tr><td class="dim">&lambda; = J/(J+2) on every credited row</td><td class="yes">PASS</td></tr>
+        <tr><td class="dim">advantage = target &minus; [&lambda;&middot;b_node + (1&minus;&lambda;)&middot;b_task]</td><td class="yes">PASS</td></tr>
+        <tr><td class="dim">fallback rows (J=0) untouched by the shrinkage</td><td class="yes">PASS</td></tr>
+        <tr><td class="dim">&kappa; &rarr; 0 recovers the unshrunk advantage</td><td class="yes">PASS</td></tr>
+        <tr><td class="dim">&kappa;=2 does change the advantage (the flag is live)</td><td class="yes">PASS</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout" style="margin-top:18px">
+    <div class="lbl">Leakage: the baseline must not see the action it prices</div>
+    <p>A policy-gradient baseline must be a function of the state, not of the action or its future. Checked
+    line by line: <b>&phi;</b> is the frozen reference model's hidden state at the <em>last prompt token</em>;
+    the context features count observations up to and including the current one; the node key is the
+    pre-action observation; <b>b_task, J and &lambda; are built from other trajectories only</b>. Masking the
+    own trajectory is necessary but not sufficient, and the representation clears the same bar.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">04 &mdash; the arm</div>
+    <h2>Four settings against the control, one mechanism</h2>
+  </div>
+  <div class="scroll">
+    <table style="min-width:700px">
+      <colgroup><col><col><col class="ourcol"><col></colgroup>
+      <thead><tr><th>setting</th><th>ret-hard (control)</th><th class="ourhead">this arm</th><th>why</th></tr></thead>
+      <tbody>
+        <tr><td class="dim">ccpo_prior_kappa</td><td><span class="m">0</span></td><td><span class="m">2.0</span></td><td>the mechanism</td></tr>
+        <tr><td class="dim">ccpo_backoff_task</td><td><span class="m">0</span></td><td><span class="m">1</span></td><td>the J=0 limit of the same formula</td></tr>
+        <tr><td class="dim">ccpo_jweight_c</td><td><span class="m">0</span></td><td><span class="m">0</span></td><td><b>off</b>: fbjw's weight is replaced, not stacked</td></tr>
+        <tr><td class="dim">keep_ckpts</td><td><span class="m">2</span></td><td><span class="m">1</span></td><td>disk only; no effect on training</td></tr>
+        <tr><td class="dim">everything else</td><td colspan="2">return target, hard gate, &rho;=0, edge 1.0, raw anchor, lr 1e-6, KL 0.01, &gamma; 0.95, group 8, batch 16, seed 0, 100 steps, GPUs 2&ndash;3, FLASH_ATTN</td><td>identical</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="tbl-cap">Comparators: <b>primary</b> <span class="m">ccpo-return-hard</span> (does shrinkage help?),
+  <b>secondary</b> <span class="m">ccpo-return-hard-fbjw</span> (does it beat fallback + advantage weight?).
+  Both are paired: same box, same seed, same 128 games per evaluation.</div>
+
+  <h3 style="margin-top:34px">Pre-registered reading, fixed before launch</h3>
+  <div class="ladder" style="margin-top:14px">
+    <div class="rung"><div class="who">Abort<span>step 20</span></div><div><span class="key">held-out &lt; ~11%</span></div><div class="note">2 SE below base, the same rule every arm has carried.</div></div>
+    <div class="rung"><div class="who">Read<span>steps 70&ndash;100</span></div><div><span class="key">window mean + all-20 mean</span></div><div class="note">Never a single evaluation, never a best-checkpoint number.</div></div>
+    <div class="rung ours"><div class="who">Promote<span>only if</span></div><div><span class="key">&ge; both comparators at 50 and 100</span></div><div class="note">Then run 3 seeds against <span class="m">ret-hard</span>. A single seed resolves ~5 pts; the offline effect predicts less, so the arm can support the mechanism but not settle it.</div></div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">05 &mdash; live</div>
+    <h2>First steps: the mechanism is on and the pairing holds</h2>
+  </div>
+  <div class="scroll">
+    <table style="min-width:640px">
+      <thead><tr><th>step</th><th>train success</th><th>ret-hard, same step</th><th>mean &lambda;</th><th>&kappa; estimated by the batch</th><th>coverage</th></tr></thead>
+      <tbody>
+        <tr><td class="dim">1</td><td><span class="m">0.1406</span></td><td><span class="m">0.1406</span></td><td><span class="m">0.721</span></td><td><span class="m">3.88</span></td><td><span class="m">1.000</span></td></tr>
+        <tr><td class="dim">2</td><td><span class="m">0.0781</span></td><td><span class="m">0.0625</span></td><td><span class="m">0.728</span></td><td><span class="m">2.30</span></td><td><span class="m">1.000</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="tbl-cap"><b>Step 1 matches the control to four decimals</b> &mdash; same seed, same games, same base
+  weights, and an estimator that only changes the update. Mean &lambda; &asymp; 0.72 says a typical state keeps
+  ~72% of its own evidence and borrows ~28% from the task prior, i.e. a typical J of about 5.
+  <b>The batch's own &kappa; estimate (2.3&ndash;3.9) runs above the fixed 2</b>, suggesting the data would
+  accept more shrinkage than we chose; &kappa; stays at 2 as pre-registered, and the estimate is logged every
+  step as the input to a later decision.</div>
+  <div class="callout warn" style="margin-top:18px">
+    <div class="lbl">What this arm cannot fix</div>
+    <p>Replayed held-out failures are <b>exploration</b> failures: the agent cycles between two or three
+    receptacles and never opens the cabinet holding the object, because the prompt carries only the last two
+    turns. When every sibling rollout loops and fails, all returns are 0 and there is no step signal to
+    improve &mdash; no baseline change reaches that case. Credit-side work is bounded by the 15% ceiling in
+    &sect;02; the exploration work is a separate line (coverage hints, revisit penalties), to be tested on
+    replays before it costs a training run.</p>
+  </div>
+</section>
+
+<div class="foot">
+  <p><b>ccpo-return-hard-cred-20260911</b> &mdash; hypothesis H-AK. Sources:
+  <span class="mono">ccpo/core_ccpo.py</span> (<span class="mono">ACG_CCPO_PRIOR_KAPPA</span>, commit
+  <span class="mono">d0076f1</span>), <span class="mono">experiments/hypothesis.md</span> H-AK,
+  offline analyses on <span class="mono">ccpo-return-hard-20260910/outputs/ccpo_samples.csv</span> (411,669
+  rows) and <span class="mono">gate-probe-20260907/outputs/grouping.jsonl</span>. Comparators:
+  <span class="mono">ccpo-return-hard-20260910</span>, <span class="mono">ccpo-return-hard-fbjw-20260911</span>.</p>
+</div>
+
+</div>
+</body></html>
