@@ -302,6 +302,21 @@ _JW_C = float(os.environ.get("ACG_CCPO_JWEIGHT_C", "0.0"))
 # Leakage check: b_task, J and the node key use only other trajectories and the
 # pre-action observation. 0 disables. Default off.
 _PRIOR_KAPPA = float(os.environ.get("ACG_CCPO_PRIOR_KAPPA", "0.0"))
+# Pin the phi-vs-uniform mixing weight instead of estimating it. "" (default) keeps the
+# empirical-Bayes rule. "1.0" uses the phi-weighted kernel readout outright -- the soft
+# attention over neighbours that the global gate already runs, and that the hard gate
+# computes and throws away, because the EB rule has measured lam = 0.000 on every real
+# batch (two degrees of freedom per bucket).
+# Offline on ccpo-return-hard's own dump (411,669 level-0 rows, return-to-go target),
+# baseline MSE against the target:
+#     uniform node mean (shipped)            4.474
+#     phi-attention readout                  4.328   -3.3%, better on 78/100 steps
+#     uniform + credibility prior (kappa=2)   4.207   -6.0%
+#     phi-attention + credibility prior       3.986   -10.9%  <- nearly additive
+# and the attention half grows with training: -0.2% over steps 1-30, -4.8% over 61-100,
+# tracking the rise in phi_rel_corr (0.01 -> 0.24). Note b_loo is phi-weighted whatever
+# rho is -- rho only scales the EB disagreement term -- so this needs no rho change.
+_LAM_FIX = os.environ.get("ACG_CCPO_LAM_FIX", "")
 
 # rho discount applied at the coarse level: a looser gate is a less trustworthy
 # metric, and rho is exactly where metric confidence enters lambda*.
@@ -834,6 +849,8 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
             _d = rho_l * (b_obs - b_loo)
             _vd1 = s2 * var_gain
             lam = 0.0 if abs(_d) < 1e-12 else float(1.0 - _vd1 / (_d * _d))
+        if _LAM_FIX != "":
+            lam = float(_LAM_FIX)
         lam = min(1.0, max(0.0, lam))
         _base = lam * b_loo + (1 - lam) * b_obs
         _lk = 1.0

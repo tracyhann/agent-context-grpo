@@ -357,6 +357,7 @@ says which is which, so the section can be read without opening every one.
 
 | | what it is | state |
 |---|---|---|
+| **H-AL** | phi-attention readout (lam pinned) + credibility prior | **offline -10.9%; queued after `cred`** |
 | **H-AK** | credibility shrinkage of the node baseline toward the task prior | **offline +6.0%; arm queued after `fbjw`** |
 | **H-AC** | `ccpo-cheapmem`, digest at 192 tok / replace mode | **running** |
 | **H-S / H-X** | epistemic weighting `w_u = J_u/(J_u+c)` — the ONE untested uncertainty variant | **open** |
@@ -374,6 +375,47 @@ divided A_CC by sigma, damping HIGH-VARIANCE neighbourhoods. H-S weights by reli
 damping POORLY-SAMPLED ones. The two disagree precisely where variance and support are
 both high, so -2.08 on the first says nothing about the second.
 
+
+### [OFFLINE-CONFIRMED; queued after `ccpo-return-hard-cred`] H-AL. **The attention readout is free and unused** — the kernel baseline is computed every step and discarded
+
+Under the hard gate the estimator computes the phi-weighted (soft-attention) baseline
+`b_loo` on every occurrence and then throws it away: the empirical-Bayes rule picks
+`lam`, and `lam` has measured **exactly 0.000 on every real batch** (two degrees of
+freedom per bucket). So every hard-gate arm we have run -- `ret-hard`, `fbjw`, `cred` --
+shipped a uniform mean while paying for the kernel. `rho` is not the switch: `b_loo` is
+phi-weighted whatever `rho` is; `rho` only scales the EB disagreement term.
+
+**Offline, on `ccpo-return-hard`'s own dump (411,669 level-0 rows, return-to-go target),
+baseline MSE against the target:**
+
+| baseline | MSE | vs shipped |
+|---|---|---|
+| uniform node mean (what every hard-gate arm ran) | 4.474 | -- |
+| phi-attention readout `b_loo` | 4.328 | **-3.3%** (better on 78/100 steps) |
+| uniform + credibility prior, kappa=2 (H-AK, running) | 4.207 | -6.0% |
+| **phi-attention + credibility prior** | **3.986** | **-10.9%** |
+
+The two are nearly additive, and the attention half **grows with training**: -0.2% over
+steps 1-30, -2.8% over 31-60, -4.8% over 61-100 -- tracking `phi_rel_corr`, which rose
+0.01 -> 0.24 over the same run. On `ccpo-global-fa` (successor target, global gate,
+445,952 rows) the same readout beats the uniform task mean by 4.6% on 89/100 steps,
+which is the gate doing its job there.
+
+**Implemented** as `ACG_CCPO_LAM_FIX` (default "" = the EB rule, unchanged). Verified on
+a real gate-probe batch: unset it is bit-identical to the committed estimator under both
+gates; set to 1.0 every credited row has `lam=1` and `adv = target - b_loo`; with
+`ACG_CCPO_PRIOR_KAPPA=2` every row equals `target - [lam_k*b_loo + (1-lam_k)*b_task]`,
+`lam_k = J/(J+2)`; the global gate is unaffected (it already pins lam=1).
+
+**Arm: `ccpo-attncred`** = `ret-hard` + `ccpo_lam_fix=1.0` + `ccpo_prior_kappa=2.0` +
+`ccpo_backoff_task=1`, `keep_ckpts=1`. Comparators: `ret-hard` (primary),
+`cred` and `fbjw` (secondary). Same reading rules as H-AK: the 70-100 window and the
+all-20 mean, abort below ~11% at step 20.
+
+**Standing caveat.** This offline proxy has now twice failed to predict on-policy
+outcomes (`ccpo-hardedge`; and H-AK trailed its control through step 35 despite -6.0%
+offline, before turning at 45). Treat -10.9% as the strongest offline case we have
+measured, not as a prediction.
 
 ### [OFFLINE-CONFIRMED; arm queued after `fbjw`] H-AK. **Credibility shrinkage of the step baseline** — the node mean discards how much evidence it has
 
