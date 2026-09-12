@@ -20,8 +20,12 @@
 #      worker per CPU, which also runs into the pid ceiling.
 #   8. logger console only (no wandb); metrics land in the ray worker log.
 #   9. data_preprocess.prepare SKIPPED so the validation set matches every number we hold.
-#  10. save_freq 40 (theirs) with max_actor_ckpt_to_keep=2: a 7B checkpoint with optimizer
-#      state is ~90+ GB, so at most two exist. default_local_dir set explicitly.
+#  10. save_freq 40 -> 20 with max_actor_ckpt_to_keep=1 (user decision): their 40 never lands
+#      on step 100, the budget every other arm is compared at. A 7B checkpoint with optimizer
+#      state is ~90+ GB and disk is ~330 GB, so only ONE rolling checkpoint is kept; the
+#      keeper script (scripts-side, outside this file) hard-links step 100 as `step100-budget`
+#      and the best-scoring saved step as `stepbest`, both of which survive rotation.
+#      Project rule is best + last only. default_local_dir set explicitly.
 #
 # UNCHANGED (everything that affects the objective): adv_estimator hgpo, weight_type length,
 # length_weight_alpha 1.0, base_group False, mode mean_std_norm, lr (their default; the 7B
@@ -109,8 +113,8 @@ env -i \
     trainer.experiment_name=hgpo-7b-ref-20260911 \
     trainer.n_gpus_per_node="$NG" \
     trainer.nnodes=1 \
-    trainer.save_freq=40 \
-    trainer.max_actor_ckpt_to_keep=2 \
+    trainer.save_freq=20 \
+    trainer.max_actor_ckpt_to_keep=1 \
     trainer.test_freq=5 \
     trainer.total_epochs=160 \
     trainer.default_local_dir="$D/outputs/checkpoints" \
