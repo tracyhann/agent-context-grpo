@@ -302,8 +302,8 @@ alongside a running arm.
 | `ccpo-global-fa-20260909` | 100 | 82.0% @100 | base config, 2xA100/FLASH — the paired comparator. **Converged 74.9%; the 79.7 config reproduces.** |
 | `ccpo-return-hard-20260910` | 100 | 84.4% @100 | ladder step 1: hard gate + return + uniform (rho=0), raw anchor. **Converged 76.3% vs paired `global-fa` 74.9% (+1.45, t 0.8): within same-config spread.** |
 | `ccpo-return-hard-fbjw-20260911` | 100 | 82.0% @100 | ladder step 3: + task-level fallback + J/(J+1) weight. **Window 70-100: 78.2% — best A100 arm.** vs `ret-hard` +1.9 (t 1.0, 4/7) in the window but +3.9 over all 20 evals (t 3.0, 14/20): **it learns faster (+10 pts held-out over steps 35-55), and ends at a similar level.** vs `global-fa` +3.35 window (t 3.5, 6/7). Per type vs `ret-hard`: Clean +8.7, Cool +11.0; Heat -6.0, Look -3.5. Single seed. |
-| `ccpo-attncred-20260912` | QUEUED (chain8, after `cred`) | — | H-AL: pins lam=1 so the phi-attention baseline is actually used, + credibility prior. Offline baseline MSE -10.9%, the largest measured. |
-| `ccpo-return-hard-cred-20260911` | **RUNNING** (launched 2026-09-11 22:06 by chain7) | — | H-AK: `ret-hard` + credibility shrinkage `lam=J/(J+2)` toward the task mean (+ fallback, no J-weight), `keep_ckpts=1`. Offline baseline MSE -6.0%. Paired vs `ret-hard` and `fbjw`. |
+| `ccpo-attncred-20260912` | **RUNNING** (launched 2026-09-12 13:23 by chain8) | — | H-AL: pins `lam=1` so the phi-attention readout is actually used, + credibility prior + fallback. Offline baseline MSE -10.9%, the largest measured. |
+| `ccpo-return-hard-cred-20260911` | 100 | 83.6% @100 | H-AK: `ret-hard` + credibility shrinkage `lam=J/(J+2)` toward the task mean (+ fallback). **NULL vs `ret-hard`: window 76.12 vs 76.34 (-0.22, se 1.51, t -0.15, ahead 3/7); all-20 +0.16.** Behind ~3 pts to step 35, ahead at every eval 40-65 (+10.2 @45), level after. Highest single eval of any arm (85.9% @95). Below `fbjw` (-2.1 window, -3.7 all-20, t -2.9). |
 
 Published at the same protocol (Qwen2.5-1.5B, ALFWorld, 100 iters, 3 seeds):
 **G²PO 95.0**, GiGPO 86.7 (at *150* iters), HGPO 92.77 (at 160), GRPO 72.8, RLOO 69.7,

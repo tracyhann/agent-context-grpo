@@ -417,7 +417,22 @@ outcomes (`ccpo-hardedge`; and H-AK trailed its control through step 35 despite 
 offline, before turning at 45). Treat -10.9% as the strongest offline case we have
 measured, not as a prediction.
 
-### [OFFLINE-CONFIRMED; arm queued after `fbjw`] H-AK. **Credibility shrinkage of the step baseline** — the node mean discards how much evidence it has
+### [RESULT 2026-09-12 — NULL on-policy despite -6.0% offline] H-AK. **Credibility shrinkage of the step baseline** — the node mean discards how much evidence it has
+
+> **RESULT.** `ccpo-return-hard-cred-20260911`, 100 steps, paired vs `ccpo-return-hard`:
+> window 70-100 **76.12 vs 76.34 (-0.22, se 1.51, t -0.15, ahead at 3/7)**; all 20 evals
+> **+0.16 (t +0.15, 8/20)**; step 100 83.6 vs 84.4. Its **85.9% at step 95 is the highest
+> single evaluation any arm has produced**, and the per-type profile moved (Cool +6.4,
+> Look -8.4 against the control), but the aggregate is a **null**. Trajectory: ~3 pts
+> behind through step 35, ahead at every evaluation from 40 to 65 (+10.2 at 45), level
+> thereafter -- mid-run leads in this setup are not predictive. Also below `fbjw`
+> (-2.1 window, -3.7 over all 20, t -2.9). Train by phase 13.3/40.5/72.8 vs the control's
+> 15.9/43.0/72.0.
+>
+> **Third time a large offline baseline-MSE gain has failed to transfer**
+> (`ccpo-hardedge`, H-AD, now H-AK at -6.0% offline). The proxy measures something real
+> -- the shrinkage does cut baseline error -- but baseline error is not what limits this
+> setup. Weight future offline-only evidence accordingly, H-AL included.
 
 **Framing.** The step baseline is a read from an episodic *return* memory: key = state,
 value = a sibling's return-to-go, read = mean over other trajectories at the node. (A
