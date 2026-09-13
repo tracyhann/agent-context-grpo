@@ -376,7 +376,32 @@ damping POORLY-SAMPLED ones. The two disagree precisely where variance and suppo
 both high, so -2.08 on the first says nothing about the second.
 
 
-### [OFFLINE-CONFIRMED; queued after `ccpo-return-hard-cred`] H-AL. **The attention readout is free and unused** — the kernel baseline is computed every step and discarded
+### [RESULT 2026-09-13 — NULL on-policy; the decisive one] H-AL. **The attention readout is free and unused** — the kernel baseline is computed every step and discarded
+
+> **RESULT.** `ccpo-attncred-20260912`, 100 steps, paired vs `ccpo-return-hard`: window
+> 70-100 **75.56 vs 76.34 (-0.78, se 1.02, t -0.76, ahead 3/7)**; all 20 evals **+1.84
+> (t +1.47, 13/20)**; step 100 84.4 = the control's 84.4. Below `fbjw` on both
+> (-2.68 window t -2.1; -2.03 all-20 t -2.2).
+>
+> **This is the decisive null of the credit-assignment line.** `effect_rel` ran
+> **0.24-0.35** all run -- a quarter to a third of the step credit departing from the
+> uniform baseline, against **0.000** for every other hard-gate arm and 0.16 for
+> `global-fa`, the old CCPO. The estimator was demonstrably doing far more work than
+> anything we have run, the offline case was the strongest we ever measured (-10.9%
+> baseline MSE), and held-out tracked the control to within a point.
+>
+> Train by phase 16.6/50.4/74.5 -- the best of the four arms -- while held-out matched
+> the control, and the train-minus-held-out gap at evaluation steps ran +2.9 in the
+> window against `fbjw`'s -15.0. **It learns the training distribution better and
+> generalises the same**, which is what a sharper state-specific credit signal would do.
+>
+> **Conclusion for the project: baseline quality is not the binding constraint.** Three
+> arms (H-AK, H-AL, and `ccpo-hardedge` before them) now show large, verified changes to
+> the step baseline moving held-out by less than the seed-to-seed spread (1.79). The
+> measured failures are grounding and state-tracking, not credit: 4% of actions are
+> inadmissible and unpenalised (the invalid-action penalty keys on parse validity only,
+> `projection.py:48`), and agents loop over 2-3 receptacles. That is where the next arm
+> should go.
 
 Under the hard gate the estimator computes the phi-weighted (soft-attention) baseline
 `b_loo` on every occurrence and then throws it away: the empirical-Bayes rule picks
