@@ -25,3 +25,10 @@ experiments/*/outputs/train.pid
 experiments/*/outputs/*.csv
 experiments/*/outputs/**/*.csv
 /.cache/
+
+# webshop benchmark stack: parallel venv (torch 2.6/vllm 0.8.4), Temurin JDK 11 for
+# pyserini's Lucene JVM, and the Search-R1 e5 index + wiki-18 corpus (~80 GB total).
+# Rebuilt by hand; see HANDOFF.md.
+/.venv-webshop/
+/jdk/
+/searchr1/

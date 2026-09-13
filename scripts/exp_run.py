@@ -150,6 +150,23 @@ DEFAULTS = {
     # train and 128 validation env actors at 0.1 CPU each plus the GPU workers.
     "ray_num_cpus": 64,
     "env_name": "alfworld/AlfredTWEnv",
+    # Search-augmented QA (Search-R1 suite via verl-agent's `search` env). Selected by
+    # env_name=search; the keys below are ignored for every other benchmark. GiGPO's
+    # published protocol (examples/gigpo_trainer/run_search.sh): group 5, 4 turns,
+    # history 4, prompt 4096, KL 0.001, invalid-action penalty 0.01, and -- critically --
+    # similarity grouping at 0.9, because retrieved-passage observations never repeat
+    # verbatim and exact-match grouping is degenerate on this benchmark.
+    "search_train_files": "/workspace/envdata/searchr1/train.parquet",
+    "search_val_files": "/workspace/envdata/searchr1/test.parquet",
+    "search_url": "http://127.0.0.1:8000/retrieve",
+    "search_topk": 3,
+
+    # WebShop (verl-agent's `Webshop` env), selected by env_name=Webshop; ignored
+    # elsewhere. GiGPO's published protocol (examples/gigpo_trainer/run_webshop.sh):
+    # group 8, 15 turns, batch 16, val 128, gamma 0.95, XFORMERS attention. Products
+    # come from the full 1.18M-item BM25 index; the parquet only encodes modality and
+    # data size, so WebShop gets its own dir prepared at 16 train / 256 val.
+    "webshop_data_dir": "/workspace/envdata/webshop_data",
     "max_steps": 50,
     "history_length": 2,
     "eval_split": "eval_in_distribution",   # = valid_seen, the reference default
@@ -288,12 +305,22 @@ def versions(python):
 def build_command(cfg, exp_dir):
     ngpu = len(cfg["gpus"].split(","))
     est = {"ccpo": "ccpo", "grpo": "grpo", "gigpo": "gigpo"}[cfg["arm"]]
+    _is_search = "search" in str(cfg["env_name"]).lower()
+    _is_webshop = "webshop" in str(cfg["env_name"]).lower()
+    if _is_search:
+        _train_f, _val_f = cfg["search_train_files"], cfg["search_val_files"]
+    elif _is_webshop:
+        _train_f = f"{cfg['webshop_data_dir']}/text/train.parquet"
+        _val_f = f"{cfg['webshop_data_dir']}/text/test.parquet"
+    else:
+        _train_f = f"{cfg['data_dir']}/text/train.parquet"
+        _val_f = f"{cfg['data_dir']}/text/test.parquet"
     ckpt = os.path.join(exp_dir, "outputs", "checkpoints")
     args = [
         "python3", "-m", "verl.trainer.main_ppo",
         f"algorithm.adv_estimator={est}",
-        f"data.train_files={cfg['data_dir']}/text/train.parquet",
-        f"data.val_files={cfg['data_dir']}/text/test.parquet",
+        f"data.train_files={_train_f}",
+        f"data.val_files={_val_f}",
         f"data.train_batch_size={cfg['train_batch_size']}",
         f"data.val_batch_size={cfg['val_batch_size']}",
         f"data.max_prompt_length={cfg['max_prompt_length']}",
@@ -343,12 +370,16 @@ def build_command(cfg, exp_dir):
         f"env.max_steps={cfg['max_steps']}",
         f"env.history_length={cfg['history_length']}",
         f"env.rollout.n={cfg['group_size']}",
-        f"env.alfworld.eval_dataset={cfg['eval_split']}",
+        *([f"env.search.search_url={cfg['search_url']}",
+           f"env.search.topk={cfg['search_topk']}"]
+          if _is_search
+          else [] if _is_webshop
+          else [f"env.alfworld.eval_dataset={cfg['eval_split']}"]),
         "env.resources_per_worker.num_cpus=0.1",
         f"ray_init.num_cpus={cfg['ray_num_cpus']}",
         "trainer.critic_warmup=0",
         "trainer.logger=[console,jsonl]",
-        "trainer.project_name=ccpo_alfworld",
+        f"trainer.project_name=ccpo_{'search' if _is_search else 'webshop' if _is_webshop else 'alfworld'}",
         f"trainer.experiment_name={cfg['exp_id']}",
         f"trainer.n_gpus_per_node={ngpu}",
         "trainer.nnodes=1",
@@ -481,8 +512,17 @@ def main():
     for sub in ("outputs", "plots"):
         os.makedirs(os.path.join(exp_dir, sub), exist_ok=True)
 
+    if "webshop" in str(cfg.get("env_name", "")).lower():
+        cfg["venv_python"] = os.path.join(ROOT, ".venv-webshop", "bin", "python3")
     argv = build_command(cfg, exp_dir)
     env = build_env(cfg, exp_dir)
+    if "webshop" in str(cfg.get("env_name", "")).lower():
+        # WebShop's product search is BM25/Lucene via pyserini, which starts a JVM
+        # inside every Ray env worker; without JAVA_HOME jnius fails on "Unable to
+        # find javac" before the env can load.
+        _jh = "/workspace/jdk/jdk-11.0.32.1+1"
+        env["JAVA_HOME"] = _jh
+        env["PATH"] = _jh + "/bin:" + env.get("PATH", os.environ.get("PATH", ""))
     record = {
         "experiment": cfg["exp_id"], "created": datetime.datetime.now().isoformat(timespec="seconds"),
         "config": cfg, "hydra_overrides": argv[3:], "env": env,
