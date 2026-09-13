@@ -678,7 +678,7 @@ Add |G_next| to `ACG_CCPO_DUMP` — a one-line change where the CSV row is built
 falls with node size. If it does not, the whole idea dies for the cost of one dump.
 
 
-### [OPEN — a prediction about the live arm] H-AI. **`anchor_aff` buys target bias with target variance, and only one side is priced**
+### [RESULT 2026-09-13 — the anchor line is closed] H-AI. **`anchor_aff` buys target bias with target variance, and only one side is priced**
 
 This is H-AH aimed at the arm that is currently running, and it makes a falsifiable
 prediction rather than a proposal.
@@ -708,6 +708,44 @@ of NODES (`ray_trainer.py:453` is `(sizes <= 1).mean()`), and reading it as a fr
 occurrences overstates the singleton population by ~9×. The occurrence-level row above
 is derived, not logged. **Log it directly.**
 
+
+**RESULT (step-1 probe, `ccpo-probe-obsrepair-20260913`).** H-AI's own remedy was tested:
+pair the refinement with target-support weighting. `attncred` *is* that pairing — the
+credibility prior `J/(J+2)` prices support directly — so this probe is `obs_repair` on
+top of it, paired against `ccpo-attncred-20260912` at step 1.
+
+| metric | attncred-0912 | +obs_repair |
+|---|---|---|
+| `bucket_singleton_frac` | 0.3263 | 0.2449 |
+| `bucket_size_mean` | 8.0842 | 7.8367 |
+| `n_eff_mean` | 4.2091 | **3.2652** |
+| `lvl1_frac` | 0.0822 | **0.1538** |
+| `effect_rel` | 0.2448 | **0.2087** |
+| `episode/success_rate` | 0.1406 | 0.1406 |
+
+Identical rollout success confirms the pairing is clean: same seed, same samples, only
+the node key differs.
+
+**Two things this overturns.** First, the prediction above framed the variance cost as
+`anchor_aff`'s, with `obs_repair` a benign merge. It is not: `obs_repair` **alone**
+costs 22% of effective support (`n_eff` 4.21 -> 3.27) and nearly doubles the share of
+rows falling to backoff. The reason is that the pre-repair `"Nothing happens."`
+mega-bucket was inflating `n_eff` with unrelated states — singleton *nodes* fall while
+support *per occurrence* falls too, because the neighbours being removed were spurious.
+Node-level and occurrence-level statistics move in opposite directions here, which is
+the same trap this entry already flagged from the other side.
+
+**Second, support weighting does not rescue the refinement.** With the prior absorbing
+the loss (`lam_k_mean` 0.721 -> 0.686), `effect_rel` still **fell** 0.245 -> 0.209: the
+refined key makes the estimator depart *less* from the uniform baseline, not more. H-AH
+is therefore not the missing ingredient.
+
+**Decision: drop the anchor line; no 100-step arm.** Converging evidence — the null
+anchor arm (73.0 vs paired 74.9, t -0.8), per-type deficits that never supported repair
+(A) (77.8 affected vs 78.6 unaffected), and now a mechanism that shrinks rather than
+enables the estimator. `anchor_aff` was not probed separately and does not need to be:
+it is a strictly harder partition refinement (758 -> 1,149 buckets), so it inherits the
+same verdict with a larger support cost. The probes were removed from the launch chain.
 
 ### [OPEN — cheap, and a real divergence from the reference] H-AJ. **We credit singleton-node targets that G²PO discards**
 
