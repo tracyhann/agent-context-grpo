@@ -499,6 +499,82 @@ ready to run (needs pid headroom — see top).
   shorter responses and is refuted. Cost driver is the **budget**: 512 tokens against a
   466-token base prompt more than doubles it whenever the digest fires.
 
+## Benchmark extension: WebShop and search-augmented QA (2026-09-13)
+
+Both benchmarks are built and verified on this box. Neither has been trained on yet --
+all four GPUs were held by the other tenant throughout setup.
+
+### WebShop -- ready to launch
+
+Runs in `/workspace/.venv-webshop` (torch 2.6.0, vllm 0.8.4, transformers 4.51.1,
+gym 0.24, pyserini 0.17, spaCy 3.7.2, numpy pinned back to 1.26.4 after vllm pulled
+2.2.6). A separate venv is required because `web_agent_site` is imported in-process.
+
+Launch via `scripts/exp_run.py --set env_name=Webshop`; the WebShop branch selects the
+venv, sets `JAVA_HOME` for the per-worker Lucene JVM, and uses
+`/workspace/envdata/webshop_data` (16 train / 256 val).
+
+**Run the 1,000-product subset, which is GiGPO's actual default.** `ppo_trainer.yaml`
+sets `env.webshop.use_small: True` and `run_webshop.sh` never overrides it, so the
+published 67.4% (Qwen2.5-1.5B) / 75.2% (7B) are on that subset.
+
+The full catalogue is not runnable here, and `num_products` does not help:
+`load_products` `json.load`s the whole 5.2 GB file *before* truncating, so a worker
+peaks at **19.04 GB whether num_products is None or 100000**. WebShop starts
+`train_batch_size*group_n + val_batch_size` = 128 + 128 workers concurrently against a
+256 GiB cgroup. The 1k subset costs **1.05 GB/worker, 0.7 s build, 6,910 goals**.
+
+Index layout under `search_engine/` -- `num_products` is hardcoded `None` upstream, so
+`init_search_engine` **always** selects `indexes` no matter which catalogue loaded.
+`indexes` must therefore match `use_small`:
+
+| dir | docs | size | use |
+|---|---|---|---|
+| `indexes` | 1,000 | 3.0 MB | active, matches `use_small=True` |
+| `indexes_full` | 1,181,370 | 3.4 GB | swap in only with `use_small=False` on a bigger host |
+| `indexes_100k` | 99,995 | 292 MB | unused |
+
+Data came from the `YWZBrandon/webshop-data` HF mirror; every Drive link in `setup.sh`
+is dead. `reviews.json` and `feat_*.pt` are not needed (commented out in `engine.py`;
+image-mode only). Rebuild the full index with `search_engine/run_indexing.sh` after
+`convert_product_file_format.py` -- the latter reads `DEFAULT_FILE_PATH`, which
+`patches/` now points at the full files.
+
+### search-augmented QA -- built, but retrieval-bound
+
+Index (`/workspace/searchr1/e5_Flat.index`, 64 GB, 21,015,324 passages x 768) and
+corpus are in place, datasets at `/workspace/envdata/searchr1/`, and `exp_run.py` has a
+`search` branch. Retrieval answers correctly.
+
+**It is not viable on CPU.** Measured throughput is a flat ceiling of ~1.0 q/s:
+
+| concurrency | wall | per query |
+|---|---|---|
+| 1 | 5.0 s | 5000 ms |
+| 8 | 8.5 s | 1060 ms |
+| 32 | 33.1 s | 1033 ms |
+| 64 | 73.5 s | 1149 ms |
+
+Concurrency past 8 buys nothing -- flat faiss search already saturates all 96 cores, so
+request coalescing cannot help either (the endpoint takes a single `query: str`, but
+widening it would not raise the ceiling). GiGPO's protocol is 256 tasks x group 5 x 4
+turns = 1,280 envs/step, i.e. **45-85 min of retrieval per training step**. Fixing this
+needs the index sharded onto GPUs (~32 GB fp16), which competes with the training arms.
+
+Start the server with:
+
+```
+cd /workspace/verl-agent && /workspace/.venv/bin/python3 \
+  examples/search/retriever/retrieval_server.py \
+  --index_path /workspace/searchr1/e5_Flat.index \
+  --corpus_path /workspace/searchr1/wiki-18.jsonl \
+  --topk 3 --retriever_name e5 --retriever_model intfloat/e5-base-v2 --port 8000
+```
+
+It holds ~66 GB of anon memory, so stop it before launching WebShop. Note that GiGPO's
+search protocol uses `enable_similarity=True, similarity_thresh=0.9` -- exact-state
+grouping is degenerate on search-QA, so our arms need `ccpo_sim=0.9` there.
+
 ## Resuming
 
 Every arm is resumable:
