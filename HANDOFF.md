@@ -561,6 +561,17 @@ widening it would not raise the ceiling). GiGPO's protocol is 256 tasks x group 
 turns = 1,280 envs/step, i.e. **45-85 min of retrieval per training step**. Fixing this
 needs the index sharded onto GPUs (~32 GB fp16), which competes with the training arms.
 
+**The 64 GB `e5_Flat.index` was deleted on 2026-09-13** to guarantee disk headroom for
+the 150-step WebShop attncred run (checkpoints are 26.6 GB each and the worst case is
+rolling + in-flight save + best + pinned-100 ~= 106 GB). The corpus `wiki-18.jsonl` is
+kept, so a rebuild only needs the index:
+
+```
+cd /workspace/verl-agent && /workspace/.venv/bin/python3 \
+  examples/search/searchr1_download.py --local_dir /workspace/searchr1
+cat /workspace/searchr1/part_* > /workspace/searchr1/e5_Flat.index
+```
+
 Start the server with:
 
 ```
