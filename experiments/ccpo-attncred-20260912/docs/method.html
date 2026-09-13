@@ -152,6 +152,17 @@ td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
 
 /* ---------- figures ---------- */
 .figgrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(430px,1fr)); gap:14px}
+.figgrid3{display:grid; grid-template-columns:repeat(auto-fit,minmax(272px,1fr)); gap:12px}
+.stepfig{background:var(--surface); border:1px solid var(--rule); border-radius:4px; padding:13px 15px 15px;
+         display:flex; flex-direction:column; gap:2px}
+.stepfig .sn{font-family:"IBM Plex Mono",monospace; font-size:.68rem; letter-spacing:.09em;
+             text-transform:uppercase; color:var(--accent); font-weight:600}
+.stepfig h4{margin:0 0 2px; font-size:.97rem; font-family:"IBM Plex Sans",sans-serif; font-weight:600}
+.stepfig .sc{font-size:.81rem; color:var(--ink-2); line-height:1.5; margin-top:8px}
+.stepfig .sc b{color:var(--ink)}
+svg .fill-acc{fill:var(--accent)} svg .fill-sunk{fill:var(--sunk)} svg .fill-warn{fill:var(--warn)}
+svg .fill-ok{fill:var(--ok)} svg .fill-crit{fill:var(--crit)} svg .fill-surf{fill:var(--surface)}
+svg .st-rule{stroke:var(--rule-2)} svg .st-acc{stroke:var(--accent)} svg .st-ink{stroke:var(--ink-3)}
 .fig2{background:var(--surface); border:1px solid var(--rule); border-radius:4px; padding:14px 16px 16px}
 .plabel{font-family:"IBM Plex Mono",monospace; font-size:.68rem; letter-spacing:.09em;
         text-transform:uppercase; color:var(--ink-3); margin:0 0 8px}
@@ -266,7 +277,446 @@ svg .dim{fill:var(--ink-3)}
 
 <section>
   <div class="sec-head">
-    <div class="eyebrow">02 &mdash; why the readout was worth trying</div>
+    <div class="eyebrow">02 &mdash; the mechanism, step by step</div>
+    <h2>From eight rollouts to one number per turn</h2>
+    <p>Five stages. Stages 1 and 5 are the shared CCPO skeleton, unchanged from the control; stages 2, 3 and 4
+    are what this arm alters. Every stage runs per turn, inside a single training batch.</p>
+  </div>
+  <div class="figgrid3">
+
+    <div class="stepfig">
+      <div class="sn">stage 1 &middot; unchanged</div>
+      <h4>Gate: group turns by exact state</h4>
+      <svg viewBox="0 0 300 152" role="img" aria-label="eight rollouts, turns at the same state collected into one bucket">
+        <text x="4" y="10" font-size="8.5" class="mono dim">8 rollouts of one task</text>
+        <g stroke-width="1">
+          <line x1="10" y1="26" x2="150" y2="26" class="st-rule"/><line x1="10" y1="40" x2="150" y2="40" class="st-rule"/>
+          <line x1="10" y1="54" x2="150" y2="54" class="st-rule"/><line x1="10" y1="68" x2="150" y2="68" class="st-rule"/>
+          <line x1="10" y1="82" x2="150" y2="82" class="st-rule"/><line x1="10" y1="96" x2="150" y2="96" class="st-rule"/>
+          <line x1="10" y1="110" x2="150" y2="110" class="st-rule"/><line x1="10" y1="124" x2="150" y2="124" class="st-rule"/>
+        </g>
+        <g class="fill-sunk">
+          <circle cx="24" cy="26" r="3.1"/><circle cx="52" cy="26" r="3.1"/><circle cx="108" cy="26" r="3.1"/><circle cx="136" cy="26" r="3.1"/>
+          <circle cx="24" cy="40" r="3.1"/><circle cx="80" cy="40" r="3.1"/><circle cx="108" cy="40" r="3.1"/><circle cx="136" cy="40" r="3.1"/>
+          <circle cx="24" cy="54" r="3.1"/><circle cx="52" cy="54" r="3.1"/><circle cx="80" cy="54" r="3.1"/><circle cx="136" cy="54" r="3.1"/>
+          <circle cx="24" cy="68" r="3.1"/><circle cx="52" cy="68" r="3.1"/><circle cx="108" cy="68" r="3.1"/><circle cx="136" cy="68" r="3.1"/>
+          <circle cx="24" cy="82" r="3.1"/><circle cx="52" cy="82" r="3.1"/><circle cx="80" cy="82" r="3.1"/><circle cx="108" cy="82" r="3.1"/>
+          <circle cx="24" cy="96" r="3.1"/><circle cx="80" cy="96" r="3.1"/><circle cx="108" cy="96" r="3.1"/><circle cx="136" cy="96" r="3.1"/>
+          <circle cx="24" cy="110" r="3.1"/><circle cx="52" cy="110" r="3.1"/><circle cx="80" cy="110" r="3.1"/><circle cx="108" cy="110" r="3.1"/><circle cx="136" cy="110" r="3.1"/>
+          <circle cx="24" cy="124" r="3.1"/><circle cx="52" cy="124" r="3.1"/><circle cx="108" cy="124" r="3.1"/><circle cx="136" cy="124" r="3.1"/>
+        </g>
+        <g class="fill-acc">
+          <circle cx="80" cy="26" r="4.2"/><circle cx="52" cy="40" r="4.2"/><circle cx="108" cy="54" r="4.2"/>
+          <circle cx="80" cy="68" r="4.2"/><circle cx="136" cy="82" r="4.2"/><circle cx="52" cy="96" r="4.2"/>
+        </g>
+        <path d="M158 76 L184 76" class="st-acc" stroke-width="1.4" fill="none"/>
+        <path d="M184 76 l-6 -3.4 l0 6.8 z" class="fill-acc"/>
+        <rect x="192" y="46" width="100" height="60" rx="4" class="fill-surf st-acc" stroke-width="1.3"/>
+        <text x="242" y="66" font-size="9.5" text-anchor="middle" class="mono">bucket: state s</text>
+        <text x="242" y="82" font-size="11" text-anchor="middle" class="mono fill-acc" font-weight="600">J = 6 siblings</text>
+        <text x="242" y="97" font-size="8.5" text-anchor="middle" class="mono dim">2 rollouts never visit s</text>
+      </svg>
+      <p class="sc">Turns are bucketed by <b>byte-identical observation</b>. <span class="m">J</span> is how many
+      <em>other</em> trajectories visited the same state &mdash; at most 7, since <span class="m">group_n=8</span>.
+      Mean J in this run: <b>5.6</b>.</p>
+    </div>
+
+    <div class="stepfig">
+      <div class="sn">stage 2 &middot; <span style="color:var(--crit)">this arm</span></div>
+      <h4>Read: &phi;-attention, not a flat mean</h4>
+      <svg viewBox="0 0 300 152" role="img" aria-label="uniform weights versus attention weights over six siblings">
+        <text x="10" y="12" font-size="8.5" class="mono dim">uniform 1/J &mdash; what shipped</text>
+        <g class="fill-sunk">
+          <rect x="12" y="30" width="14" height="26" rx="1.5"/><rect x="32" y="30" width="14" height="26" rx="1.5"/>
+          <rect x="52" y="30" width="14" height="26" rx="1.5"/><rect x="72" y="30" width="14" height="26" rx="1.5"/>
+          <rect x="92" y="30" width="14" height="26" rx="1.5"/><rect x="112" y="30" width="14" height="26" rx="1.5"/>
+        </g>
+        <line x1="10" y1="56" x2="130" y2="56" class="st-rule" stroke-width="1"/>
+        <text x="10" y="70" font-size="8.5" class="mono dim">&phi;(s_i , s_j) &mdash; this arm</text>
+        <g class="fill-acc">
+          <rect x="12" y="116" width="14" height="14" rx="1.5" opacity=".45"/><rect x="32" y="98" width="14" height="32" rx="1.5" opacity=".65"/>
+          <rect x="52" y="82" width="14" height="48" rx="1.5"/><rect x="72" y="104" width="14" height="26" rx="1.5" opacity=".6"/>
+          <rect x="92" y="122" width="14" height="8" rx="1.5" opacity=".35"/><rect x="112" y="110" width="14" height="20" rx="1.5" opacity=".5"/>
+        </g>
+        <line x1="10" y1="130" x2="130" y2="130" class="st-rule" stroke-width="1"/>
+        <text x="68" y="142" font-size="8.5" text-anchor="middle" class="mono dim">the 6 siblings</text>
+        <path d="M140 80 L164 80" class="st-acc" stroke-width="1.4" fill="none"/>
+        <path d="M164 80 l-6 -3.4 l0 6.8 z" class="fill-acc"/>
+        <rect x="172" y="52" width="122" height="56" rx="4" class="fill-surf st-acc" stroke-width="1.3"/>
+        <text x="233" y="72" font-size="9" text-anchor="middle" class="mono">b_loo = &Sigma; &phi;&middot;G / &Sigma; &phi;</text>
+        <text x="233" y="89" font-size="8.5" text-anchor="middle" class="dim">kernel on whitened</text>
+        <text x="233" y="100" font-size="8.5" text-anchor="middle" class="dim">hidden states + context</text>
+      </svg>
+      <p class="sc">The readout was <b>always computed</b>; the empirical-Bayes rule chose the flat mean every
+      time (<span class="m">lam_eb_obs</span> = 0.000). <span class="m">ACG_CCPO_LAM_FIX=1.0</span> forces the
+      kernel to be used. Effective sample fell 4.22 &rarr; 3.48 as weight concentrated.</p>
+    </div>
+
+    <div class="stepfig">
+      <div class="sn">stage 3 &middot; <span style="color:var(--crit)">this arm</span></div>
+      <h4>Shrink: price the evidence</h4>
+      <svg viewBox="0 0 300 152" role="img" aria-label="credibility blend between task baseline and node baseline">
+        <text x="6" y="14" font-size="8.5" class="mono dim">b = lam_k &middot; b_node + (1&minus;lam_k) &middot; b_task</text>
+        <line x1="28" y1="56" x2="272" y2="56" class="st-rule" stroke-width="2"/>
+        <circle cx="28" cy="56" r="4" class="fill-warn"/><circle cx="272" cy="56" r="4" class="fill-acc"/>
+        <text x="28" y="44" font-size="9" text-anchor="middle" class="mono">b_task</text>
+        <text x="272" y="44" font-size="9" text-anchor="middle" class="mono">b_node</text>
+        <text x="28" y="76" font-size="8" text-anchor="middle" class="mono dim">lam_k=0</text>
+        <text x="272" y="76" font-size="8" text-anchor="middle" class="mono dim">lam_k=1</text>
+        <g>
+          <line x1="109" y1="50" x2="109" y2="62" class="st-ink" stroke-width="1.4"/>
+          <text x="109" y="96" font-size="8.5" text-anchor="middle" class="mono dim">J=1</text>
+          <text x="109" y="108" font-size="8.5" text-anchor="middle" class="mono dim">0.33</text>
+          <line x1="218" y1="46" x2="218" y2="66" class="st-acc" stroke-width="2"/>
+          <text x="218" y="96" font-size="8.5" text-anchor="middle" class="mono fill-acc" font-weight="600">J=7</text>
+          <text x="218" y="108" font-size="8.5" text-anchor="middle" class="mono fill-acc" font-weight="600">0.78</text>
+        </g>
+        <line x1="190" y1="56" x2="190" y2="62" class="st-ink" stroke-width="1"/>
+        <text x="190" y="126" font-size="8.5" text-anchor="middle" class="mono dim">mean 0.708</text>
+        <path d="M190 62 L190 118" class="st-ink" stroke-width="1" stroke-dasharray="3 3" fill="none"/>
+      </svg>
+      <p class="sc"><span class="m">lam_k = J/(J+&kappa;)</span>, <span class="m">&kappa;=2</span>. Because J caps
+      at 7, <b>100% of rows sit below 0.8</b> &mdash; at least a fifth of every baseline stays on the task
+      prior. Unlike fbjw's J/(J+1) weight, this one never becomes a constant.</p>
+    </div>
+
+    <div class="stepfig">
+      <div class="sn">stage 4 &middot; inherited from fbjw</div>
+      <h4>Fallback: J=0 still gets credit</h4>
+      <svg viewBox="0 0 300 152" role="img" aria-label="a turn with no sibling falls back to the task baseline">
+        <circle cx="52" cy="58" r="8" class="fill-crit"/>
+        <text x="52" y="82" font-size="9" text-anchor="middle" class="mono">J = 0</text>
+        <text x="52" y="95" font-size="8.5" text-anchor="middle" class="dim">no sibling</text>
+        <text x="52" y="34" font-size="8.5" text-anchor="middle" class="mono dim">one turn</text>
+        <path d="M70 58 L120 58" class="st-ink" stroke-width="1.3" stroke-dasharray="4 3" fill="none"/>
+        <text x="95" y="50" font-size="8" text-anchor="middle" class="mono dim">before</text>
+        <rect x="126" y="40" width="64" height="36" rx="3" class="fill-surf st-rule" stroke-width="1.2"/>
+        <text x="158" y="62" font-size="10" text-anchor="middle" class="mono">A_step = 0</text>
+        <path d="M70 108 L120 108" class="st-acc" stroke-width="1.6" fill="none"/>
+        <path d="M120 108 l-6 -3.4 l0 6.8 z" class="fill-acc"/>
+        <text x="95" y="100" font-size="8" text-anchor="middle" class="mono fill-acc">now</text>
+        <rect x="126" y="90" width="88" height="36" rx="3" class="fill-surf st-acc" stroke-width="1.3"/>
+        <text x="170" y="112" font-size="10" text-anchor="middle" class="mono">b = b_task</text>
+        <text x="240" y="112" font-size="9" text-anchor="middle" class="mono fill-ok" font-weight="600">live 1.000</text>
+      </svg>
+      <p class="sc">The <span class="m">lam_k = 0</span> case of stage 3, stated as its own flag. Coverage ran
+      <b>1.000</b> all run. Caveat: this run's dump holds <b>no J=0 rows</b>, so the fallback population cannot
+      be sized from it &mdash; on fbjw it was 8&ndash;10% of turns.</p>
+    </div>
+
+    <div class="stepfig">
+      <div class="sn">stage 5 &middot; unchanged</div>
+      <h4>Assemble: step, edge, episode</h4>
+      <svg viewBox="0 0 300 152" role="img" aria-label="advantage assembly from step, edge and episode terms">
+        <rect x="8" y="26" width="126" height="34" rx="3" class="fill-surf st-acc" stroke-width="1.3"/>
+        <text x="71" y="47" font-size="9.5" text-anchor="middle" class="mono">A_CC = G &minus; b</text>
+        <rect x="8" y="68" width="126" height="30" rx="3" class="fill-surf st-rule" stroke-width="1.2"/>
+        <text x="71" y="87" font-size="9.5" text-anchor="middle" class="mono">+ edge (w=1.0)</text>
+        <rect x="8" y="106" width="126" height="30" rx="3" class="fill-surf st-rule" stroke-width="1.2"/>
+        <text x="71" y="125" font-size="9.5" text-anchor="middle" class="mono">+ episode</text>
+        <path d="M140 81 L168 81" class="st-ink" stroke-width="1.4" fill="none"/>
+        <path d="M168 81 l-6 -3.4 l0 6.8 z" class="fill-acc"/>
+        <rect x="176" y="52" width="116" height="58" rx="4" class="fill-surf st-acc" stroke-width="1.3"/>
+        <text x="234" y="74" font-size="9.5" text-anchor="middle" class="mono">whiten (task)</text>
+        <text x="234" y="92" font-size="9.5" text-anchor="middle" class="mono">&rarr; policy update</text>
+        <text x="71" y="18" font-size="8.5" text-anchor="middle" class="mono dim">per turn</text>
+      </svg>
+      <p class="sc">Only the step term changed. The J/(J+1) reliability weight from fbjw is
+      <b>off</b> here (<span class="m">ccpo_jweight_c=0.0</span>) &mdash; this arm puts the same idea into the
+      baseline at stage 3 instead of onto the finished advantage.</p>
+    </div>
+
+    <div class="stepfig">
+      <div class="sn">the shape of the batch</div>
+      <h4>lam_k against J, with where the mass is</h4>
+      <svg viewBox="0 0 300 176" role="img" aria-label="credibility weight as a function of J, with the distribution of J">
+        <line x1="30" y1="140" x2="285" y2="140" class="st-rule" stroke-width="1"/>
+        <line x1="30" y1="40" x2="30" y2="140" class="st-rule" stroke-width="1"/>
+        <text x="24" y="44" font-size="8" text-anchor="end" class="mono dim">1.0</text>
+        <text x="24" y="94" font-size="8" text-anchor="end" class="mono dim">0.5</text>
+        <text x="24" y="143" font-size="8" text-anchor="end" class="mono dim">0</text>
+        <line x1="30" y1="60" x2="285" y2="60" class="st-rule" stroke-dasharray="3 3" stroke-width="1"/>
+        <text x="287" y="63" font-size="7.5" class="mono dim">0.8</text>
+        <polyline points="30,140 65,106.7 100,90 135,80 170,73.3 205,68.6 240,65 275,62.2" fill="none" class="st-acc" stroke-width="2"/>
+        <g class="fill-acc">
+          <circle cx="30" cy="140" r="2.6"/><circle cx="65" cy="106.7" r="2.6"/><circle cx="100" cy="90" r="2.6"/>
+          <circle cx="135" cy="80" r="2.6"/><circle cx="170" cy="73.3" r="2.6"/><circle cx="205" cy="68.6" r="2.6"/>
+          <circle cx="240" cy="65" r="2.6"/><circle cx="275" cy="62.2" r="3.4"/>
+        </g>
+        <g class="fill-acc" opacity=".3">
+          <rect x="58" y="159.7" width="14" height="2.3"/><rect x="93" y="159.9" width="14" height="2.1"/>
+          <rect x="128" y="160" width="14" height="2"/><rect x="163" y="159.8" width="14" height="2.2"/>
+          <rect x="198" y="159.3" width="14" height="2.7"/><rect x="233" y="158" width="14" height="4"/>
+          <rect x="268" y="142.2" width="14" height="19.8"/>
+        </g>
+        <line x1="30" y1="162" x2="285" y2="162" class="st-rule" stroke-width="1"/>
+        <g font-size="8" class="mono dim" text-anchor="middle">
+          <text x="30" y="152">0</text><text x="65" y="152">1</text><text x="100" y="152">2</text><text x="135" y="152">3</text>
+          <text x="170" y="152">4</text><text x="205" y="152">5</text><text x="240" y="152">6</text><text x="275" y="152">7</text>
+        </g>
+        <text x="157" y="174" font-size="8.5" text-anchor="middle" class="dim">J &mdash; siblings at this state (bars: share of turns)</text>
+        <text x="275" y="53" font-size="8" text-anchor="middle" class="mono fill-acc" font-weight="600">56.7%</text>
+      </svg>
+      <p class="sc">The curve never reaches the dashed 0.8 line within the range J can take. <b>56.7% of turns
+      sit at J=7</b> and get 0.778; the 24% at J&le;4 get 0.67 or less and lean on the task prior.</p>
+    </div>
+
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">03 &mdash; against the published estimators</div>
+    <h2>Everyone groups by exact match; nobody weights by how much evidence a group has</h2>
+    <p>The four estimators this project is measured against, read off their own equations. The last column is
+    this arm. Read the bottom row with care &mdash; the cells come from different papers at different training
+    budgets and are not a like-for-like comparison.</p>
+  </div>
+  <div class="scroll">
+    <table style="min-width:900px">
+      <colgroup><col><col><col><col><col><col class="ourcol"></colgroup>
+      <thead><tr><th>dimension</th><th>GRPO</th><th>GiGPO</th><th>G&sup2;PO</th><th>HGPO</th><th class="ourhead">attncred (this arm)</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="dim">credit unit</td>
+          <td>whole trajectory</td>
+          <td>episode + step</td>
+          <td>episode + node + edge</td>
+          <td>step, across K+1 nested groups</td>
+          <td>episode + step + edge</td>
+        </tr>
+        <tr>
+          <td class="dim">grouping rule</td>
+          <td>G samples of one prompt</td>
+          <td>exact state equality; variant at LMS similarity &gt; 0.9</td>
+          <td>exact observation equality</td>
+          <td>exact equality of the k-step state history</td>
+          <td>exact state equality, then <b>&phi;-kernel weights inside the bucket</b></td>
+        </tr>
+        <tr>
+          <td class="dim">step baseline</td>
+          <td>&mdash;</td>
+          <td><span class="m">mean</span> of same-state returns, std-normalised</td>
+          <td><span class="m">V(G')&minus;V(G)</span>, standardised batch-wide</td>
+          <td><span class="m">mean</span> per level, &sigma;-normalised</td>
+          <td><span class="m">&Sigma;&phi;&middot;G / &Sigma;&phi;</span>, shrunk to the task mean</td>
+        </tr>
+        <tr>
+          <td class="dim">combination</td>
+          <td>&mdash;</td>
+          <td><span class="m">A_E + &omega;&middot;A_S</span></td>
+          <td><span class="m">A_EP + w(A_NC + A_EC)</span></td>
+          <td><span class="m">&Sigma;<sub>k</sub> w_k A_k</span>, no episode term</td>
+          <td><span class="m">A_CC + edge + episode</span></td>
+        </tr>
+        <tr>
+          <td class="dim">weighting</td>
+          <td>none</td>
+          <td>static <span class="m">&omega;=1</span></td>
+          <td>static <span class="m">w</span> (1 on ALFWorld)</td>
+          <td>adaptive by <em>depth</em>: <span class="m">w_k=(k+1)<sup>&alpha;</sup>/&Sigma;</span></td>
+          <td>adaptive by <em>support</em>: <span class="m">lam_k = J/(J+2)</span></td>
+        </tr>
+        <tr>
+          <td class="dim">group of size 1 or 0</td>
+          <td>n/a</td>
+          <td>degrades to GRPO; &lt;35% of step groups are size 1</td>
+          <td>no rule stated; 8.1% of ALFWorld steps are size 1</td>
+          <td>zero-advantage groups omitted from the weighting</td>
+          <td><b>falls back to the task baseline</b>; coverage 1.000</td>
+        </tr>
+        <tr>
+          <td class="dim">learned features for matching</td>
+          <td class="no">no</td>
+          <td class="no">no &mdash; hashmap keys</td>
+          <td class="no">no &mdash; raw text</td>
+          <td class="no">no &mdash; hashmap lookups</td>
+          <td class="yes">yes &mdash; whitened hidden states + context</td>
+        </tr>
+        <tr>
+          <td class="dim">ALFWorld, Qwen2.5-1.5B</td>
+          <td>not in the paper</td>
+          <td><b>86.7</b> &plusmn;1.7 @150 iters</td>
+          <td><b>95.0</b> &plusmn;0.8 @100 iters</td>
+          <td><b>92.77</b> &plusmn;1.08 @160 iters, K=2</td>
+          <td>84.4 @100 iters, <b>single seed</b></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="tbl-cap"><b>Do not read the last row as a ranking.</b> The three published figures are means over
+  three seeds at three different budgets, each from its own paper's setup; HGPO re-runs GiGPO in its own
+  harness and reports a different number for it than GiGPO's own paper does. Ours is one seed at 100 steps.
+  The row is here to show the gap the project is trying to attribute, not to place this arm in it.</div>
+
+  <div class="ev" style="margin-top:22px">
+    <div class="card">
+      <div class="tag"><span class="id">what is genuinely new</span><span class="verdict v-ok">unbuilt elsewhere</span></div>
+      <h3>Both of our levers are named as future work &mdash; by the papers themselves</h3>
+      <p>GiGPO: <em>"exploring more robust state-matching strategies, such as embedding-based representations
+      &hellip; remains an important direction"</em>, having listed reliance on exact state matching as its own
+      limitation. HGPO: <em>"explore other ways for hierarchical grouping, e.g., the embedding similarity of
+      the memory&hellip; a totally adaptive weighting scheme &hellip; considering the uncertainty of the
+      advantage estimate"</em>. Stages 2 and 3 of this arm are those two sentences, implemented.</p>
+    </div>
+    <div class="card">
+      <div class="tag"><span class="id">and what it bought</span><span class="verdict v-crit">nothing measurable</span></div>
+      <h3>The unbuilt thing was worth building and did not work</h3>
+      <p>That is the result, and it is more useful than the mechanism would have been. Two independent groups
+      pointed at embedding-based grouping as the obvious next step; on this setup it moves held-out success by
+      less than the seed-to-seed spread, while measurably changing a quarter to a third of the credit. Anyone
+      planning to spend a run on it can now spend it elsewhere.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">04 &mdash; the same state, grouped five ways</div>
+    <h2>One turn, one real batch, five different comparison sets</h2>
+    <p>A single ALFWorld state from the gate probe:
+    <span class="m">"You arrive at coffeetable 1. On the coffeetable 1, you see nothing."</span>
+    Eight rollouts of one task visit it <b>51 times</b>. Seven of the rollouts fail and return zero at every
+    visit; one succeeds, and it passes through this state three times, with returns-to-go
+    <span class="m">4.18</span>, <span class="m">5.69</span> and <span class="m">7.35</span>.</p>
+  </div>
+
+  <div class="fig2">
+    <div class="plabel">the bucket, and how each estimator cuts it</div>
+    <svg viewBox="0 0 560 300" role="img" aria-label="51 occurrences of one state partitioned by four grouping rules">
+      <text x="26" y="16" font-size="9.5" class="mono dim">51 occurrences, ordered by rollout &mdash; filled = the rollout that succeeded</text>
+      <g class="fill-sunk">
+        <circle cx="30.0" cy="34" r="3.3"/><circle cx="39.6" cy="34" r="3.3"/><circle cx="49.2" cy="34" r="3.3"/><circle cx="58.8" cy="34" r="3.3"/><circle cx="68.4" cy="34" r="3.3"/><circle cx="78.0" cy="34" r="3.3"/><circle cx="87.6" cy="34" r="3.3"/>
+        <circle cx="97.2" cy="34" r="3.3"/><circle cx="106.8" cy="34" r="3.3"/><circle cx="116.4" cy="34" r="3.3"/><circle cx="126.0" cy="34" r="3.3"/><circle cx="135.6" cy="34" r="3.3"/><circle cx="145.2" cy="34" r="3.3"/><circle cx="154.8" cy="34" r="3.3"/>
+        <circle cx="164.4" cy="34" r="3.3"/><circle cx="174.0" cy="34" r="3.3"/><circle cx="183.6" cy="34" r="3.3"/><circle cx="193.2" cy="34" r="3.3"/><circle cx="202.8" cy="34" r="3.3"/><circle cx="212.4" cy="34" r="3.3"/><circle cx="222.0" cy="34" r="3.3"/><circle cx="231.6" cy="34" r="3.3"/><circle cx="241.2" cy="34" r="3.3"/><circle cx="250.8" cy="34" r="3.3"/>
+        <circle cx="289.2" cy="34" r="3.3"/><circle cx="298.8" cy="34" r="3.3"/><circle cx="308.4" cy="34" r="3.3"/><circle cx="318.0" cy="34" r="3.3"/>
+        <circle cx="327.6" cy="34" r="3.3"/><circle cx="337.2" cy="34" r="3.3"/><circle cx="346.8" cy="34" r="3.3"/><circle cx="356.4" cy="34" r="3.3"/><circle cx="366.0" cy="34" r="3.3"/><circle cx="375.6" cy="34" r="3.3"/><circle cx="385.2" cy="34" r="3.3"/>
+        <circle cx="394.8" cy="34" r="3.3"/><circle cx="404.4" cy="34" r="3.3"/><circle cx="414.0" cy="34" r="3.3"/><circle cx="423.6" cy="34" r="3.3"/><circle cx="433.2" cy="34" r="3.3"/><circle cx="442.8" cy="34" r="3.3"/><circle cx="452.4" cy="34" r="3.3"/>
+        <circle cx="462.0" cy="34" r="3.3"/><circle cx="471.6" cy="34" r="3.3"/><circle cx="481.2" cy="34" r="3.3"/><circle cx="490.8" cy="34" r="3.3"/><circle cx="500.4" cy="34" r="3.3"/><circle cx="510.0" cy="34" r="3.3"/>
+      </g>
+      <g class="fill-ok">
+        <circle cx="260.4" cy="34" r="4.6"/><circle cx="270.0" cy="34" r="4.6"/><circle cx="279.6" cy="34" r="4.6"/>
+      </g>
+      <text x="270" y="16" font-size="8.5" text-anchor="middle" class="mono fill-ok" font-weight="600">4.18 &middot; 5.69 &middot; 7.35</text>
+
+      <text x="26" y="62" font-size="9" class="mono dim">GRPO &mdash; no state group at all; one number per rollout</text>
+      <g fill="none" class="st-rule" stroke-width="1.2">
+        <rect x="25.6" y="70" width="67.2" height="16" rx="2"/><rect x="92.8" y="70" width="67.2" height="16" rx="2"/>
+        <rect x="160.0" y="70" width="96.0" height="16" rx="2"/><rect x="284.8" y="70" width="38.4" height="16" rx="2"/>
+        <rect x="323.2" y="70" width="67.2" height="16" rx="2"/><rect x="390.4" y="70" width="67.2" height="16" rx="2"/>
+        <rect x="457.6" y="70" width="57.6" height="16" rx="2"/>
+      </g>
+      <rect x="256.0" y="70" width="28.8" height="16" rx="2" fill="none" stroke="var(--ok)" stroke-width="1.6"/>
+
+      <text x="26" y="110" font-size="9" class="mono dim">GiGPO / G&sup2;PO &mdash; one bucket, the turn's own rollout included</text>
+      <rect x="25.6" y="118" width="489.6" height="18" rx="3" fill="none" class="st-warn" stroke="var(--warn)" stroke-width="1.8"/>
+      <text x="523" y="131" font-size="9" class="mono" fill="var(--warn)">51</text>
+
+      <text x="26" y="160" font-size="9" class="mono dim">HGPO k&ge;1 &mdash; same 51 turns, re-ordered by predecessor state</text>
+      <g class="fill-sunk">
+        <circle cx="30.0" cy="178" r="3.3"/><circle cx="39.6" cy="178" r="3.3"/><circle cx="49.2" cy="178" r="3.3"/><circle cx="58.8" cy="178" r="3.3"/><circle cx="68.4" cy="178" r="3.3"/><circle cx="78.0" cy="178" r="3.3"/><circle cx="87.6" cy="178" r="3.3"/><circle cx="97.2" cy="178" r="3.3"/>
+        <circle cx="106.8" cy="178" r="3.3"/><circle cx="116.4" cy="178" r="3.3"/><circle cx="126.0" cy="178" r="3.3"/><circle cx="135.6" cy="178" r="3.3"/><circle cx="145.2" cy="178" r="3.3"/><circle cx="154.8" cy="178" r="3.3"/>
+        <circle cx="164.4" cy="178" r="3.3"/><circle cx="174.0" cy="178" r="3.3"/><circle cx="183.6" cy="178" r="3.3"/><circle cx="193.2" cy="178" r="3.3"/>
+        <circle cx="202.8" cy="178" r="3.3"/><circle cx="212.4" cy="178" r="3.3"/><circle cx="222.0" cy="178" r="3.3"/><circle cx="231.6" cy="178" r="3.3"/>
+        <circle cx="241.2" cy="178" r="3.3"/><circle cx="250.8" cy="178" r="3.3"/><circle cx="260.4" cy="178" r="3.3"/><circle cx="270.0" cy="178" r="3.3"/>
+        <circle cx="279.6" cy="178" r="3.3"/><circle cx="289.2" cy="178" r="3.3"/><circle cx="298.8" cy="178" r="3.3"/><circle cx="308.4" cy="178" r="3.3"/>
+        <circle cx="318.0" cy="178" r="3.3"/><circle cx="327.6" cy="178" r="3.3"/><circle cx="337.2" cy="178" r="3.3"/><circle cx="346.8" cy="178" r="3.3"/>
+        <circle cx="356.4" cy="178" r="3.3"/><circle cx="366.0" cy="178" r="3.3"/><circle cx="375.6" cy="178" r="3.3"/><circle cx="385.2" cy="178" r="3.3"/>
+        <circle cx="394.8" cy="178" r="3.3"/><circle cx="404.4" cy="178" r="3.3"/><circle cx="414.0" cy="178" r="3.3"/><circle cx="423.6" cy="178" r="3.3"/>
+        <circle cx="433.2" cy="178" r="3.3"/><circle cx="442.8" cy="178" r="3.3"/><circle cx="452.4" cy="178" r="3.3"/><circle cx="462.0" cy="178" r="3.3"/>
+        <circle cx="471.6" cy="178" r="3.3"/><circle cx="481.2" cy="178" r="3.3"/><circle cx="490.8" cy="178" r="3.3"/><circle cx="500.4" cy="178" r="3.3"/><circle cx="510.0" cy="178" r="3.3"/>
+      </g>
+      <g fill="none" stroke="var(--ink-3)" stroke-width="1.2">
+        <rect x="25.6" y="188" width="75.8" height="14" rx="2"/><rect x="102.4" y="188" width="56.6" height="14" rx="2"/>
+        <rect x="160.0" y="188" width="37.6" height="14" rx="2"/><rect x="198.4" y="188" width="37.6" height="14" rx="2"/>
+        <rect x="236.8" y="188" width="37.6" height="14" rx="2"/><rect x="275.2" y="188" width="18.4" height="14" rx="2"/>
+        <rect x="294.4" y="188" width="18.4" height="14" rx="2"/><rect x="313.6" y="188" width="18.4" height="14" rx="2"/>
+        <rect x="332.8" y="188" width="18.4" height="14" rx="2"/><rect x="352.0" y="188" width="18.4" height="14" rx="2"/>
+      </g>
+      <g fill="none" stroke="var(--crit)" stroke-width="1.2">
+        <rect x="371.2" y="188" width="8.8" height="14" rx="2"/><rect x="380.8" y="188" width="8.8" height="14" rx="2"/>
+        <rect x="390.4" y="188" width="8.8" height="14" rx="2"/><rect x="400.0" y="188" width="8.8" height="14" rx="2"/>
+        <rect x="409.6" y="188" width="8.8" height="14" rx="2"/><rect x="419.2" y="188" width="8.8" height="14" rx="2"/>
+        <rect x="428.8" y="188" width="8.8" height="14" rx="2"/><rect x="438.4" y="188" width="8.8" height="14" rx="2"/>
+        <rect x="448.0" y="188" width="8.8" height="14" rx="2"/><rect x="457.6" y="188" width="8.8" height="14" rx="2"/>
+        <rect x="467.2" y="188" width="8.8" height="14" rx="2"/><rect x="476.8" y="188" width="8.8" height="14" rx="2"/>
+        <rect x="486.4" y="188" width="8.8" height="14" rx="2"/><rect x="496.0" y="188" width="8.8" height="14" rx="2"/>
+        <rect x="505.6" y="188" width="8.8" height="14" rx="2"/>
+      </g>
+      <text x="443" y="214" font-size="8.5" text-anchor="middle" fill="var(--crit)" class="mono">15 singletons &mdash; nothing to compare against</text>
+
+      <text x="26" y="244" font-size="9" class="mono dim">attncred &mdash; one bucket, own rollout removed, &phi;-weighted inside</text>
+      <rect x="25.6" y="252" width="226.0" height="18" rx="3" fill="none" class="st-acc" stroke-width="1.8"/>
+      <rect x="284.8" y="252" width="230.4" height="18" rx="3" fill="none" class="st-acc" stroke-width="1.8"/>
+      <rect x="256.0" y="252" width="28.8" height="18" rx="3" fill="none" stroke="var(--ok)" stroke-width="1.4" stroke-dasharray="3 2"/>
+      <text x="270" y="286" font-size="8.5" text-anchor="middle" class="mono fill-ok">own rollout, excluded</text>
+      <text x="523" y="265" font-size="9" class="mono fill-acc">48</text>
+    </svg>
+    <div class="cap">Provenance: <span class="m">experiments/gate-probe-20260907/outputs/grouping.jsonl</span>,
+    one task at step 101 of <span class="m">ccpo-global</span>. It is a different arm's batch &mdash; what is
+    being illustrated is the <b>grouping rules</b>, not this arm's numbers.</div>
+  </div>
+
+  <h3 style="margin-top:34px">The winning turn: t=18 of the successful rollout, return-to-go 7.351</h3>
+  <div class="scroll" style="margin-top:12px">
+    <table style="min-width:800px">
+      <colgroup><col><col><col><col><col class="ourcol"></colgroup>
+      <thead><tr><th>estimator</th><th>what this turn is compared against</th><th>n</th><th>baseline</th><th>step advantage</th></tr></thead>
+      <tbody>
+        <tr><td class="dim">GRPO</td><td>nothing at state level &mdash; the rollout's own return against the 8 rollouts</td><td>8</td><td>trajectory mean</td><td>one number, shared by all 20 turns</td></tr>
+        <tr><td class="dim">GiGPO</td><td>every occurrence of the state, <b>including its own rollout's other two visits</b></td><td>51</td><td><span class="m">0.338</span></td><td><span class="m">+7.013</span></td></tr>
+        <tr><td class="dim">G&sup2;PO</td><td>the same node group, plus an edge term standardised batch-wide</td><td>51</td><td><span class="m">0.338</span></td><td><span class="m">+7.013</span> (node part)</td></tr>
+        <tr><td class="dim">HGPO</td><td>k=0: the whole bucket. k=1: only turns with the same predecessor state</td><td>51 / 2</td><td><span class="m">0.338</span> / <span class="m">0.000</span></td><td>mixed by <span class="m">w_k</span></td></tr>
+        <tr style="background:var(--accent-soft)"><td class="dim">attncred</td><td>the 48 occurrences in the <b>other seven</b> rollouts, &phi;-weighted, shrunk to the task prior</td><td>48 &nbsp;<span class="m">(J=7)</span></td><td><span class="m">0.000</span></td><td><span class="m">+7.351</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="margin-top:26px">And its mirror: a turn at the same state in a failing rollout, return-to-go 0</h3>
+  <div class="scroll" style="margin-top:12px">
+    <table style="min-width:800px">
+      <colgroup><col><col><col><col class="ourcol"></colgroup>
+      <thead><tr><th>estimator</th><th>comparison set</th><th>baseline</th><th>step advantage</th></tr></thead>
+      <tbody>
+        <tr><td class="dim">GiGPO / G&sup2;PO</td><td>all 51, self included</td><td><span class="m">0.338</span></td><td><span class="m">&minus;0.338</span></td></tr>
+        <tr style="background:var(--accent-soft)"><td class="dim">attncred</td><td>the 44 occurrences outside its own rollout</td><td><span class="m">0.391</span></td><td><span class="m">&minus;0.391</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="ev" style="margin-top:22px">
+    <div class="card">
+      <div class="tag"><span class="id">difference 1</span><span class="verdict v-warn">self-inclusion</span></div>
+      <h3>A rollout dilutes its own credit</h3>
+      <p>GiGPO and G&sup2;PO average the turn's own trajectory into its baseline. Here the only successful
+      rollout visits this state three times, so <b>its own two successes raise its own baseline</b> from 0.000
+      to 0.338 &mdash; shaving credit off the one rollout that solved the task. Leave-own-trajectory-out avoids
+      it by construction; it is also why the failing turn's baseline is <em>higher</em> for us (0.391 against
+      0.338), which is the correct direction.</p>
+    </div>
+    <div class="card">
+      <div class="tag"><span class="id">difference 2</span><span class="verdict v-crit">fragmentation</span></div>
+      <h3>25 groups where there was one</h3>
+      <p>These 51 turns have <b>25 distinct predecessor states</b>, so HGPO's k&ge;1 levels cut the bucket into
+      25 groups of which <b>15 are singletons</b> with nothing to compare against. The winning turn lands in a
+      group of two, and its single sibling returned zero. HGPO's own paper flags this: <em>"the average group
+      size of Oracle steps is small, which increases the variance of estimated advantages."</em></p>
+    </div>
+    <div class="card">
+      <div class="tag"><span class="id">difference 3</span><span class="verdict v-ok">re-weight, don't subdivide</span></div>
+      <h3>Same bucket, different arithmetic inside</h3>
+      <p>This arm keeps the single bucket and changes how it is averaged: &phi; weights siblings by hidden-state
+      similarity, and <span class="m">lam_k</span> pulls the result toward the task prior by how many siblings
+      there were. <b>On this particular turn the &phi; weighting cannot matter</b> &mdash; all 48 siblings
+      returned zero, so every weighting gives the same baseline. It only bites where siblings disagree, which
+      is what <span class="m">effect_rel</span> 0.24&ndash;0.35 in &sect;06 is measuring.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">05 &mdash; why the readout was worth trying</div>
     <h2>The kernel was computed 430,000 times and thrown away</h2>
   </div>
   <div class="ev">
@@ -296,7 +746,7 @@ svg .dim{fill:var(--ink-3)}
 
 <section>
   <div class="sec-head">
-    <div class="eyebrow">03 &mdash; what actually changed in the batch</div>
+    <div class="eyebrow">06 &mdash; what actually changed in the batch</div>
     <h2>The largest estimator change this project has made</h2>
     <p>From this run's own per-occurrence dump (394,280 level-0 rows of 430,464 total) and its metrics.
     <span class="m">effect_rel</span> is the mean departure of the step credit from the uniform-baseline credit,
@@ -319,6 +769,33 @@ svg .dim{fill:var(--ink-3)}
   separated by a factor of three over the run, and <span class="m">phi_rel_corr</span> &mdash; how much the
   kernel's weighting correlates with actual return differences &mdash; more than doubled. The effective sample
   behind each baseline fell 4.22 &rarr; 3.48 as the kernel concentrated weight on fewer siblings.</div>
+
+  <div class="fig2" style="margin-top:22px">
+    <div class="plabel">estimator diagnostics by training step (every 5th step)</div>
+    <svg viewBox="0 0 560 268" role="img" aria-label="effect_rel and phi_rel_corr by training step">
+      <line x1="56" x2="546" y1="250.0" y2="250.0" stroke="var(--rule)"/><text x="48" y="253.5" font-size="10" text-anchor="end" class="mono dim">0</text>
+      <line x1="56" x2="546" y1="191.7" y2="191.7" stroke="var(--rule)"/><text x="48" y="195.2" font-size="10" text-anchor="end" class="mono dim">0.10</text>
+      <line x1="56" x2="546" y1="133.3" y2="133.3" stroke="var(--rule)"/><text x="48" y="136.8" font-size="10" text-anchor="end" class="mono dim">0.20</text>
+      <line x1="56" x2="546" y1="75.0" y2="75.0" stroke="var(--rule)"/><text x="48" y="78.5" font-size="10" text-anchor="end" class="mono dim">0.30</text>
+      <text x="56.0" y="264" font-size="10" text-anchor="middle" class="mono dim">1</text>
+      <text x="179.8" y="264" font-size="10" text-anchor="middle" class="mono dim">25</text>
+      <text x="308.7" y="264" font-size="10" text-anchor="middle" class="mono dim">50</text>
+      <text x="437.7" y="264" font-size="10" text-anchor="middle" class="mono dim">75</text>
+      <text x="546.0" y="264" font-size="10" text-anchor="middle" class="mono dim">96</text>
+      <polyline points="56.0,107.2 81.8,89.5 107.6,115.2 133.4,108.4 159.2,114.4 184.9,138.9 210.7,81.0 236.5,105.5 262.3,95.4 288.1,125.3 313.9,76.8 339.7,72.0 365.5,91.3 391.3,75.4 417.1,91.4 442.8,76.0 468.6,71.7 494.4,69.7 520.2,82.6 546.0,61.2" fill="none" stroke="var(--accent)" stroke-width="2.2"/>
+      <polyline points="56.0,242.2 81.8,232.3 107.6,200.3 133.4,205.2 159.2,208.3 184.9,221.4 210.7,217.2 236.5,188.3 262.3,179.7 288.1,157.6 313.9,173.3 339.7,151.0 365.5,168.4 391.3,151.8 417.1,198.0 442.8,144.0 468.6,115.3 494.4,140.4 520.2,134.1 546.0,122.1" fill="none" stroke="var(--warn)" stroke-width="1.7"/>
+      <line x1="56" x2="546" y1="250.0" y2="250.0" stroke="var(--rule-2)" stroke-width="1.2"/>
+      <text x="300" y="20" font-size="9.5" text-anchor="middle" class="dim">every other hard-gate arm sits flat on the zero line for effect_rel</text>
+    </svg>
+    <div class="curve-legend">
+      <span><i style="background:var(--accent);height:4px"></i>effect_rel &mdash; how far credit moved from the uniform baseline</span>
+      <span><i style="background:var(--warn)"></i>phi_rel_corr &mdash; does the kernel's weighting track real return differences</span>
+    </div>
+    <div class="cap">Both rise. <span class="m">effect_rel</span> ends at 0.30&ndash;0.35 having started near 0.24;
+    <span class="m">phi_rel_corr</span> roughly doubles, 0.085 &rarr; 0.163 by phase, peaking at 0.271. The
+    mechanism was not only live, it was <b>strengthening</b> exactly as the offline analysis predicted &mdash;
+    and &sect;07 shows held-out success ignoring all of it.</div>
+  </div>
 
   <h3 style="margin-top:34px">The prior bound on every row, and the fallback on none</h3>
   <div class="ev" style="margin-top:12px">
@@ -344,7 +821,7 @@ svg .dim{fill:var(--ink-3)}
 
 <section>
   <div class="sec-head">
-    <div class="eyebrow">04 &mdash; results</div>
+    <div class="eyebrow">07 &mdash; results</div>
     <h2>A third of the credit, moved, for nothing</h2>
     <p>Held-out success on ALFWorld's <span class="m">valid_seen</span> split (128 of 140 games, temperature
     0.4, every 5 steps). Four arms, same two A100s, same backend, one seed each.</p>
@@ -416,7 +893,7 @@ svg .dim{fill:var(--ink-3)}
 
 <section>
   <div class="sec-head">
-    <div class="eyebrow">05 &mdash; how to read it</div>
+    <div class="eyebrow">08 &mdash; how to read it</div>
     <h2>It learns the training distribution better and generalises the same</h2>
   </div>
   <div class="ev">
@@ -458,7 +935,7 @@ svg .dim{fill:var(--ink-3)}
 
 <section>
   <div class="sec-head">
-    <div class="eyebrow">06 &mdash; the shipped configuration</div>
+    <div class="eyebrow">09 &mdash; the shipped configuration</div>
     <h2>Three lines against the control</h2>
   </div>
   <div class="scroll">
@@ -488,7 +965,7 @@ svg .dim{fill:var(--ink-3)}
 
 <section>
   <div class="sec-head">
-    <div class="eyebrow">07 &mdash; what comes next</div>
+    <div class="eyebrow">10 &mdash; what comes next</div>
     <h2>Stop improving the baseline; fix the grounding</h2>
     <p>The credit-assignment line is closed by this result. The measured failures are elsewhere, and they are
     concrete.</p>
