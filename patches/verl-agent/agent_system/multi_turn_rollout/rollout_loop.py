@@ -450,6 +450,13 @@ class TrajectoryCollector:
             else:
                 batch.non_tensor_batch['is_action_valid'] = np.ones(batch_size, dtype=bool)
 
+            # ACG instrumentation only -- never used for reward or advantage. No
+            # else-branch on purpose: only the ALFWorld manager sets this, and an
+            # all-ones fallback would make WebShop report admissible_ratio 1.0 and a
+            # negative gap. Absent key -> the metric is skipped, which is honest.
+            if 'is_action_admissible' in infos[0]:
+                batch.non_tensor_batch['is_action_admissible'] = np.array([info['is_action_admissible'] for info in infos], dtype=bool)
+
             if 'tool_calling' in infos[0]:
                 tool_callings[active_masks] += np.array([info['tool_calling'] for info in infos], dtype=np.float32)[active_masks]
             # Create reward tensor, only assign rewards for active environments

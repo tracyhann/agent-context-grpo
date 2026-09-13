@@ -194,8 +194,20 @@ class AlfWorldEnvironmentManager(EnvironmentManagerBase):
             infos = set_gamefile(infos, self.gamefile)
 
         # add action_valid to infos
+        # ACG instrumentation: admissibility is computed but deliberately NOT folded
+        # into is_action_valid. G2PO does not penalise inadmissible actions either
+        # (verified against baselines/G2PO/.../alfworld/projection.py: valids[i]=1 on
+        # parse success alone), and our config matches their published script (H-AB),
+        # so changing the penalty would forfeit comparability. We only measure how
+        # often a well-formed action is absent from the admissible list that
+        # build_text_obs already printed into the prompt -- i.e. a copy failure, not
+        # exploration. Whether it decays with training and whether it concentrates in
+        # failing episodes decides if a penalty arm is worth running at all.
+        _adm_pools = self.envs.get_admissible_commands
         for i, info in enumerate(infos):
             info['is_action_valid'] = to_numpy(valids[i])
+            _pool = [a.lower() for a in (_adm_pools[i] or [])] if i < len(_adm_pools) else []
+            info['is_action_admissible'] = bool(valids[i]) and (actions[i] in _pool)
 
         # ACG_OBS_REPAIR=1 reproduces G2PO's anchor repair
         # (baselines/G2PO/agent_system/environments/env_manager.py:132-178). The anchor

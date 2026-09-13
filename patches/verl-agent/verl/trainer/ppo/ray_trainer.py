@@ -222,6 +222,14 @@ def apply_invalid_action_penalty(data: DataProto, invalid_action_penalty_coef=fl
     
     valid_action_ratio = np.mean(data.non_tensor_batch['is_action_valid'].astype(np.float32)).item()
     metrics = {'episode/valid_action_ratio': valid_action_ratio}
+    # ACG: parse-valid but NOT in the admissible list the prompt showed the model.
+    # This is the population a penalty arm would target; it is unpenalised today, and
+    # it is unpenalised in G2PO too. Measured at step 1 of ccpo-attncred-20260912 it
+    # was 3.9% of 128 actions -- one batch, untrained policy, hence this metric.
+    if 'is_action_admissible' in data.non_tensor_batch:
+        adm = np.mean(data.non_tensor_batch['is_action_admissible'].astype(np.float32)).item()
+        metrics['episode/admissible_action_ratio'] = adm
+        metrics['episode/inadmissible_unpenalised_ratio'] = float(valid_action_ratio - adm)
     return data, metrics
 
 def compute_response_mask(data: DataProto):
