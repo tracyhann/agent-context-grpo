@@ -239,6 +239,12 @@ DEFAULTS = {
     "force_tail": 32,
     # rolling global_step checkpoints kept after each save (best-* is kept separately)
     "keep_ckpts": 2,
+    # comma-separated global steps to pin against rolling pruning, e.g. "100". Each is
+    # hardlinked to step<N>-pin at save time (same cp -al trick as best-*), so it costs
+    # no extra disk until the rolling copy is pruned. To resume or evaluate from one:
+    #   cp -al <ckpts>/step100-pin <ckpts>/global_step_100
+    # (the resume path must contain "global_step_"; verl asserts on it).
+    "pin_steps": "",
 }
 
 _REFERENCE_DELTA = [
@@ -256,6 +262,7 @@ ENV_KEYS = {
     "ccpo_backoff_rho": "ACG_CCPO_BACKOFF_RHO", "ccpo_edge_w": "ACG_CCPO_EDGE_W",
     "ccpo_backoff_task": "ACG_CCPO_BACKOFF_TASK", "ccpo_jweight_c": "ACG_CCPO_JWEIGHT_C",
     "ccpo_prior_kappa": "ACG_CCPO_PRIOR_KAPPA", "keep_ckpts": "ACG_KEEP_CKPTS",
+    "pin_steps": "ACG_PIN_STEPS",
     "ccpo_lam_fix": "ACG_CCPO_LAM_FIX",
     "ccpo_gate": "ACG_CCPO_GATE", "ccpo_tau": "ACG_CCPO_TAU",
     "ccpo_std": "ACG_CCPO_STD", "ccpo_std_floor": "ACG_CCPO_STD_FLOOR",

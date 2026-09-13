@@ -1483,6 +1483,21 @@ class RayPPOTrainer:
                                 _json.dump({"step": _pb[0], "val_success_rate": _pb[1]},
                                            open(_os.path.join(_root, "best.json"), "w"))
                                 self._acg_pending_best = None
+                            # pin selected steps against rolling pruning: ACG_PIN_STEPS="100"
+                            # hardlinks global_step_100 -> step100-pin using the same cp -al
+                            # trick as best-*, so it costs no extra disk until the rolling
+                            # copy is pruned. To resume or evaluate from a pin:
+                            #   cp -al <ckpts>/step100-pin <ckpts>/global_step_100
+                            # (verl asserts "global_step_" is in the resume path, and the
+                            # pruner int()s the suffix, so the pin must NOT be named
+                            # global_step_*.)
+                            for _ps in _os.environ.get("ACG_PIN_STEPS", "").split(","):
+                                _ps = _ps.strip()
+                                if _ps and _ps == str(self.global_steps):
+                                    _pin = _os.path.join(_root, f"step{_ps}-pin")
+                                    if not _os.path.isdir(_pin):
+                                        _sp.run(["cp", "-al", _cur, _pin], check=False)
+                                        print(f"[pin] step {_ps} pinned -> {_pin}", flush=True)
                             # prune rolling checkpoints (vendored verl ignores max_ckpt_to_keep):
                             # keep the ACG_KEEP_CKPTS newest global_step dirs (default 2);
                             # best-* survives via hardlinks. Pruning runs AFTER the save, so
