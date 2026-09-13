@@ -167,6 +167,16 @@ DEFAULTS = {
     # come from the full 1.18M-item BM25 index; the parquet only encodes modality and
     # data size, so WebShop gets its own dir prepared at 16 train / 256 val.
     "webshop_data_dir": "/workspace/envdata/webshop_data",
+    # use_small picks the 1,000-product catalogue. It is verl-agent's default and what
+    # run_webshop.sh actually runs, so GiGPO's published 67.4% (Qwen2.5-1.5B) is on this
+    # subset. It is also the only feasible setting here: load_products json.loads the
+    # whole 5.2 GB items_shuffle.json before truncating, so a full-catalogue worker peaks
+    # at 19.0 GB regardless of num_products, and WebShop starts train_batch_size*group_n
+    # + val_batch_size workers concurrently (128 + 128) against a 256 GiB cgroup.
+    # NOTE: num_products is hardcoded None upstream, so init_search_engine always selects
+    # `indexes`; that directory must therefore hold the SAME product set as use_small.
+    "webshop_use_small": 1,
+    "webshop_human_goals": 0,
     "max_steps": 50,
     "history_length": 2,
     "eval_split": "eval_in_distribution",   # = valid_seen, the reference default
@@ -373,7 +383,8 @@ def build_command(cfg, exp_dir):
         *([f"env.search.search_url={cfg['search_url']}",
            f"env.search.topk={cfg['search_topk']}"]
           if _is_search
-          else [] if _is_webshop
+          else [f"env.webshop.use_small={bool(int(cfg['webshop_use_small']))}",
+                f"env.webshop.human_goals={bool(int(cfg['webshop_human_goals']))}"] if _is_webshop
           else [f"env.alfworld.eval_dataset={cfg['eval_split']}"]),
         "env.resources_per_worker.num_cpus=0.1",
         f"ray_init.num_cpus={cfg['ray_num_cpus']}",
