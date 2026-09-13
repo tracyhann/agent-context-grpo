@@ -1,0 +1,521 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
+<title>The Attention Readout</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+:root{
+  color-scheme: light;
+  --ground:#f7f8f7; --surface:#ffffff; --surface-2:#f1f4f3; --sunk:#eaeeed;
+  --ink:#14181a; --ink-2:#525c5e; --ink-3:#8b9599;
+  --rule:#dfe4e3; --rule-2:#c9d2d0;
+  --accent:#0f5d63; --accent-soft:#e2eeee;
+  --ok:#1a6b4d; --ok-soft:#e2efe9;
+  --warn:#8a5d0f; --warn-soft:#f5ecda;
+  --crit:#9a3229; --crit-soft:#f6e6e3;
+  --shadow:0 1px 2px rgba(20,24,26,.05), 0 8px 24px -16px rgba(20,24,26,.25);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --ground:#0e1213; --surface:#161b1c; --surface-2:#1b2122; --sunk:#111617;
+    --ink:#edf2f1; --ink-2:#a4afae; --ink-3:#6b7776;
+    --rule:#252f30; --rule-2:#354041;
+    --accent:#5cb9c0; --accent-soft:#12292b;
+    --ok:#4dbb8d; --ok-soft:#12261e;
+    --warn:#d2a24f; --warn-soft:#2a2113;
+    --crit:#e07a6f; --crit-soft:#2c1917;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -18px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --ground:#0e1213; --surface:#161b1c; --surface-2:#1b2122; --sunk:#111617;
+  --ink:#edf2f1; --ink-2:#a4afae; --ink-3:#6b7776;
+  --rule:#252f30; --rule-2:#354041;
+  --accent:#5cb9c0; --accent-soft:#12292b;
+  --ok:#4dbb8d; --ok-soft:#12261e;
+  --warn:#d2a24f; --warn-soft:#2a2113;
+  --crit:#e07a6f; --crit-soft:#2c1917;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -18px rgba(0,0,0,.8);
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  font-size:16px; line-height:1.62; margin:0;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1080px; margin:0 auto; padding:0 28px 96px}
+
+h1,h2,h3{font-family:"Newsreader", Georgia, serif; text-wrap:balance; margin:0}
+h1{font-size:clamp(2.3rem,5.2vw,3.4rem); font-weight:500; letter-spacing:-.018em; line-height:1.08}
+h2{font-size:1.72rem; font-weight:500; letter-spacing:-.01em}
+h3{font-size:1.12rem; font-weight:600; font-family:"IBM Plex Sans",sans-serif; letter-spacing:-.005em}
+p{margin:0}
+a{color:var(--accent)}
+
+.eyebrow{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:.7rem; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--ink-3); font-weight:500;
+}
+code,.mono,.m{font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:.86em}
+.num{font-variant-numeric:tabular-nums}
+
+/* ---------- masthead ---------- */
+header.mast{border-bottom:1px solid var(--rule); background:var(--surface)}
+.mast-in{max-width:1080px; margin:0 auto; padding:56px 28px 40px; display:flex; flex-direction:column; gap:22px}
+.thesis{font-family:"Newsreader",Georgia,serif; font-size:1.3rem; line-height:1.5; color:var(--ink-2); max-width:62ch}
+.thesis b{color:var(--ink); font-weight:600}
+.mast-meta{display:flex; flex-wrap:wrap; gap:8px 26px; padding-top:6px; border-top:1px solid var(--rule); color:var(--ink-3); font-size:.83rem}
+
+/* ---------- status strip ---------- */
+.status{display:grid; grid-template-columns:repeat(auto-fit,minmax(178px,1fr)); gap:10px; margin-top:6px}
+.st{border:1px solid var(--rule); border-radius:3px; padding:12px 14px; background:var(--surface); display:flex; flex-direction:column; gap:5px}
+.st .k{font-family:"IBM Plex Mono",monospace; font-size:.74rem; letter-spacing:.06em; color:var(--ink-3)}
+.st .v{font-weight:600; font-size:.95rem; line-height:1.25}
+.st.ok{border-left:3px solid var(--ok)}      .st.ok .v{color:var(--ok)}
+.st.warn{border-left:3px solid var(--warn)}  .st.warn .v{color:var(--warn)}
+.st.crit{border-left:3px solid var(--crit)}  .st.crit .v{color:var(--crit)}
+.st .n{font-size:.79rem; color:var(--ink-2); line-height:1.4}
+
+section{padding-top:60px}
+.sec-head{display:flex; flex-direction:column; gap:9px; margin-bottom:26px}
+.sec-head p{color:var(--ink-2); max-width:70ch}
+
+/* ---------- ladder ---------- */
+.ladder{display:flex; flex-direction:column; gap:0; border:1px solid var(--rule); border-radius:4px; overflow:hidden; background:var(--surface)}
+.rung{display:grid; grid-template-columns:150px 1fr 260px; gap:20px; align-items:center;
+      padding:15px 18px; border-bottom:1px solid var(--rule)}
+.rung:last-child{border-bottom:none}
+.rung.ours{background:var(--accent-soft)}
+.rung .who{font-weight:600; font-size:.95rem; display:flex; flex-direction:column; gap:2px}
+.rung .who span{font-weight:400; font-size:.74rem; color:var(--ink-3); font-family:"IBM Plex Mono",monospace}
+.rung.ours .who{color:var(--accent)}
+.key{font-family:"IBM Plex Mono",monospace; font-size:.88rem; color:var(--ink);
+     background:var(--sunk); border:1px solid var(--rule); border-radius:3px; padding:7px 11px; display:inline-block}
+.rung.ours .key{background:var(--surface); border-color:var(--accent)}
+.rung .note{font-size:.83rem; color:var(--ink-2); line-height:1.45}
+
+/* ---------- equations ---------- */
+.eqs{display:flex; flex-direction:column; gap:12px}
+.eq{background:var(--surface); border:1px solid var(--rule); border-radius:4px; padding:16px 18px;
+    display:grid; grid-template-columns:26px 1fr; gap:16px; align-items:start}
+.eq .i{font-family:"IBM Plex Mono",monospace; font-size:.78rem; color:var(--ink-3); padding-top:3px; font-weight:500}
+.eq .body{display:flex; flex-direction:column; gap:8px; min-width:0}
+.eq .math{font-family:"IBM Plex Mono",monospace; font-size:.94rem; line-height:1.75; color:var(--ink);
+          overflow-x:auto; padding-bottom:2px; white-space:nowrap}
+.eq .gloss{font-size:.87rem; color:var(--ink-2); line-height:1.5}
+.eq.flag{border-left:3px solid var(--warn)}
+
+/* ---------- tables ---------- */
+.scroll{overflow-x:auto; border:1px solid var(--rule); border-radius:4px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:.86rem; min-width:720px}
+th,td{text-align:left; padding:11px 14px; border-bottom:1px solid var(--rule); vertical-align:top; line-height:1.45}
+thead th{background:var(--surface-2); font-weight:600; font-size:.76rem;
+         letter-spacing:.05em; text-transform:uppercase; color:var(--ink-2); white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+td.dim{font-weight:600; color:var(--ink); white-space:nowrap}
+col.ourcol{background:var(--accent-soft)}
+th.ourhead{color:var(--accent)}
+td .m{font-family:"IBM Plex Mono",monospace; font-size:.93em}
+.yes{color:var(--ok); font-weight:600} .no{color:var(--crit); font-weight:600}
+.up{color:var(--crit); font-weight:600} .down{color:var(--ok); font-weight:600}
+.tbl-cap{font-size:.79rem; color:var(--ink-3); margin-top:9px; line-height:1.5}
+
+/* ---------- cards / callouts ---------- */
+.ev{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:12px}
+.card{background:var(--surface); border:1px solid var(--rule); border-radius:4px; padding:16px 18px;
+      display:flex; flex-direction:column; gap:9px}
+.card .tag{display:flex; align-items:center; gap:9px; flex-wrap:wrap}
+.card .id{font-family:"IBM Plex Mono",monospace; font-size:.74rem; font-weight:600; color:var(--ink-3)}
+.card .verdict{font-family:"IBM Plex Mono",monospace; font-size:.68rem; letter-spacing:.08em; text-transform:uppercase;
+               padding:2px 7px; border-radius:2px; font-weight:600}
+.v-ok{color:var(--ok); background:var(--ok-soft); border:1px solid var(--ok)}
+.v-warn{color:var(--warn); background:var(--warn-soft); border:1px solid var(--warn)}
+.v-crit{color:var(--crit); background:var(--crit-soft); border:1px solid var(--crit)}
+.card h3{font-size:1rem}
+.card p{font-size:.87rem; color:var(--ink-2)}
+.card .fig{font-family:"IBM Plex Mono",monospace; font-size:.8rem; color:var(--ink);
+           background:var(--sunk); border-radius:3px; padding:8px 11px; line-height:1.6}
+
+.callout{border:1px solid var(--rule-2); border-left:3px solid var(--accent); background:var(--surface);
+         border-radius:3px; padding:16px 20px; display:flex; flex-direction:column; gap:8px}
+.callout.warn{border-left-color:var(--warn)}
+.callout.crit{border-left-color:var(--crit)}
+.callout .lbl{font-family:"IBM Plex Mono",monospace; font-size:.7rem; letter-spacing:.12em;
+              text-transform:uppercase; color:var(--accent); font-weight:600}
+.callout.warn .lbl{color:var(--warn)} .callout.crit .lbl{color:var(--crit)}
+.callout p{color:var(--ink-2); font-size:.92rem}
+.callout b{color:var(--ink)}
+
+/* ---------- figures ---------- */
+.figgrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(430px,1fr)); gap:14px}
+.fig2{background:var(--surface); border:1px solid var(--rule); border-radius:4px; padding:14px 16px 16px}
+.plabel{font-family:"IBM Plex Mono",monospace; font-size:.68rem; letter-spacing:.09em;
+        text-transform:uppercase; color:var(--ink-3); margin:0 0 8px}
+.cap{font-size:.8rem; color:var(--ink-2); line-height:1.5; margin-top:9px}
+svg{width:100%; height:auto; display:block}
+svg text{font-family:"IBM Plex Sans",sans-serif; fill:var(--ink)}
+svg .mono{font-family:"IBM Plex Mono",monospace}
+svg .dim{fill:var(--ink-3)}
+
+.foot{margin-top:70px; padding-top:22px; border-top:1px solid var(--rule); color:var(--ink-3); font-size:.81rem; line-height:1.6}
+
+@media (max-width:820px){
+  .rung{grid-template-columns:1fr; gap:9px}
+  .rung .note{border-top:1px solid var(--rule); padding-top:9px}
+}
+
+.curve-legend{display:flex;gap:18px;flex-wrap:wrap;font-size:.8rem;color:var(--ink-2);margin-top:6px}
+.curve-legend i{display:inline-block;width:18px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
+.pos{color:var(--ok);font-weight:600} .neg{color:var(--crit);font-weight:600}
+.barrow{display:grid;grid-template-columns:120px 1fr 66px;gap:10px;align-items:center;font-size:.83rem;margin:5px 0}
+.bar{height:14px;background:var(--sunk);border-radius:2px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent)}
+.bar i.alt{background:var(--warn)}
+</style>
+<header class="mast">
+  <div class="mast-in">
+    <div class="eyebrow">Group-relative RL · credit assignment · arm note</div>
+    <h1>The Attention Readout</h1>
+    <p class="thesis">Under the hard gate the estimator builds a &phi;-weighted soft-attention baseline on every
+    turn and then discards it: the empirical-Bayes rule sets <span class="m">lam</span> to <b>exactly 0.000 on
+    every batch</b>, so every arm we have shipped paid for a kernel and used a plain mean. This arm switches the
+    readout on and adds a credibility prior. It moved <b>a quarter to a third of the step credit</b> &mdash;
+    more than any arm we have run &mdash; and held-out success did not move at all.</p>
+    <div class="status">
+      <div class="st crit">
+        <div class="k">VS ITS CONTROL</div>
+        <div class="v">&minus;0.78 window</div>
+        <div class="n">75.56 vs <span class="m">ret-hard</span> 76.34 (se 1.02, t &minus;0.76, ahead 3/7). Over all 20 evals +1.84 (t +1.47, 13/20).</div>
+      </div>
+      <div class="st warn">
+        <div class="k">HOW MUCH IT CHANGED</div>
+        <div class="v">effect_rel 0.24&ndash;0.35</div>
+        <div class="n">Against <span class="m">0.000</span> for every other hard-gate arm and 0.16 for <span class="m">global-fa</span>. The estimator did far more work than anything before it.</div>
+      </div>
+      <div class="st ok">
+        <div class="k">OFFLINE CASE</div>
+        <div class="v">&minus;10.9% baseline MSE</div>
+        <div class="n">The strongest offline result the project has measured. It did not transfer &mdash; the third such failure.</div>
+      </div>
+      <div class="st warn">
+        <div class="k">TRAIN VS HELD-OUT</div>
+        <div class="v">Trains best, generalises same</div>
+        <div class="n">Train by phase 16.6 / 50.4 / 74.5, the best of the four arms; held-out tracked the control to within a point.</div>
+      </div>
+      <div class="st ok">
+        <div class="k">ENDPOINT</div>
+        <div class="v">84.4% @100</div>
+        <div class="n">Identical to the control's 84.4% @100. Coverage <span class="m">live_frac</span> 1.000 throughout.</div>
+      </div>
+    </div>
+    <div class="mast-meta">
+      <span>ccpo-attncred-20260912</span>
+      <span>ALFWorld &middot; Qwen2.5-1.5B-Instruct</span>
+      <span>2 &times; A100-SXM4-80GB &middot; FLASH_ATTN</span>
+      <span>H-AL, the decisive null</span>
+      <span>100 steps, single seed</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">01 &mdash; the three flags</div>
+    <h2>Use the kernel you already pay for, then price its evidence</h2>
+    <p>This arm is <span class="m">ccpo-return-hard</span> plus three environment variables. Target, gate,
+    edge term, raw anchor, seed, hardware and backend are identical, so the comparison is paired.
+    <span class="m">ccpo_jweight_c</span> is <b>0</b> here &mdash; the <span class="m">fbjw</span> reliability
+    weight is deliberately off, because this arm applies the same idea to the baseline instead.</p>
+  </div>
+  <div class="eqs">
+    <div class="eq"><div class="i">1</div><div class="body">
+      <div class="math">lam &larr; 1   &rArr;   b_node = b_loo = &Sigma;<sub>j&ne;i</sub> &phi;(s_i,s_j)&middot;G_j / &Sigma;<sub>j&ne;i</sub> &phi;(s_i,s_j)     <span class="dim"># ACG_CCPO_LAM_FIX=1.0</span></div>
+      <div class="gloss">The soft-attention readout over sibling turns, with &phi; a kernel on whitened hidden
+      states plus context (<span class="m">ACG_CCPO_PHI=hidden+ctx</span>). It is computed on every occurrence
+      under every setting; until this flag existed, the empirical-Bayes rule chose between it and the uniform
+      mean, and it always chose uniform. <span class="m">rho</span> is not the switch &mdash;
+      <span class="m">b_loo</span> is &phi;-weighted whatever <span class="m">rho</span> is.</div>
+    </div></div>
+    <div class="eq"><div class="i">2</div><div class="body">
+      <div class="math">b = lam_k &middot; b_node + (1 &minus; lam_k) &middot; b_task,   lam_k = J / (J + &kappa;),   &kappa; = 2     <span class="dim"># ACG_CCPO_PRIOR_KAPPA=2.0</span></div>
+      <div class="gloss">The credibility prior from H-AK, shrinking the node baseline toward the task mean in
+      proportion to the evidence behind it. Offline the two halves are nearly additive, which is why they were
+      shipped together.</div>
+    </div></div>
+    <div class="eq"><div class="i">3</div><div class="body">
+      <div class="math">if J[i] = 0:  b[i] = b_task                                  <span class="dim"># ACG_CCPO_BACKOFF_TASK=1</span></div>
+      <div class="gloss">The <span class="m">fbjw</span> fallback, kept so that unmatched turns still receive
+      step credit. It is the <span class="m">lam_k = 0</span> case of equation 2, so it costs nothing to state
+      twice. Coverage ran <span class="m">1.000</span> for the whole run.</div>
+    </div></div>
+  </div>
+  <div class="callout warn" style="margin-top:18px">
+    <div class="lbl">Three changes, so the arm cannot attribute</div>
+    <p>Equation 3 alone is <span class="m">fbjw</span>'s live half and equation 2 alone is
+    <span class="m">cred</span>, both already run. What is new here is equation 1. The arm is therefore best
+    read against <b>both</b> siblings: it carries their mechanisms plus the readout, and it finishes
+    <b>below</b> <span class="m">fbjw</span> and level with <span class="m">cred</span>.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">02 &mdash; why the readout was worth trying</div>
+    <h2>The kernel was computed 430,000 times and thrown away</h2>
+  </div>
+  <div class="ev">
+    <div class="card">
+      <div class="tag"><span class="id">the discard</span><span class="verdict v-crit">lam = 0.000</span></div>
+      <h3>The EB rule never chose it</h3>
+      <p><span class="m">lam_eb_obs</span> measured <b>exactly 0.000 on every batch of every hard-gate arm</b>
+      &mdash; two degrees of freedom per bucket is not enough for the empirical-Bayes estimator to prefer the
+      kernel. <span class="m">ret-hard</span>, <span class="m">fbjw</span> and <span class="m">cred</span> all
+      shipped a uniform mean while paying the kernel's cost.</p>
+    </div>
+    <div class="card">
+      <div class="tag"><span class="id">offline</span><span class="verdict v-ok">strongest ever measured</span></div>
+      <h3>&minus;10.9% baseline MSE</h3>
+      <div class="fig">uniform node mean&nbsp;&nbsp;4.474&nbsp;&nbsp;&mdash;<br>&phi;-attention <span class="m">b_loo</span>&nbsp;&nbsp;4.328&nbsp;&nbsp;&minus;3.3%<br>uniform + prior &kappa;=2&nbsp;&nbsp;4.207&nbsp;&nbsp;&minus;6.0%<br><b>attention + prior&nbsp;&nbsp;3.986&nbsp;&nbsp;&minus;10.9%</b></div>
+      <p>On <span class="m">ret-hard</span>'s own dump, 411,669 level-0 rows, return-to-go target.</p>
+    </div>
+    <div class="card">
+      <div class="tag"><span class="id">trend</span><span class="verdict v-ok">grows with training</span></div>
+      <h3>The attention half improves late</h3>
+      <p>Offline the readout beat uniform by &minus;0.2% over steps 1&ndash;30, &minus;2.8% over 31&ndash;60 and
+      &minus;4.8% over 61&ndash;100, tracking <span class="m">phi_rel_corr</span> as it rose 0.01 &rarr; 0.24.
+      A signal that strengthens as the policy sharpens is exactly what you want to switch on.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">03 &mdash; what actually changed in the batch</div>
+    <h2>The largest estimator change this project has made</h2>
+    <p>From this run's own per-occurrence dump (394,280 level-0 rows of 430,464 total) and its metrics.
+    <span class="m">effect_rel</span> is the mean departure of the step credit from the uniform-baseline credit,
+    scaled by the advantage scale.</p>
+  </div>
+  <div class="scroll">
+    <table style="min-width:760px">
+      <thead><tr><th>phase</th><th>effect_rel</th><th>mean lam_k</th><th>mean J</th><th>|b_loo &minus; b_task|</th><th>phi_rel_corr</th><th>n_eff</th><th>mean |A_CC|</th></tr></thead>
+      <tbody>
+        <tr><td class="dim">steps 1&ndash;30</td><td><span class="m">0.236</span></td><td><span class="m">0.707</span></td><td><span class="m">5.66</span></td><td><span class="m">0.310</span></td><td><span class="m">0.085</span></td><td><span class="m">4.22</span></td><td><span class="m">0.57</span></td></tr>
+        <tr><td class="dim">steps 31&ndash;60</td><td><span class="m">0.271</span></td><td><span class="m">0.708</span></td><td><span class="m">5.63</span></td><td><span class="m">0.781</span></td><td><span class="m">0.131</span></td><td><span class="m">3.79</span></td><td><span class="m">1.31</span></td></tr>
+        <tr><td class="dim">steps 61&ndash;100</td><td><span class="m">0.292</span></td><td><span class="m">0.708</span></td><td><span class="m">5.60</span></td><td><span class="m">1.042</span></td><td><span class="m">0.163</span></td><td><span class="m">3.48</span></td><td><span class="m">1.55</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="tbl-cap"><b>Every diagnostic says the mechanism was live and strengthening.</b>
+  <span class="m">effect_rel</span> rose 0.236 &rarr; 0.292 (0.302 at step 100) against
+  <span class="m">0.000</span> for <span class="m">ret-hard</span>, <span class="m">fbjw</span> and
+  <span class="m">cred</span>, and 0.16 for <span class="m">global-fa</span>. The node and task baselines
+  separated by a factor of three over the run, and <span class="m">phi_rel_corr</span> &mdash; how much the
+  kernel's weighting correlates with actual return differences &mdash; more than doubled. The effective sample
+  behind each baseline fell 4.22 &rarr; 3.48 as the kernel concentrated weight on fewer siblings.</div>
+
+  <h3 style="margin-top:34px">The prior bound on every row, and the fallback on none</h3>
+  <div class="ev" style="margin-top:12px">
+    <div class="card">
+      <div class="tag"><span class="id">support</span></div>
+      <h3>J tops out at 7, so lam_k tops out at 0.778</h3>
+      <div class="fig">J=7&nbsp;&nbsp;56.7%&nbsp;&nbsp;lam_k 0.778<br>J=6&nbsp;&nbsp;11.3%&nbsp;&nbsp;0.750<br>J=5&nbsp;&nbsp;&nbsp;7.7%&nbsp;&nbsp;0.714<br>J=1&ndash;4&nbsp;24.3%&nbsp;&nbsp;0.333&ndash;0.667</div>
+      <p>With <span class="m">group_n=8</span> there are at most 7 other trajectories, so
+      <b>100% of rows carry lam_k &lt; 0.8</b> and the mean is 0.708. Unlike <span class="m">fbjw</span>'s
+      J/(J+1) weight, which was nearly a constant, this one always leaves at least 22% of the baseline on the
+      task prior.</p>
+    </div>
+    <div class="card">
+      <div class="tag"><span class="id">caveat</span><span class="verdict v-warn">not measurable here</span></div>
+      <h3>The dump holds no J=0 rows</h3>
+      <p>On <span class="m">fbjw</span> the fallback population was 8&ndash;10% of dumped turns and could be
+      characterised directly. This run's dump contains <b>no J=0 rows at either level</b>, so the fallback's
+      share cannot be recovered from it. <span class="m">live_frac</span> = 1.000 confirms every turn was
+      credited; the composition is simply not in the file.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">04 &mdash; results</div>
+    <h2>A third of the credit, moved, for nothing</h2>
+    <p>Held-out success on ALFWorld's <span class="m">valid_seen</span> split (128 of 140 games, temperature
+    0.4, every 5 steps). Four arms, same two A100s, same backend, one seed each.</p>
+  </div>
+
+  <div class="fig2">
+    <div class="plabel">held-out success (%) by training step</div>
+    <svg viewBox="0 0 560 290" role="img" aria-label="held-out success by training step, four arms"><line x1="56" x2="546" y1="262.0" y2="262.0" stroke="var(--rule)"/><text x="48" y="265.5" font-size="10" text-anchor="end" class="mono dim">0</text><line x1="56" x2="546" y1="210.4" y2="210.4" stroke="var(--rule)"/><text x="48" y="213.9" font-size="10" text-anchor="end" class="mono dim">20</text><line x1="56" x2="546" y1="158.9" y2="158.9" stroke="var(--rule)"/><text x="48" y="162.4" font-size="10" text-anchor="end" class="mono dim">40</text><line x1="56" x2="546" y1="107.3" y2="107.3" stroke="var(--rule)"/><text x="48" y="110.8" font-size="10" text-anchor="end" class="mono dim">60</text><line x1="56" x2="546" y1="55.8" y2="55.8" stroke="var(--rule)"/><text x="48" y="59.3" font-size="10" text-anchor="end" class="mono dim">80</text><text x="56.0" y="278" font-size="10" text-anchor="middle" class="mono dim">5</text><text x="159.2" y="278" font-size="10" text-anchor="middle" class="mono dim">25</text><text x="288.1" y="278" font-size="10" text-anchor="middle" class="mono dim">50</text><text x="417.1" y="278" font-size="10" text-anchor="middle" class="mono dim">75</text><text x="546.0" y="278" font-size="10" text-anchor="middle" class="mono dim">100</text><rect x="391.3" y="30" width="154.7" height="232" fill="var(--accent-soft)" opacity=".55"/><text x="468.6" y="44" font-size="9.5" text-anchor="middle" class="mono dim">window 70&#8211;100</text><polyline points="56.0,251.9 81.8,244.0 107.6,225.7 133.4,215.6 159.2,215.6 184.9,193.4 210.7,195.5 236.5,165.3 262.3,141.1 288.1,118.9 313.9,111.0 339.7,108.9 365.5,92.9 391.3,86.7 417.1,95.0 442.8,74.6 468.6,56.6 494.4,60.7 520.2,40.6 546.0,46.5" fill="none" stroke="var(--ink-3)" stroke-width="1.3" stroke-dasharray="4 3"/><polyline points="56.0,251.9 81.8,221.8 107.6,229.8 133.4,203.5 159.2,195.5 184.9,181.6 210.7,157.4 236.5,125.1 262.3,137.2 288.1,133.1 313.9,103.0 339.7,100.9 365.5,86.7 391.3,64.6 417.1,76.7 442.8,68.7 468.6,54.5 494.4,50.6 520.2,56.6 546.0,50.6" fill="none" stroke="var(--warn)" stroke-width="1.5"/><polyline points="56.0,251.9 81.8,239.8 107.6,215.6 133.4,209.7 159.2,203.5 184.9,177.5 210.7,181.6 236.5,165.3 262.3,167.4 288.1,135.2 313.9,133.1 339.7,111.0 365.5,100.9 391.3,82.9 417.1,96.8 442.8,54.5 468.6,64.6 494.4,60.7 520.2,52.7 546.0,44.5" fill="none" stroke="var(--ok)" stroke-width="1.8"/><circle cx="56.0" cy="251.9" r="2.3" fill="var(--ok)"/><circle cx="81.8" cy="239.8" r="2.3" fill="var(--ok)"/><circle cx="107.6" cy="215.6" r="2.3" fill="var(--ok)"/><circle cx="133.4" cy="209.7" r="2.3" fill="var(--ok)"/><circle cx="159.2" cy="203.5" r="2.3" fill="var(--ok)"/><circle cx="184.9" cy="177.5" r="2.3" fill="var(--ok)"/><circle cx="210.7" cy="181.6" r="2.3" fill="var(--ok)"/><circle cx="236.5" cy="165.3" r="2.3" fill="var(--ok)"/><circle cx="262.3" cy="167.4" r="2.3" fill="var(--ok)"/><circle cx="288.1" cy="135.2" r="2.3" fill="var(--ok)"/><circle cx="313.9" cy="133.1" r="2.3" fill="var(--ok)"/><circle cx="339.7" cy="111.0" r="2.3" fill="var(--ok)"/><circle cx="365.5" cy="100.9" r="2.3" fill="var(--ok)"/><circle cx="391.3" cy="82.9" r="2.3" fill="var(--ok)"/><circle cx="417.1" cy="96.8" r="2.3" fill="var(--ok)"/><circle cx="442.8" cy="54.5" r="2.3" fill="var(--ok)"/><circle cx="468.6" cy="64.6" r="2.3" fill="var(--ok)"/><circle cx="494.4" cy="60.7" r="2.3" fill="var(--ok)"/><circle cx="520.2" cy="52.7" r="2.3" fill="var(--ok)"/><circle cx="546.0" cy="44.5" r="2.3" fill="var(--ok)"/><polyline points="56.0,247.8 81.8,239.8 107.6,239.8 133.4,223.9 159.2,199.6 184.9,171.3 210.7,167.4 236.5,145.2 262.3,131.1 288.1,115.1 313.9,106.8 339.7,108.9 365.5,86.7 391.3,80.8 417.1,88.8 442.8,66.6 468.6,70.7 494.4,58.6 520.2,60.7 546.0,44.5" fill="none" stroke="var(--accent)" stroke-width="2.4"/><circle cx="56.0" cy="247.8" r="2.3" fill="var(--accent)"/><circle cx="81.8" cy="239.8" r="2.3" fill="var(--accent)"/><circle cx="107.6" cy="239.8" r="2.3" fill="var(--accent)"/><circle cx="133.4" cy="223.9" r="2.3" fill="var(--accent)"/><circle cx="159.2" cy="199.6" r="2.3" fill="var(--accent)"/><circle cx="184.9" cy="171.3" r="2.3" fill="var(--accent)"/><circle cx="210.7" cy="167.4" r="2.3" fill="var(--accent)"/><circle cx="236.5" cy="145.2" r="2.3" fill="var(--accent)"/><circle cx="262.3" cy="131.1" r="2.3" fill="var(--accent)"/><circle cx="288.1" cy="115.1" r="2.3" fill="var(--accent)"/><circle cx="313.9" cy="106.8" r="2.3" fill="var(--accent)"/><circle cx="339.7" cy="108.9" r="2.3" fill="var(--accent)"/><circle cx="365.5" cy="86.7" r="2.3" fill="var(--accent)"/><circle cx="391.3" cy="80.8" r="2.3" fill="var(--accent)"/><circle cx="417.1" cy="88.8" r="2.3" fill="var(--accent)"/><circle cx="442.8" cy="66.6" r="2.3" fill="var(--accent)"/><circle cx="468.6" cy="70.7" r="2.3" fill="var(--accent)"/><circle cx="494.4" cy="58.6" r="2.3" fill="var(--accent)"/><circle cx="520.2" cy="60.7" r="2.3" fill="var(--accent)"/><circle cx="546.0" cy="44.5" r="2.3" fill="var(--accent)"/></svg>
+    <div class="curve-legend">
+      <span><i style="background:var(--accent);height:4px"></i>attncred (readout + prior + fallback)</span>
+      <span><i style="background:var(--ok)"></i>ret-hard (control)</span>
+      <span><i style="background:var(--warn)"></i>fbjw</span>
+      <span><i style="background:var(--ink-3)"></i>cred</span>
+    </div>
+    <div class="cap">This arm leads the control from step 25 to step 65 &mdash; the same mid-run lead
+    <span class="m">cred</span> showed and gave back &mdash; then converges onto it exactly. Both finish at
+    84.4% at step 100. <span class="m">fbjw</span> stays above all three across the window.</div>
+  </div>
+
+  <div class="scroll" style="margin-top:22px">
+    <table>
+      <colgroup><col class="ourcol"><col><col><col><col></colgroup>
+      <thead><tr><th>arm</th><th>window 70&ndash;100</th><th>all 20 evaluations</th><th>step 100</th><th>best</th></tr></thead>
+      <tbody>
+        <tr style="background:var(--accent-soft)"><td class="dim">attncred</td><td>75.56</td><td>50.16</td><td><b>84.4</b></td><td>84.4 @100</td></tr>
+        <tr><td class="dim">ret-hard (control)</td><td>76.34</td><td>48.32</td><td><b>84.4</b></td><td>84.4 @100</td></tr>
+        <tr><td class="dim">fbjw</td><td><b>78.24</b></td><td><b>52.19</b></td><td>82.0</td><td>82.0 @90</td></tr>
+        <tr><td class="dim">cred</td><td>76.12</td><td>48.48</td><td>83.6</td><td>85.9 @95</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="scroll" style="margin-top:14px">
+    <table style="min-width:700px">
+      <thead><tr><th>paired difference</th><th>mean</th><th>sd</th><th>se</th><th>t</th><th>ahead at</th></tr></thead>
+      <tbody>
+        <tr><td class="dim">attncred &minus; ret-hard, window (n=7)</td><td><b>&minus;0.78</b></td><td>2.71</td><td>1.02</td><td>&minus;0.76</td><td>3/7</td></tr>
+        <tr><td class="dim">attncred &minus; ret-hard, all 20</td><td><b>+1.84</b></td><td>5.58</td><td>1.25</td><td>+1.47</td><td>13/20</td></tr>
+        <tr><td class="dim">attncred &minus; fbjw, window</td><td class="no">&minus;2.68</td><td>3.37</td><td>1.27</td><td><b>&minus;2.10</b></td><td>2/7</td></tr>
+        <tr><td class="dim">attncred &minus; fbjw, all 20</td><td class="no">&minus;2.03</td><td>4.14</td><td>0.93</td><td><b>&minus;2.20</b></td><td>6/20</td></tr>
+        <tr><td class="dim">attncred &minus; cred, window</td><td>&minus;0.56</td><td>4.30</td><td>1.62</td><td>&minus;0.34</td><td>5/7</td></tr>
+        <tr><td class="dim">attncred &minus; cred, all 20</td><td>+1.68</td><td>4.70</td><td>1.05</td><td>+1.60</td><td>15/20</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="tbl-cap"><b>These t values are within-run, not across seeds.</b> They treat the 7 (or 20) paired
+  evaluations as the sample, so they price evaluation noise and not run-to-run noise. The yardstick for the
+  latter is the same-config replicate: <span class="m">global-fa</span> against the Blackwell run of the
+  identical configuration differ by <b>1.79</b> on the window. Every difference in the first two rows is inside
+  that. The only difference here that clears the bar is <b>negative</b>: this arm sits 2.7 points below
+  <span class="m">fbjw</span>.</div>
+
+  <h3 style="margin-top:34px">Per task type, window mean</h3>
+  <div class="scroll" style="margin-top:12px">
+    <table style="min-width:680px">
+      <thead><tr><th>arm</th><th>Pick</th><th>Look</th><th>Clean</th><th>Heat</th><th>Cool</th><th>Pick2</th></tr></thead>
+      <tbody>
+        <tr style="background:var(--accent-soft)"><td class="dim">attncred</td><td>85.6</td><td>61.9</td><td>76.8</td><td>70.9</td><td>78.5</td><td><b>68.9</b></td></tr>
+        <tr><td class="dim">ret-hard</td><td>85.8</td><td>62.1</td><td>80.4</td><td><b>81.0</b></td><td>74.2</td><td>65.8</td></tr>
+        <tr><td class="dim">fbjw</td><td>85.5</td><td>58.6</td><td><b>89.1</b></td><td>75.0</td><td><b>85.2</b></td><td>62.7</td></tr>
+        <tr><td class="dim">&Delta; attncred &minus; ret-hard</td><td>&minus;0.2</td><td>&minus;0.2</td><td class="no">&minus;3.6</td><td class="no">&minus;10.1</td><td class="yes">+4.3</td><td class="yes">+3.1</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="tbl-cap">Each type carries ~20 of the 128 games per evaluation, so one or two episodes move a
+  type by 5 points. Read the row as texture, not as a finding &mdash; though Heat &minus;10.1 is the single
+  largest per-type move of any arm against this control.</div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">05 &mdash; how to read it</div>
+    <h2>It learns the training distribution better and generalises the same</h2>
+  </div>
+  <div class="ev">
+    <div class="card">
+      <div class="tag"><span class="id">train success</span><span class="verdict v-ok">best of four</span></div>
+      <h3>Ahead on train by phase</h3>
+      <div class="fig">attncred&nbsp;&nbsp;16.6 / 50.4 / 74.5<br>ret-hard&nbsp;&nbsp;15.9 / 43.0 / 72.0<br>fbjw&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;18.1 / 47.6 / 71.9<br>cred&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;13.3 / 40.5 / 72.8</div>
+      <p>+7.4 on the control over steps 31&ndash;60 and +2.5 at the end &mdash; the best middle and the best
+      finish on the distribution it trains on.</p>
+    </div>
+    <div class="card">
+      <div class="tag"><span class="id">the gap</span><span class="verdict v-warn">opposite sign to fbjw</span></div>
+      <h3>Train minus held-out, window</h3>
+      <div class="fig">attncred&nbsp;&nbsp;<b>+2.7</b><br>ret-hard&nbsp;&nbsp;&minus;0.1<br>fbjw&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&minus;8.0<br>cred&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+3.7</div>
+      <p>Measured at each evaluation step, steps 70&ndash;100. The two baseline-quality arms train ahead of
+      what they generalise; <span class="m">fbjw</span>, the arm that added <em>coverage</em>, is the only one
+      whose held-out beats its train. That contrast is the most suggestive thing in this run.</p>
+    </div>
+    <div class="card">
+      <div class="tag"><span class="id">pairing</span><span class="verdict v-ok">clean</span></div>
+      <h3>Same rollouts, different update</h3>
+      <p>Same seed, same games, same base weights; the flags change only how credit is assigned, not what is
+      sampled. Response length fell 77 &rarr; 74 tokens while the control's rose 82 &rarr; 93, and step time was
+      561 &rarr; 521 s against the control's 570 &rarr; 523 s &mdash; the readout is essentially free.</p>
+    </div>
+  </div>
+  <div class="callout crit" style="margin-top:18px">
+    <div class="lbl">The conclusion this arm forces</div>
+    <p><b>Baseline quality is not the binding constraint.</b> Three arms now &mdash;
+    <span class="m">ccpo-hardedge</span>, H-AK and this one &mdash; have made large, verified changes to the
+    step baseline and moved held-out success by less than the seed-to-seed spread of 1.79. This was the
+    strongest case of the three: the best offline number the project has measured (&minus;10.9%), a mechanism
+    demonstrably live all run (<span class="m">effect_rel</span> 0.24&ndash;0.35 against 0.000), and a
+    diagnostic that strengthened as training went on. Held-out still did not move.
+    <b>The offline baseline-MSE proxy has now failed to predict on-policy outcome three times out of three,
+    and should not be used to justify another arm.</b></p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">06 &mdash; the shipped configuration</div>
+    <h2>Three lines against the control</h2>
+  </div>
+  <div class="scroll">
+    <table style="min-width:640px">
+      <thead><tr><th>setting</th><th>value</th><th>vs ret-hard</th></tr></thead>
+      <tbody>
+        <tr><td class="dim">ccpo_lam_fix</td><td><span class="m">1.0</span></td><td class="yes">changed</td></tr>
+        <tr><td class="dim">ccpo_prior_kappa</td><td><span class="m">2.0</span></td><td class="yes">changed</td></tr>
+        <tr><td class="dim">ccpo_backoff_task</td><td><span class="m">1</span></td><td class="yes">changed</td></tr>
+        <tr><td class="dim">ccpo_jweight_c</td><td><span class="m">0.0</span></td><td>same (fbjw's weight is off)</td></tr>
+        <tr><td class="dim">ccpo_phi</td><td><span class="m">hidden+ctx</span></td><td>same (now actually used)</td></tr>
+        <tr><td class="dim">ccpo_target / ccpo_gate / ccpo_rho</td><td><span class="m">return / hard / 0.0</span></td><td>same</td></tr>
+        <tr><td class="dim">ccpo_edge_w / ccpo_shrink / ccpo_whiten</td><td><span class="m">1.0 / eb / 3</span></td><td>same</td></tr>
+        <tr><td class="dim">anchor</td><td>raw (no repair, no admissible suffix)</td><td>same</td></tr>
+        <tr><td class="dim">lr / KL / &gamma; / group / batch</td><td><span class="m">1e-6 / 0.01 low-var / 0.95 / 8 / 16</span></td><td>same</td></tr>
+        <tr><td class="dim">gpus / backend / seed / steps</td><td><span class="m">2,3 / FLASH_ATTN / 0 / 100</span></td><td>same</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="tbl-cap"><span class="m">ACG_CCPO_LAM_FIX</span> defaults to <span class="m">""</span>, the
+  unchanged EB rule. Verified before launch on a real gate-probe batch: unset it is bit-identical to the
+  committed estimator under both gates; at 1.0 every credited row has <span class="m">lam=1</span> and
+  <span class="m">adv = target &minus; b_loo</span>; with <span class="m">PRIOR_KAPPA=2</span> every row equals
+  <span class="m">target &minus; [lam_k&middot;b_loo + (1&minus;lam_k)&middot;b_task]</span>. The global gate is
+  unaffected &mdash; it already pins <span class="m">lam=1</span>.</div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">07 &mdash; what comes next</div>
+    <h2>Stop improving the baseline; fix the grounding</h2>
+    <p>The credit-assignment line is closed by this result. The measured failures are elsewhere, and they are
+    concrete.</p>
+  </div>
+  <div class="eqs">
+    <div class="eq"><div class="i">&rarr;</div><div class="body">
+      <div class="math">4% of emitted actions are inadmissible and carry no penalty</div>
+      <div class="gloss">The invalid-action penalty keys on parse validity only
+      (<span class="m">projection.py:48</span>), so an action that parses but cannot be executed in the current
+      state is trained on as though it were fine. Held-out failures are agents looping over 2&ndash;3
+      receptacles &mdash; a state-tracking and grounding failure, not a credit failure. No change to the
+      estimator addresses it.</div>
+    </div></div>
+  </div>
+</section>
+
+<div class="foot">
+  <p><b>ccpo-attncred-20260912</b> &mdash; hypothesis H-AL (&phi;-attention readout with <span class="mono">lam</span>
+  pinned) on top of H-AK's credibility prior and H-S's fallback. Sources:
+  <span class="mono">ccpo/core_ccpo.py</span> (<span class="mono">_LAM_FIX</span>,
+  <span class="mono">_PRIOR_KAPPA</span>, <span class="mono">_PHI_MODE</span>),
+  <span class="mono">outputs/metrics.jsonl</span>, <span class="mono">outputs/ccpo_samples.csv</span>
+  (430,464 dumped turns), <span class="mono">experiments/hypothesis.md</span> H-AL / H-AK / H-S. Control:
+  <span class="mono">experiments/ccpo-return-hard-20260910</span>. Siblings:
+  <span class="mono">ccpo-return-hard-fbjw-20260911</span>,
+  <span class="mono">ccpo-return-hard-cred-20260911</span>.</p>
+</div>
+
+</div>
+</body></html>
