@@ -136,6 +136,12 @@ DEFAULTS = {
     # 0 disables the resume validation-draw alignment; required when comparing
     # checkpoints saved at different steps on one common draw.
     "align_val_on_resume": 1,
+    # 0 disables the resume TRAINING-draw alignment. On resume the env workers
+    # replay their game list from the start, so a resumed run re-trains on games it
+    # has already seen; the alignment burns one env reset per completed step, which
+    # is what the rollout loop consumes. Leave at 1 -- set 0 only to reproduce a run
+    # made before this existed, and say so in the arm's NOTES.
+    "align_train_on_resume": 1,
 
     # Dump raw grouping inputs for offline gate analysis (large; diagnostic arms only).
     "gdump": False,
@@ -269,7 +275,8 @@ ENV_KEYS = {
     "ccpo_step_norm": "ACG_CCPO_STEP_NORM",
     "compact_budget": "ACG_COMPACT_BUDGET", "compact_stall": "ACG_COMPACT_STALL",
     "compact_mode": "ACG_COMPACT_MODE", "obs_repair": "ACG_OBS_REPAIR", "anchor_aff": "ACG_ANCHOR_AFF",
-    "align_val_on_resume": "ACG_ALIGN_VAL_ON_RESUME", "force_budget": "ACG_FORCE_BUDGET",
+    "align_val_on_resume": "ACG_ALIGN_VAL_ON_RESUME",
+    "align_train_on_resume": "ACG_ALIGN_TRAIN_ON_RESUME", "force_budget": "ACG_FORCE_BUDGET",
     "force_tail": "ACG_FORCE_TAIL",
     "early_stop_patience": "ACG_EARLY_STOP_PATIENCE",
     "early_stop_min_steps": "ACG_EARLY_STOP_MIN_STEPS",

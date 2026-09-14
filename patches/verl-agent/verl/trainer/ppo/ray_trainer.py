@@ -20,6 +20,7 @@ This trainer supports model-agonistic model initialization with huggingface
 
 import json
 import os
+import time
 import uuid
 from collections import defaultdict
 from contextlib import contextmanager
@@ -1181,6 +1182,43 @@ class RayPPOTrainer:
                               flush=True)
                         break
                 print(f"[acg] validation draw aligned ({_burn} resets)", flush=True)
+
+        # ---- align the TRAINING draw after a resume ------------------------
+        # The same problem as the validation draw above, one axis over, and it was
+        # missed when that fix went in. The checkpoint stores the train dataloader,
+        # but for ALFWorld the dataloader carries no games: the env workers hold the
+        # game list and iterate it, and make_envs() has already run. So a resumed run
+        # replays the sequence from the beginning and RE-TRAINS on games it has
+        # already seen, while a fresh run at the same step is somewhere else entirely.
+        #
+        # The rollout loop performs exactly one envs.reset() per training step
+        # (agent_system/multi_turn_rollout/rollout_loop.py:368), so a fresh run that
+        # has completed N steps has consumed N resets. Burn that many.
+        #
+        # Measured consequence of NOT doing this: fbjw crashed at step 15 and resumed
+        # from global_step_10; steps 11-14 ran twice from identical weights and scored
+        # 26.6% then 11.7% train success at step 14. Part of that 15-point gap is
+        # sampling, but the game draw differed too, and the two were not separable.
+        _align_tr = os.environ.get("ACG_ALIGN_TRAIN_ON_RESUME", "1") != "0"
+        if _align_tr and self.global_steps > 0 and self.envs is not None:
+            _tburn = int(self.global_steps)
+            print(f"[acg] resumed at step {self.global_steps}; advancing the training "
+                  f"draw by {_tburn} resets so it matches a fresh run", flush=True)
+            _t0 = time.time()
+            for _b in range(_tburn):
+                try:
+                    self.envs.reset(None)
+                except TypeError:
+                    self.envs.reset()
+                except Exception as _e:
+                    print(f"[acg] training-draw alignment stopped at {_b}/{_tburn}: {_e}",
+                          flush=True)
+                    break
+                if (_b + 1) % 25 == 0:
+                    print(f"[acg]   training draw {_b + 1}/{_tburn} ({time.time() - _t0:.0f}s)",
+                          flush=True)
+            print(f"[acg] training draw aligned ({_tburn} resets, {time.time() - _t0:.0f}s)",
+                  flush=True)
 
         # perform validation before training
         # currently, we only support validation using the reward_function.
