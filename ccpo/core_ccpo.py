@@ -50,6 +50,14 @@ _SHRINK = os.environ.get("ACG_CCPO_SHRINK", "eb").lower()
 # (6,912 occurrences, both targets): LOO residual R2 0.4579 -> 0.4841 at
 # tau_scale 0.15 on return-to-go, 0.7434 -> 0.7604 at 0.25 on nextnode.
 _GATE = os.environ.get("ACG_CCPO_GATE", "hard").lower()
+# Neighbour weighting mode. "soft" (default) is the phi kernel exp(-d/tau); "hard"
+# thresholds it to 0/1 at the same tau, i.e. uniform weight over the neighbours inside
+# the kernel radius and nothing outside. This is the ablation that asks whether the
+# attention arm's gain (if any) comes from ORDERING neighbours by phi-distance or merely
+# from RESTRICTING which neighbours count. tau is unchanged, so both modes select the
+# same neighbourhood and differ only in how they weight inside it.
+_WMODE = os.environ.get("ACG_CCPO_WMODE", "soft").strip().lower()
+
 # Kernel width as a multiple of the bucket's median phi-distance. Only meaningful
 # under the global gate, where it IS the gate: too tight rebuilds exact matching
 # with worse statistics (R2 0.30 at 0.02), too loose converges on the uniform task
@@ -510,6 +518,41 @@ def g2po_step_advantage(index, VAL, NODE, NEXT, is_action_valid=None,
     return out
 
 
+def dense_step_returns(batch, gamma=0.95, scale=10.0):
+    """Discounted return-to-go on WebShop's DENSE task score.
+
+    verl-agent overwrites WebShop's reward with a binary 10/0 at
+    env_package/webshop/envs.py:47-53, keeping the env's own partial score in
+    info['task_score']. The rollout loop carries that through as
+    non_tensor_batch['task_scores']; this turns it into the same shape of target
+    the binary channel produces -- gamma-discounted return-to-go per turn --
+    scaled to the binary reward's units so the invalid-action penalty (0.1) and
+    the episode term keep their relative sizes.
+
+    Why it exists: 30-69% of task groups on WebShop score zero on EVERY rollout,
+    and a group-relative estimator computes exactly zero advantage there (measured
+    on ccpo-attncred-ws-20260914: 69.2% of groups over steps 1-25, 30.2% over 51+).
+    The dense score still varies inside those groups, so it restores a gradient
+    where the binary channel has none. Returns None when the batch has no dense
+    score, which is every benchmark but WebShop.
+    """
+    key = 'task_scores'
+    if key not in batch.non_tensor_batch:
+        return None
+    vals = np.asarray(batch.non_tensor_batch[key], dtype=np.float64) * float(scale)
+    traj = np.asarray(batch.non_tensor_batch['traj_uid'])
+    out = np.zeros_like(vals)
+    order = defaultdict(list)
+    for i, t in enumerate(traj):
+        order[str(t)].append(i)
+    for _t, idxs in order.items():
+        run = 0.0
+        for i in reversed(idxs):          # rollout order within a trajectory
+            run = vals[i] + gamma * run
+            out[i] = run
+    return out
+
+
 def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
                         traj_index, phi, tau_scale=1.0, min_traj=2,
                         epsilon=1e-6, return_diag=False, ctx_override=None,
@@ -517,7 +560,8 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
                         aff_labels=None, step_tag="", phi_feats=None,
                         episode_rewards=None, is_action_valid=None,
                         gamma=0.95, success_reward=10.0, target=None,
-                        edge_w=None, sim=None, sim_backoff=None):
+                        edge_w=None, sim=None, sim_backoff=None,
+                        dense_scores=None):
     """Weighted cross-trajectory leave-one-out step advantage.
 
     phi_feats: optional (n, d) array of per-sample affinity features. When given
@@ -553,7 +597,21 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
                                            episode_rewards, gamma, success_reward)
 
     # ---- the target the step credit is computed on --------------------------
-    if target == "nextnode" and VAL is not None:
+    if target == "score":
+        # Dense WebShop score in place of the binary return-to-go. The BASELINE
+        # machinery is untouched: b_loo, b_obs and B_TASK are all means of TGT, so
+        # the attention readout, the credibility prior and the J=0 fallback carry
+        # over unchanged -- only the quantity they predict is denser. The episode
+        # term still runs on the published binary reward.
+        if dense_scores is None:
+            raise RuntimeError(
+                "ACG_CCPO_TARGET=score needs non_tensor_batch['task_scores'], which only "
+                "the WebShop env supplies (info['task_score']). Falling back silently would "
+                "train on a target of zeros, so this fails loudly instead.")
+        inval = np.zeros(n) if is_action_valid is None else \
+            (1.0 - np.asarray(is_action_valid, dtype=float).reshape(-1))
+        TGT = np.asarray(dense_scores, dtype=np.float64) - _INVALID_PEN * inval
+    elif target == "nextnode" and VAL is not None:
         inval = np.zeros(n) if is_action_valid is None else \
             (1.0 - np.asarray(is_action_valid, dtype=float).reshape(-1))
         TGT = _successor_values(VAL, NEXT, n) - _INVALID_PEN * inval
@@ -722,7 +780,16 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
                 other = [b for b in range(len(idx)) if trajs[b] != trajs[a]]
                 if not other:
                     continue
-                w = np.exp(-D[a, other] / tau)
+                if _WMODE == "hard":
+                    # 0/1 gate at the kernel radius. If tau excludes every neighbour the
+                    # row would lose its baseline entirely, which is not an ablation but
+                    # a different estimator, so the nearest trajectory is always kept.
+                    _d = D[a, other]
+                    w = (_d <= tau).astype(np.float64)
+                    if w.sum() <= 0.0:
+                        w[int(np.argmin(_d))] = 1.0
+                else:
+                    w = np.exp(-D[a, other] / tau)
                 w_all.extend(w.tolist())
                 # aggregate within each reference trajectory first, then across
                 # them: the independent unit is the trajectory, not the occurrence

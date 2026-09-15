@@ -466,6 +466,13 @@ class TrajectoryCollector:
 
             assert len(rewards) == batch_size, f"env should return rewards for all environments, got {len(rewards)} rewards for {batch_size} environments"
             batch.non_tensor_batch['rewards'] = torch_to_numpy(rewards, is_object=True)
+            # ACG: WebShop keeps the env's DENSE partial score in info['task_score']
+            # before overwriting reward with the binary 10/0 (env_package/webshop/
+            # envs.py:45-53). Carried here so ACG_CCPO_TARGET=score can use it as the
+            # step target; no other benchmark sets the key, so it simply never appears.
+            if 'task_score' in infos[0]:
+                batch.non_tensor_batch['task_scores'] = np.array(
+                    [float(info.get('task_score', 0.0)) for info in infos], dtype=np.float32)
             batch.non_tensor_batch['active_masks'] = torch_to_numpy(active_masks, is_object=True)
             
             # Update episode lengths for active environments

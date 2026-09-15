@@ -368,6 +368,12 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
             data.non_tensor_batch['uid'], data.non_tensor_batch['traj_uid'],
             1e-6, _remove_std)
         phi = core_ccpo.FrozenPhi(context_weight=kwargs.get('ccpo_context_weight', 1.0))
+        # ACG_CCPO_TARGET=score: dense WebShop target for the STEP channel only.
+        # The episode term above keeps the published binary reward, so this changes
+        # what step credit predicts, not the objective's outcome signal.
+        _dense = (core_ccpo.dense_step_returns(data, gamma=gamma)
+                  if str(kwargs.get('ccpo_target') or os.environ.get('ACG_CCPO_TARGET', 'return')).lower() == 'score'
+                  else None)
         step_adv, diag = core_ccpo.ccpo_step_advantage(
             step_rewards=data.batch['step_rewards'],
             response_mask=data.batch['response_mask'],
@@ -378,6 +384,7 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
             aff_labels=data.non_tensor_batch.get('anchor_aff'),
             step_tag=kwargs.get('ccpo_step_tag', ''),
             phi_feats=data.batch.get('ccpo_phi_feats'),
+            dense_scores=_dense,
             # G2PO's node values need the episode return and the validity flag.
             # Supplied unconditionally: they cost one pass over the batch and
             # they are what makes r_vs_g2po a real measurement rather than nan.
@@ -426,7 +433,17 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
                     _v = _sa[_ix]
                     _sa[_ix] = (_v - _v.mean()) / (_v.std() + 1e-6)
             step_adv = _sa
-        scores = episode_adv + step_advantage_w * step_adv.unsqueeze(-1) * data.batch['response_mask']
+        # Weight on the EPISODE term A^EP. 1.0 is the shipped behaviour (GiGPO's
+        # A_E + w*A_S, G2PO's A_EP + w(A_NC + A_EC)); 0.0 drops it entirely, leaving
+        # the step term alone -- and the step term already carries G2PO's edge
+        # contribution, which core_ccpo folds into `adv` when edge_w > 0. So
+        # ACG_CCPO_EP_W=0 is the "context + edge only" ablation: no trajectory-level
+        # signal at all, every turn credited solely by where it stands and where it
+        # moves. Note HGPO ships exactly this shape (no episode term, hgpo:377-380)
+        # and reports that ADDING the trajectory-level advantage hurt (hgpo:686-690),
+        # so the arm is a direct test of their claim on our harness.
+        _ep_w = float(os.environ.get("ACG_CCPO_EP_W", "1.0"))
+        scores = _ep_w * episode_adv + step_advantage_w * step_adv.unsqueeze(-1) * data.batch['response_mask']
         data.batch['advantages'] = scores
         data.batch['returns'] = scores
         # Surface every estimator term for downstream analysis. Printing them to
@@ -1199,7 +1216,11 @@ class RayPPOTrainer:
         # from global_step_10; steps 11-14 ran twice from identical weights and scored
         # 26.6% then 11.7% train success at step 14. Part of that 15-point gap is
         # sampling, but the game draw differed too, and the two were not separable.
-        _align_tr = os.environ.get("ACG_ALIGN_TRAIN_ON_RESUME", "1") != "0"
+        # val_only never trains, so there is no training stream to align -- and the
+        # burn is not free: at step 150 it is 150 resets of 128 workers before the one
+        # validation pass the run exists for. Checkpoint re-scoring sets val_only=1.
+        _align_tr = (os.environ.get("ACG_ALIGN_TRAIN_ON_RESUME", "1") != "0"
+                     and not self.config.trainer.get("val_only", False))
         if _align_tr and self.global_steps > 0 and self.envs is not None:
             _tburn = int(self.global_steps)
             print(f"[acg] resumed at step {self.global_steps}; advancing the training "

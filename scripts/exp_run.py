@@ -104,6 +104,12 @@ DEFAULTS = {
     # run. It only needs KV cache for ~32 concurrent generations of <=512 tokens;
     # everything else is better left to the trainer's backward pass.
     "gpu_mem_util": 0.25,
+    # vLLM tensor parallelism. The published scripts use tp=2 on 8 GPUs, which is a
+    # parallelism choice, not a learning hyperparameter: at tp=1 each GPU holds a
+    # whole 1.5B replica and the rollout runs n_gpus generation streams instead of
+    # one. On two GPUs tp=2 would halve the number of replicas, so tp=1 stays the
+    # default and the delta is recorded in _REFERENCE_DELTA.
+    "tp_size": 1,
     # vLLM's attention backend. TRITON_ATTN was pinned for Blackwell (sm_120);
     # on A100 (sm_80) FLASH_ATTN is the mature path and generation is ~50% of the
     # step, so this is worth measuring rather than assuming. Configurable so the
@@ -155,6 +161,10 @@ DEFAULTS = {
     # by the RAY_* knobs in build_env, not by this. 64 leaves headroom for the 128
     # train and 128 validation env actors at 0.1 CPU each plus the GPU workers.
     "ray_num_cpus": 64,
+    # CPU units reserved per env worker. ALFWorld runs at verl-agent's default 0.1;
+    # WebShop's published script lowers it to 0.05 because it starts
+    # train_batch_size*group_n + val_batch_size = 256 workers at once.
+    "env_num_cpus": 0.1,
     "env_name": "alfworld/AlfredTWEnv",
     # Search-augmented QA (Search-R1 suite via verl-agent's `search` env). Selected by
     # env_name=search; the keys below are ignored for every other benchmark. GiGPO's
@@ -196,14 +206,36 @@ DEFAULTS = {
     "ccpo_rho": 0.59,
     "ccpo_shrink": "eb",
     "ccpo_whiten": 3,
+    # What the STEP channel predicts. "return" = gamma-discounted return-to-go of
+    # the env reward (the shipped default); "nextnode" = G2PO's successor value;
+    # "score" = WebShop's dense partial score, which only that benchmark supplies
+    # (info['task_score']). "score" exists because WebShop's reward reaching the
+    # trainer is binary 10/0, leaving 30-69% of task groups with zero advantage on
+    # every turn -- see ccpo/core_ccpo.dense_step_returns. It changes the target
+    # only: the gate, the attention readout, the credibility prior, the J=0
+    # fallback and the episode term are all unchanged.
     "ccpo_target": "return",
+    # Mixing ratio for the context block when phi=hidden+ctx: both blocks are
+    # L2-normalised first, so 1.0 is a true 50/50 and 0.0 leaves the whitened hidden
+    # state alone. 0.0 is the designed null control for the context features
+    # (n_unique, revisit, progress) -- the episode-level signal the prompt cannot
+    # carry. Only meaningful with the readout ON (ccpo_lam_fix=1.0); under the EB
+    # rule phi is computed and discarded, so this is a no-op there.
+    "ccpo_ctx_w": 1.0,
     "ccpo_sim": 0.0,
     "ccpo_sim_backoff": 0.0,
     "ccpo_backoff_rho": 0.5,
     "ccpo_backoff_task": 0,     # 1: hard-gate rows with no sibling fall back to the task baseline
     "ccpo_jweight_c": 0.0,      # >0: step term *= J/(J+c); c=1 is the derived value. 0 = off
     "ccpo_prior_kappa": 0.0,    # >0: hard-gate node baseline shrunk to the task mean, weight kappa/(J+kappa)
-    "ccpo_lam_fix": "",         # "1.0": use the phi-weighted (attention) readout instead of the EB-estimated lam
+    "ccpo_lam_fix": "",
+    # neighbour weighting: "soft" = phi kernel exp(-d/tau); "hard" = 0/1 gate at the
+    # same tau. Ablates ordering-by-similarity against mere neighbourhood restriction.
+    # Weight on the episode-level advantage A^EP. 1.0 ships (GiGPO/G2PO shape);
+    # 0.0 removes the trajectory-level term, leaving the step term -- which already
+    # carries the edge contribution -- as the whole advantage. That is HGPO's shape.
+    "ccpo_ep_w": 1.0,
+    "ccpo_wmode": "soft",         # "1.0": use the phi-weighted (attention) readout instead of the EB-estimated lam
     "ccpo_edge_w": 0.0,
     # "hard" = the GiGPO/G2PO exact (task, observation) gate. "global" makes the
     # task one bucket and lets exp(-d/tau) gate softly; ccpo_tau is then the
@@ -257,7 +289,41 @@ _REFERENCE_DELTA = [
     "base model: Qwen2.5-1.5B-Instruct matches the G2PO/GiGPO/HGPO reference",
     "attention: flash-attn 2.8.3 DOES build for sm_120; trainer runs flash_attention_2\n     with use_remove_padding=True (packed). Falls back to sdpa if the import fails.",
     "rollout: vllm, VLLM_ATTENTION_BACKEND set by the vllm_attn_backend key",
-    "tensor_model_parallel_size=1 on 6 GPUs vs their 8 with tp=2",
+    "tensor_model_parallel_size=1 on this box's GPUs vs their 8 with tp=2",
+]
+
+# ---------------------------------------------------------------------------
+# Per-benchmark protocol. DEFAULTS above are the ALFWorld reference
+# (baselines/G2PO/examples/g2po_trainer/run_alfworld.sh). WebShop's published
+# script differs in more than the env name, and those differences are protocol
+# rather than taste, so env_name=Webshop applies them automatically -- unless the
+# command line set the key, which always wins.
+# Source: baselines/G2PO/examples/g2po_trainer/run_webshop.sh (identical on every
+# one of these to GiGPO's examples/gigpo_trainer/run_webshop.sh).
+# ---------------------------------------------------------------------------
+WEBSHOP_PROTOCOL = {
+    # WebShop pages are long: the reference doubles the prompt budget.
+    "max_prompt_length": 4096,
+    # val_data_size=128 in the reference; the parquet is prepared at 2x that.
+    "val_batch_size": 128,
+    # 15 turns, not ALFWorld's 50.
+    "max_steps": 15,
+    # mean_norm on WebShop vs mean_std_norm on ALFWorld. This one is an estimator
+    # setting, so it changes the update, not just the budget.
+    "adv_mode": "mean_norm",
+    "ppo_mini_batch_size": 64,
+    # Inert while dynamic_bsz is on (the token budgets below govern), kept at the
+    # reference values so turning dynamic_bsz off reproduces the published script.
+    "ppo_micro_batch_size_per_gpu": 8,
+    "log_prob_micro_batch_size_per_gpu": 16,
+    "env_num_cpus": 0.05,
+}
+
+_WEBSHOP_DELTA = [
+    "WebShop protocol from run_webshop.sh: prompt 4096, val 128, 15 turns,\n     mean_norm, mini-batch 64, 0.05 CPU/worker -- see WEBSHOP_PROTOCOL",
+    "gpu_memory_utilization stays 0.25 (theirs 0.6): they hold 8 cards with tp=2,\n     this box trains and generates on the same two, and the actor peaked at 86.5 GB\n     of 95.6 GiB on ALFWorld",
+    "use_dynamic_bsz=True replaces their fixed micro-batches; the token budgets are\n     memory-calibrated for this box and bound peak memory as prompts lengthen",
+    "1,000-product catalogue (env.webshop.use_small=True) -- verl-agent's default and\n     what the published scripts run, so 67.4% (GiGPO, Qwen2.5-1.5B) is on this subset",
 ]
 
 ENV_KEYS = {
@@ -269,7 +335,7 @@ ENV_KEYS = {
     "ccpo_backoff_task": "ACG_CCPO_BACKOFF_TASK", "ccpo_jweight_c": "ACG_CCPO_JWEIGHT_C",
     "ccpo_prior_kappa": "ACG_CCPO_PRIOR_KAPPA", "keep_ckpts": "ACG_KEEP_CKPTS",
     "pin_steps": "ACG_PIN_STEPS",
-    "ccpo_lam_fix": "ACG_CCPO_LAM_FIX",
+    "ccpo_lam_fix": "ACG_CCPO_LAM_FIX", "ccpo_wmode": "ACG_CCPO_WMODE", "ccpo_ep_w": "ACG_CCPO_EP_W", "ccpo_ctx_w": "ACG_CCPO_CTX_W",
     "ccpo_gate": "ACG_CCPO_GATE", "ccpo_tau": "ACG_CCPO_TAU",
     "ccpo_std": "ACG_CCPO_STD", "ccpo_std_floor": "ACG_CCPO_STD_FLOOR",
     "ccpo_step_norm": "ACG_CCPO_STEP_NORM",
@@ -368,7 +434,7 @@ def build_command(cfg, exp_dir):
         "actor_rollout_ref.actor.fsdp_config.param_offload=False",
         "actor_rollout_ref.actor.fsdp_config.optimizer_offload=False",
         f"actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu={cfg['log_prob_micro_batch_size_per_gpu']}",
-        "actor_rollout_ref.rollout.tensor_model_parallel_size=1",
+        f"actor_rollout_ref.rollout.tensor_model_parallel_size={cfg['tp_size']}",
         "actor_rollout_ref.rollout.name=vllm",
         f"actor_rollout_ref.rollout.gpu_memory_utilization={cfg['gpu_mem_util']}",
         "actor_rollout_ref.rollout.enable_chunked_prefill=False",
@@ -400,7 +466,7 @@ def build_command(cfg, exp_dir):
           else [f"env.webshop.use_small={bool(int(cfg['webshop_use_small']))}",
                 f"env.webshop.human_goals={bool(int(cfg['webshop_human_goals']))}"] if _is_webshop
           else [f"env.alfworld.eval_dataset={cfg['eval_split']}"]),
-        "env.resources_per_worker.num_cpus=0.1",
+        f"env.resources_per_worker.num_cpus={cfg['env_num_cpus']}",
         f"ray_init.num_cpus={cfg['ray_num_cpus']}",
         "trainer.critic_warmup=0",
         "trainer.logger=[console,jsonl]",
@@ -515,11 +581,19 @@ def main():
     cfg = dict(DEFAULTS)
     if a.arm:
         cfg["arm"] = a.arm
+    explicit = set()
     for kv in a.set:
         k, _, v = kv.partition("=")
         if k not in cfg:
             sys.exit(f"unknown config key: {k}\nknown: {', '.join(sorted(cfg))}")
         cfg[k] = _coerce(v)
+        explicit.add(k)
+
+    # Benchmark protocol, applied only where the command line was silent.
+    if "webshop" in str(cfg["env_name"]).lower():
+        for k, v in WEBSHOP_PROTOCOL.items():
+            if k not in explicit:
+                cfg[k] = v
 
     cfg["exp_id"] = f"{a.name}-{a.date}"
     exp_dir = os.path.join(ROOT, "experiments", cfg["exp_id"])
@@ -548,20 +622,55 @@ def main():
         _jh = "/workspace/jdk/jdk-11.0.32.1+1"
         env["JAVA_HOME"] = _jh
         env["PATH"] = _jh + "/bin:" + env.get("PATH", os.environ.get("PATH", ""))
+        # One JVM per env worker, and WebShop starts train_batch_size*group_n +
+        # val_batch_size of them at once (128 + 128 here). The JVM sizes its GC and JIT
+        # thread pools from the VISIBLE core count -- 96 on this box -- so the default
+        # costs 88.3 PIDs per worker against a cgroup pids.max of 20,000. Measured on a
+        # 16-worker probe: Ray itself takes 3,543, and 256 workers project to 26,152,
+        # which is exactly how the first launch died ("pthread_create failed (EAGAIN)",
+        # java.lang.OutOfMemoryError: unable to create native thread, at 19,941 PIDs).
+        # Pinning the JVM to one processor with the serial collector cuts it to 18.6 per
+        # worker and the projection to 8,311. Heap is irrelevant to the thread count;
+        # 512m is ample for a BM25 search over the 1,000-product index.
+        env["JAVA_TOOL_OPTIONS"] = ("-XX:ActiveProcessorCount=1 -XX:+UseSerialGC "
+                                    "-Xss512k -Xms32m -Xmx512m")
     record = {
         "experiment": cfg["exp_id"], "created": datetime.datetime.now().isoformat(timespec="seconds"),
         "config": cfg, "hydra_overrides": argv[3:], "env": env,
         "git": git_state(), "versions": versions(cfg["venv_python"]),
         "reference_protocol": {
-            "source": "baselines/G2PO/examples/g2po_trainer/run_alfworld.sh",
-            "matched": ["val temperature 0.4 + do_sample", "val set 128 episodes (in chunks of val_batch_size)",
-                        "eval split eval_in_distribution (valid_seen)",
-                        "group size 8", "train_batch_size 16", "max_prompt_length 2048",
-                        "max_response_length 512", "lr 1e-6", "kl 0.01 low_var_kl",
-                        "gamma 0.95", "step_advantage_w 1.0", "mode mean_std_norm",
-                        "invalid-action penalty 0.1", "env.max_steps 50", "env.seed 0",
-                        "history_length 2"],
-            "deltas": _REFERENCE_DELTA,
+            "source": ("baselines/G2PO/examples/g2po_trainer/run_webshop.sh"
+                       if "webshop" in str(cfg["env_name"]).lower()
+                       else "baselines/G2PO/examples/g2po_trainer/run_alfworld.sh"),
+            # Read off the resolved config, not hardcoded, so a benchmark whose
+            # protocol differs (WebShop: prompt 4096, mean_norm, 15 turns) records
+            # what it actually ran rather than ALFWorld's numbers.
+            "matched": [f"val temperature {cfg['val_temperature']} + do_sample",
+                        f"val batch {cfg['val_batch_size']}",
+                        *([f"eval split {cfg['eval_split']} (valid_seen)"]
+                          if "alfworld" in str(cfg["env_name"]).lower() else
+                          [f"webshop use_small={bool(int(cfg['webshop_use_small']))}"]
+                          if "webshop" in str(cfg["env_name"]).lower() else []),
+                        f"group size {cfg['group_size']}",
+                        f"train_batch_size {cfg['train_batch_size']}",
+                        f"max_prompt_length {cfg['max_prompt_length']}",
+                        f"max_response_length {cfg['max_response_length']}",
+                        f"lr {cfg['lr']}", f"kl {cfg['kl_loss_coef']} {cfg['kl_loss_type']}",
+                        f"gamma {cfg['gamma']}",
+                        f"step_advantage_w {cfg['step_advantage_w']}",
+                        f"mode {cfg['adv_mode']}",
+                        "invalid-action penalty 0.1",
+                        f"env.max_steps {cfg['max_steps']}", f"env.seed {cfg['seed']}",
+                        f"history_length {cfg['history_length']}"],
+            "deltas": _REFERENCE_DELTA + (_WEBSHOP_DELTA
+                      if "webshop" in str(cfg["env_name"]).lower() else []) + (
+                      [f"val_batch_size {cfg['val_batch_size']} not the reference 128: the val"
+                       f" set (256 rows) is evaluated in {256 // int(cfg['val_batch_size'])} chunks"
+                       f" instead of 2, same episodes. WebShop holds one Ray actor per"
+                       f" concurrent env and each costs ~65 threads, so 128 train + 128 val"
+                       f" actors reach 19,800 of the cgroup's 20,000 pids.max before step 1."]
+                      if "webshop" in str(cfg["env_name"]).lower()
+                      and int(cfg["val_batch_size"]) != 128 else []),
         },
     }
     with open(os.path.join(exp_dir, "config.json"), "w") as fh:
