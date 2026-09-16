@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The six CCPO-ATTNCRED ablations, per experiments/experiments.md.
+"""The CCPO-ATTNCRED ablations, per experiments/experiments.md.
 
 Each is the main `attncred` arm of the SAME benchmark with one component removed,
 1.5B backbone, 150 steps. The control for an ALFWorld ablation is
@@ -7,7 +7,9 @@ Each is the main `attncred` arm of the SAME benchmark with one component removed
 which carries the dense-score target -- so an ablation inherits it and stays paired
 with the arm it ablates.
 
-Each entry names the component, the delta, and what the result decides.
+Each entry names the component, the delta, and what the result decides. An entry may
+declare `benchmarks` when it is only meaningful on one of them -- by default an ablation
+runs on both.
 """
 import os
 import sys
@@ -132,7 +134,37 @@ ABLATIONS = {
               "task afterwards, so the arm mostly reweights; on WebShop (mean_norm) "
               "nothing rescales it, and the step channel gets absolutely smaller.",
     ),
+    # -----------------------------------------------------------------------
+    "no-edge-return-ws": dict(
+        name="CCPO-ATTNCRED-NOEDGE-RETURN-WS",
+        tag="noedgeret",
+        title="Without the edge advantage, on the binary return target (WebShop)",
+        delta={"ccpo_edge_w": 0.0, "ccpo_target": "return"},
+        benchmarks=("webshop",),
+        removes="G2PO's value-gain term AND the dense-score adaptation",
+        # A = A_EP + Z(TGT_i - base_i) with TGT the gamma-discounted return-to-go of
+        # WebShop's binary 10/0 reward -- the published target. Two keys, deliberately:
+        # this is the arm that shows what the method does on WebShop with NOTHING
+        # borrowed, neither G2PO's edge term nor the dense score this project added.
+        # The episode term stays (A_CC + A_EP), so it is still the standard shape.
+        #
+        # WebShop only. On ALFWorld ccpo_target is already `return`, so the delta would
+        # collapse to plain A6 and the run would be a duplicate.
+        asks="on WebShop, with the published binary reward and no edge term, does the "
+             "context-conditioned baseline carry anything on its own?",
+        watch="the zero-advantage population is the risk: under the binary reward 30-69% "
+              "of task groups score zero on EVERY rollout, and a group-relative estimator "
+              "computes exactly zero advantage there -- which is why the dense target "
+              "exists. Read ccpo/effect_rel and ccpo/live_frac beside the success curve; "
+              "a flat curve here with effect_rel > 0 says the target, not the estimator, "
+              "was the binding constraint.",
+    ),
 }
+
+
+def benchmarks_for(ablation):
+    """The benchmarks an ablation is defined on. Both, unless it says otherwise."""
+    return tuple(ABLATIONS[ablation].get("benchmarks", ("alfworld", "webshop")))
 
 
 def build(ablation, benchmark, extra=None):
@@ -140,6 +172,10 @@ def build(ablation, benchmark, extra=None):
     if ablation not in ABLATIONS:
         raise KeyError(f"unknown ablation {ablation!r}; known: {', '.join(ABLATIONS)}")
     spec = ABLATIONS[ablation]
+    allowed = benchmarks_for(ablation)
+    if benchmark not in allowed:
+        raise KeyError(f"{ablation!r} is defined for {', '.join(allowed)} only, "
+                       f"not {benchmark!r}")
     _, cfg = arms.build("attncred", benchmark, "1.5b")
     cfg.update(spec["delta"])
     cfg.update(extra or {})

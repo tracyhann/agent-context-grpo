@@ -49,7 +49,7 @@ er = _load("exp_run", os.path.join(ROOT, "scripts", "exp_run.py"))
 def test_one_delta_each():
     ok = True
     for key, spec in ablations.ABLATIONS.items():
-        for bench in ("alfworld", "webshop"):
+        for bench in ablations.benchmarks_for(key):
             _, ctl = arms.build("attncred", bench, "1.5b")
             _, abl = ablations.build(key, bench)
             ctl = {k: er._coerce(str(v)) for k, v in ctl.items()}
@@ -60,11 +60,15 @@ def test_one_delta_each():
             ok &= good
             if not good:
                 print(f"    {key}/{bench}: moved {sorted(moved)}, declared {sorted(want)}")
-        print(f"  {key:18s} delta {list(spec['delta'])} on both benchmarks: "
-              f"{'OK' if good else 'FAIL'}")
+        print(f"  {key:18s} delta {list(spec['delta'])} on "
+              f"{'+'.join(ablations.benchmarks_for(key))}: {'OK' if good else 'FAIL'}")
     # the WebShop ablations must inherit the dense-score target from their control
+    # every WebShop ablation inherits the dense target from its control, EXCEPT the
+    # one whose whole point is to change it back.
     dense = all(ablations.build(k, "webshop")[1]["ccpo_target"] == "score"
-                for k in ablations.ABLATIONS)
+                for k in ablations.ABLATIONS
+                if "webshop" in ablations.benchmarks_for(k)
+                and "ccpo_target" not in ablations.ABLATIONS[k]["delta"])
     ok &= dense
     print(f"  webshop ablations keep the dense-score target: {'OK' if dense else 'FAIL'}")
     return bool(ok)

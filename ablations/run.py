@@ -21,13 +21,14 @@ import arms                                                   # noqa: E402
 
 
 def describe():
-    print(f"{'ablation':20s}{'name':28s}{'delta':26s}removes")
+    print(f"{'ablation':20s}{'name':34s}{'delta':42s}{'benchmarks':20s}removes")
     for key, spec in ablations.ABLATIONS.items():
         delta = ", ".join(f"{k}={v}" for k, v in spec["delta"].items())
-        print(f"{key:20s}{spec['name']:28s}{delta:26s}{spec['removes']}")
-    print("\nruns (each also on --benchmark webshop):")
+        bench = "+".join(ablations.benchmarks_for(key))
+        print(f"{key:20s}{spec['name']:34s}{delta:42s}{bench:20s}{spec['removes']}")
+    print("\nruns:")
     for key in ablations.ABLATIONS:
-        for b in ("alfworld", "webshop"):
+        for b in ablations.benchmarks_for(key):
             name, _ = ablations.build(key, b)
             print(f"  {name}")
 
@@ -45,6 +46,10 @@ def main():
     if not a.ablation:
         ap.error("--ablation is required (see --list)")
 
+    allowed = ablations.benchmarks_for(a.ablation)
+    if a.benchmark not in allowed:
+        ap.error(f"{a.ablation} is defined for {', '.join(allowed)} only "
+                 f"(see --list); got --benchmark {a.benchmark}")
     name, cfg = ablations.build(a.ablation, a.benchmark)
     arms.check_gpus(a.gpus, "1.5b")
     spec = ablations.ABLATIONS[a.ablation]

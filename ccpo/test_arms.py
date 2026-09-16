@@ -188,7 +188,8 @@ def test_doc_matches_code():
     code_names |= {spec["name"] for spec in abl.ABLATIONS.values()}
     code_ids = {arms.build(m, b, k)[0] for m in arms.METHODS for b in arms.BENCHMARK
                 for k in arms.BACKBONE}
-    code_ids |= {abl.build(a, b)[0] for a in abl.ABLATIONS for b in ("alfworld", "webshop")}
+    code_ids |= {abl.build(a, b)[0] for a in abl.ABLATIONS
+                 for b in abl.benchmarks_for(a)}
 
     doc_names = set(re.findall(r"CCPO-ATTNCRED[A-Z-]*", doc))
     doc_ids = set(re.findall(r"ccpo-attncred[a-z0-9.\-]*", doc))

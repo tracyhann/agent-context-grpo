@@ -1,4 +1,4 @@
-# `ablations/` — the six CCPO-ATTNCRED ablations
+# `ablations/` — the CCPO-ATTNCRED ablations
 
 Each removes one component of the main arm, on both benchmarks, 1.5B, 150 steps
 (`experiments/experiments.md`). The control is the main arm of the **same** benchmark —
@@ -18,8 +18,11 @@ python3 official-repo/ablations/run.py --ablation cosine    --benchmark webshop 
 | `no-context-vector` | `ccpo_phi=hidden` | the trajectory-context block of φ | does whole-episode context earn its place? |
 | `cosine` | `ccpo_wmode=cos` | the exponential kernel | does `exp(−d/τ)` beat a plain similarity? |
 | `no-edge` | `ccpo_edge_w=0` | G²PO's value-gain term | baseline or edge — which carries the effect? |
+| `no-edge-return-ws` | `ccpo_edge_w=0` + `ccpo_target=return` | the edge term **and** the dense-score adaptation | WebShop only: does the baseline carry anything with nothing borrowed? |
 
-Twelve runs. Each is a **single-key** delta from its control, asserted by the guard.
+Thirteen runs. Each is a single-key delta from its control — except
+`no-edge-return-ws`, which declares two and runs on WebShop alone. The guard asserts
+each arm moves exactly the keys it declares, on exactly the benchmarks it declares.
 
 ## What each one does to the math
 
