@@ -133,18 +133,49 @@ exp-ids: `ccpo-attncred-alfworld-1.5b`, `ccpo-attncred-alfworld-7b`.
 
 ### M2 · `CCPO-ATTNCRED-WS` — WebShop, dense score
 
-WebShop adaptation. verl-agent overwrites WebShop's reward with a binary 10/0 and keeps
-the environment's partial score in `info['task_score']`; 30–69% of task groups then
-score zero on **every** rollout, where a group-relative estimator computes exactly zero
-advantage. The step channel predicts the dense score instead:
+#### The WebShop reward, and which channel sees what
+
+Both GiGPO and the released HGPO recipe train WebShop on **terminal success**. Their
+shared environment wrapper (`verl-agent/agent_system/environments/env_package/webshop/envs.py`,
+upstream — we do not patch it) converts WebShop's graded score into
+
+```
+      r_T = 10   if the episode ends with a perfect score (score == 1.0)
+      r_T = 0    otherwise, partial matches included
+```
+
+and retains the original graded score as `info['task_score']` for reporting. We inherit
+that unchanged: `env_manager.py:683-686` reads `info['won']` into `success_rate` and
+`info['task_score']` into the reported score, and the reward manager writes the episode
+reward, unaltered, onto the last response token.
+
+*Verified on `ccpo-attncred-ws-20260914`, 84 steps:* `episode/reward/mean` equals
+`10 × episode/success_rate` to four decimals (mean absolute difference **0.0000**),
+against **3.2214** for the graded-score hypothesis, and the reward takes only the values
+0 and 10 (`reward/min` 0.0, `reward/max` 10.0 at every step). The binary channel is what
+reaches the trainer.
+
+That is also the problem: 30–69% of task groups score zero on **every** rollout under
+this reward, and a group-relative estimator computes exactly zero advantage there. So
+this arm points the **step channel** at the dense score, which still varies inside those
+groups:
 
 ```
 (D)   TGT_i = Σ_{t ≥ i} γ^(t−i) · ( 10 · score_t )  −  0.1 · 1[action invalid]
 ```
 
-**Step channel only** — `A_EP` in (T) keeps the published binary reward, and `V` in (S)
-is still built from it. Horizon 15 turns, not ALFWorld's 50. `Z` in (T) is the identity
-here (see §1).
+The ×10 keeps the dense target in the binary reward's units, so the invalid-action
+penalty and the episode term keep their relative sizes.
+
+**Step channel only.** `A_EP` in (T) keeps the published binary 10/0, `V` in (S) is
+still built from it, and the reported Success and Score both come from the environment
+manager — so the outcome signal and the reported numbers stay comparable to GiGPO and
+HGPO. What deviates is what the credit-assignment channel regresses on, and nothing else.
+
+For the strictly-comparable arm — binary on both channels, as the published runs are —
+add `--set ccpo_target=return`. That is what `ccpo-attncred-ws-20260914` ran.
+
+Horizon 15 turns, not ALFWorld's 50. `Z` in (T) is the identity here (see §1).
 
 ```bash
 python3 official-repo/ccpo/run.py --method attncred --benchmark webshop \
