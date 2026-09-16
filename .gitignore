@@ -1,0 +1,31 @@
+__pycache__/
+*.pyc
+*.log
+
+# secrets: HF_HOME lives here, and tokens must never be committed. Log in with
+# `hf auth login` or export HF_TOKEN instead of writing a token into the tree.
+hf/
+*.token
+.env
+
+# runnable overlay: upstream verl-agent + patches/. Rebuild with
+# scripts/sync_patches.sh; patches/ is the source of truth for our edits.
+/verl-agent/
+
+# environment and data, rebuilt by scripts/setup_env.sh
+/.venv/
+/.venv-webshop/
+/alfworld_data/
+/envdata/
+/jdk/
+/.cache/
+/wheels/
+docker/wheels/
+
+# per-run artefacts: config.json, NOTES.md, metrics.jsonl and plots/ are tracked;
+# weights, raw logs and per-sample dumps are not
+experiments/*/outputs/checkpoints/
+experiments/*/outputs/train.log
+experiments/*/outputs/train.pid
+experiments/*/outputs/*.csv
+experiments/*/outputs/**/*.csv

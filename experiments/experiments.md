@@ -1,0 +1,559 @@
+# CCPO experiments
+
+Eighteen runs: **8 main** (4 method variants × 2 backbones) and **10 ablations**
+(5 variants × 2 benchmarks, 1.5B only).
+
+Every method variant below has a name, a location in the repo, and the one equation
+that separates it from the base estimator in §1. Nothing else differs between any two
+arms in this document — each is a single-delta change, asserted by the guards.
+
+---
+
+## 0. Protocol — identical in every run
+
+| | |
+|---|---|
+| steps | **150** (`total_epochs=150`, early stopping off) |
+| checkpoints | **3**: `step<N>-best`, `step100-pin`, `step<N>-last` (`pin_steps=100`, `keep_ckpts=1`) |
+| seed | 0, one seed per arm |
+| eval | every 5 steps, T=0.4 with sampling |
+| attention | FA2 on both sides — vLLM `FLASH_ATTN`, trainer `remove_padding=True`; A100/H100 |
+
+To resume or score the pin, copy it back first (verl asserts the path contains
+`global_step_`): `cp -al <ckpts>/step100-pin <ckpts>/global_step_100`.
+
+---
+
+## 1. Notation and the base estimator
+
+**Indices.** `i` is one occurrence — one turn of one rollout. `j(i)` is its trajectory,
+`B(i)` its bucket: the exact `(task_uid, anchor_obs)` match, the same gate GiGPO and
+G²PO use. Neighbours are **cross-trajectory only**:
+
+```
+N(i) = { b ∈ B(i) : j(b) ≠ j(i) }          J = |{ j(b) : b ∈ N(i) }|
+```
+
+Leaving *own trajectory* out — not just occurrence `i` — is what keeps the baseline
+valid: a revisit later in the same rollout is downstream of the action being scored.
+
+**Target.** What the step credit predicts:
+
+```
+TGT_i = Σ_{t ≥ i, same trajectory} γ^(t−i) · r_t          γ = 0.95
+```
+
+**Affinity features.** `h_i` is the frozen reference policy's last-prompt-token hidden
+state (free — that forward pass already runs for the KL term):
+
+```
+φ_i = [ whiten₃(h_i) ; w_ctx · thermo(t, n_unique, progress, revisit) ]     both blocks L2-normalised
+```
+
+`whiten₃` centres, removes the top 3 principal directions and L2-normalises, batch-wide.
+The context block carries what the prompt cannot: the prompt holds `step_count` plus the
+last 2 turns, so a hidden state separates "step 5 from step 15" but not "has this agent
+already searched here twice".
+
+**Kernel and baseline.**
+
+```
+d_ib  = ‖φ_i − φ_b‖₂
+τ_B   = 0.15 · median{ d_ab : a < b ∈ B }
+w_b   = exp( −d_ib / τ_B )                                            ← (K)
+b_loo = Σ_{b ∈ N(i)} w_b · TGT_b  /  Σ_{b ∈ N(i)} w_b                 ← (L)
+```
+
+**Credibility prior.** `b_task,i` is the leave-own-trajectory-out mean of `TGT` over the
+whole task — the Bühlmann form, so a thinly supported node leans on it and a
+well-supported one keeps its own evidence:
+
+```
+λ_k   = J / (J + κ)                     κ = 2                         ← (C)
+base_i = λ_k · b_loo + (1 − λ_k) · b_task,i                           ← (B)
+```
+
+**Step advantage.** The second term is G²PO's value gain, standardised per task, with
+`V(g)` the group-aggregated node value `mean over visits of γ^(T−t)·R`:
+
+```
+A_CC,i = ( TGT_i − base_i ) + z_task( V(next_i) − V(cur_i) )          ← (S)
+```
+
+**Total.**
+
+```
+A[i,t] = ep_w · A_EP[i,t] + step_w · Z( A_CC,i ) · mask[i,t]          ← (T)
+
+  A_EP    group-relative episode advantage over the task's 8 sibling rollouts (plain GRPO)
+  ep_w = step_w = 1
+  Z       per-task standardisation over the estimator's live rows on ALFWorld
+          (adv_mode=mean_std_norm); the IDENTITY on WebShop (mean_norm), where
+          neither term is standardised and both stay in reward units
+```
+
+Two notes that apply everywhere. The mixing weight λ between `b_loo` and the uniform
+mean `b_obs` is **pinned to 1** (`ccpo_lam_fix=1.0`) — the empirical-Bayes rule measures
+λ = 0.000 on every real batch, so without the pin φ is computed and discarded. And rows
+whose node holds no sibling trajectory are credited against a task-wide bucket at
+level 1 (`ccpo_backoff_task=1`), where (C)–(B) do **not** apply; this keeps `live_frac`
+at 1.0 (~8% of rows on ALFWorld, ~20% on WebShop).
+
+---
+
+## 2. Main methods
+
+Run code: **`official-repo/ccpo/`** — definition in `arms.py` (`BASE`, `BENCHMARK`,
+`METHODS`), launcher `run.py`, guard `test_arms.py`.
+
+```bash
+python3 official-repo/ccpo/run.py --list
+```
+
+| # | Name | Δ from §1 | benchmark |
+|---|---|---|---|
+| M1 | `CCPO-ATTNCRED` | — (the base estimator) | ALFWorld |
+| M2 | `CCPO-ATTNCRED-WS` | (D) dense target | WebShop |
+| M3 | `CCPO-ATTNCRED-CTXADV` | (T) `ep_w = 0` | ALFWorld |
+| M4 | `CCPO-ATTNCRED-CTXADV-WS` | (T) `ep_w = 0` **and** (D) | WebShop |
+
+### M1 · `CCPO-ATTNCRED` — ALFWorld
+
+The base estimator of §1, unchanged. `TGT` is the γ-discounted return-to-go of the
+binary 10/0 environment reward.
+
+```bash
+python3 official-repo/ccpo/run.py --method attncred --benchmark alfworld \
+    --backbone 1.5b --gpus <4+ ids>       # Experiment 1: Qwen2.5-1.5B, ≥4 GPUs
+python3 official-repo/ccpo/run.py --method attncred --benchmark alfworld \
+    --backbone 7b   --gpus <8+ ids>       # Experiment 2: Qwen2.5-7B,   ≥8 GPUs
+```
+
+exp-ids: `ccpo-attncred-alfworld-1.5b`, `ccpo-attncred-alfworld-7b`.
+
+### M2 · `CCPO-ATTNCRED-WS` — WebShop, dense score
+
+WebShop adaptation. verl-agent overwrites WebShop's reward with a binary 10/0 and keeps
+the environment's partial score in `info['task_score']`; 30–69% of task groups then
+score zero on **every** rollout, where a group-relative estimator computes exactly zero
+advantage. The step channel predicts the dense score instead:
+
+```
+(D)   TGT_i = Σ_{t ≥ i} γ^(t−i) · ( 10 · score_t )  −  0.1 · 1[action invalid]
+```
+
+**Step channel only** — `A_EP` in (T) keeps the published binary reward, and `V` in (S)
+is still built from it. Horizon 15 turns, not ALFWorld's 50. `Z` in (T) is the identity
+here (see §1).
+
+```bash
+python3 official-repo/ccpo/run.py --method attncred --benchmark webshop \
+    --backbone 1.5b --gpus <4+ ids>       # Experiment 1: Qwen2.5-1.5B, ≥4 GPUs
+python3 official-repo/ccpo/run.py --method attncred --benchmark webshop \
+    --backbone 7b   --gpus <8+ ids>       # Experiment 2: Qwen2.5-7B,   ≥8 GPUs
+```
+
+exp-ids: `ccpo-attncred-ws-1.5b`, `ccpo-attncred-ws-7b`.
+
+### M3 · `CCPO-ATTNCRED-CTXADV` — context advantage only, ALFWorld
+
+The standard episode advantage is ablated from the total. `A_EP` is plain GRPO on the
+trajectory return and is precisely what this method **shares** with the baselines it is
+measured against; what remains is the normalised, context-conditioned, credit-adapted
+term — plus the edge term, which (S) already folds in.
+
+```
+(T′)  A[i,t] = step_w · Z( A_CC,i ) · mask[i,t]                      ep_w = 0
+```
+
+HGPO ships this shape and reports that *adding* the trajectory-level advantage hurt, so
+this is also a direct test of that claim on our harness.
+
+```bash
+python3 official-repo/ccpo/run.py --method attncred-context-adv-only \
+    --benchmark alfworld --backbone 1.5b --gpus <4+ ids> # Experiment 1: 1.5B, ≥4 GPUs
+python3 official-repo/ccpo/run.py --method attncred-context-adv-only \
+    --benchmark alfworld --backbone 7b   --gpus <8+ ids> # Experiment 2: 7B,   ≥8 GPUs
+```
+
+exp-ids: `ccpo-attncred-ctxadv-alfworld-1.5b`, `ccpo-attncred-ctxadv-alfworld-7b`.
+
+**Watch `ccpo/live_frac`.** With `A_EP` gone, an uncredited occurrence contributes
+advantage exactly 0 — no signal at all for those tokens. `ccpo_backoff_task=1` is what
+keeps that from happening; if `live_frac` drops below 1.0 the arm is training on a
+subset of its batch.
+
+### M4 · `CCPO-ATTNCRED-CTXADV-WS` — context advantage only, WebShop
+
+(T′) **and** (D) together: no episode term, dense step target.
+
+```bash
+python3 official-repo/ccpo/run.py --method attncred-context-adv-only \
+    --benchmark webshop --backbone 1.5b --gpus <4+ ids>  # Experiment 3: 1.5B, ≥4 GPUs
+python3 official-repo/ccpo/run.py --method attncred-context-adv-only \
+    --benchmark webshop --backbone 7b   --gpus <8+ ids>  # Experiment 4: 7B,   ≥8 GPUs
+```
+
+exp-ids: `ccpo-attncred-ctxadv-ws-1.5b`, `ccpo-attncred-ctxadv-ws-7b`.
+
+---
+
+## 3. Ablations
+
+Run code: **`official-repo/ablations/`** — definitions in `ablations.py` (`ABLATIONS`),
+launcher `run.py`, guard `test_ablations.py`.
+
+```bash
+python3 official-repo/ablations/run.py --list
+```
+
+All ten are **Qwen2.5-1.5B, ≥4 GPUs, 150 steps**. Each runs on both benchmarks, and the
+control is the main arm of the *same* benchmark — so a WebShop ablation inherits (D)
+and stays paired with what it ablates.
+
+| # | Name | Δ from §1 | one key |
+|---|---|---|---|
+| A1 | `CCPO-ATTNCRED-HARDGATE` | (K) → binary threshold | `ccpo_wmode=hard` |
+| A2 | `CCPO-ATTNCRED-NOTASK` | (B) → `b_loo` only | `ccpo_prior_kappa=0` |
+| A3 | `CCPO-ATTNCRED-EVENBLEND` | (C) → constant ½ | `ccpo_lk_fix=0.5` |
+| A4 | `CCPO-ATTNCRED-NOCTX` | φ → hidden state only | `ccpo_phi=hidden` |
+| A5 | `CCPO-ATTNCRED-COS` | (K) → cosine, no kernel | `ccpo_wmode=cos` |
+
+### A1 · `CCPO-ATTNCRED-HARDGATE` — binary hard gating
+
+```
+(K₁)  w_b = 1[ d_ib ≤ τ_B ]          (if nothing survives, the nearest trajectory is kept)
+```
+
+With 0/1 weights (L) becomes the plain average of the survivors. τ is unchanged, so both
+modes select the same neighbourhood and differ only in how they weight inside it.
+**Asks:** does the gain come from *ordering* neighbours by φ-distance, or only from
+*restricting* which ones count?
+
+**Watch** `ccpo/E_w`, now the survival fraction: on ALFWorld it measured 0.011 — about 1
+neighbour in 90 clears `τ = 0.15·median` — so the arm runs close to a
+nearest-trajectory baseline, and `effect_rel` rose to 0.70 against soft's 0.28.
+
+```bash
+python3 official-repo/ablations/run.py --ablation hard-gate --benchmark alfworld --gpus <4+ ids>   # 1.5B, ≥4 GPUs
+python3 official-repo/ablations/run.py --ablation hard-gate --benchmark webshop  --gpus <4+ ids>   # 1.5B, ≥4 GPUs
+```
+
+### A2 · `CCPO-ATTNCRED-NOTASK` — without task baseline fallback
+
+```
+(B₂)  base_i = b_loo                                      κ = 0, b_task not used
+```
+
+λ stays pinned at 1, so this is the context baseline alone, and `b_task` is not even
+computed. **Asks:** does leaning a thinly supported node on the task mean buy anything?
+**Watch** `ccpo/lam_k_mean` → 1.000.
+
+`ccpo_backoff_task` stays 1: the level-1 task *bucket* is a different mechanism (it
+recomputes `b_loo` over the task rather than mixing in a prior) and is what holds
+`live_frac` at 1.0. To ablate that instead, add `--set ccpo_backoff_task=0`.
+
+```bash
+python3 official-repo/ablations/run.py --ablation no-task-baseline --benchmark alfworld --gpus <4+ ids>   # 1.5B, ≥4 GPUs
+python3 official-repo/ablations/run.py --ablation no-task-baseline --benchmark webshop  --gpus <4+ ids>   # 1.5B, ≥4 GPUs
+```
+
+### A3 · `CCPO-ATTNCRED-EVENBLEND` — without evidential-support shrinkage
+
+```
+(C₃)  λ_k = ½       ⇒     base_i = ½ · b_loo + ½ · b_task,i
+```
+
+The prior stays; its *support weighting* goes. κ no longer enters. **Asks:** is the
+Bühlmann credibility form doing the work, or merely the presence of a task prior at some
+fixed ratio? Paired with A2 this separates *the prior exists* from *the prior is weighted
+by evidence*. **Watch** `ccpo/lam_k_mean` pinned to 0.500, against `J/(J+2)` in M1.
+
+```bash
+python3 official-repo/ablations/run.py --ablation even-blend --benchmark alfworld --gpus <4+ ids>   # 1.5B, ≥4 GPUs
+python3 official-repo/ablations/run.py --ablation even-blend --benchmark webshop  --gpus <4+ ids>   # 1.5B, ≥4 GPUs
+```
+
+### A4 · `CCPO-ATTNCRED-NOCTX` — without the context summary vector
+
+```
+(φ₄)  φ_i = whiten₃(h_i)                     no context block concatenated
+```
+
+Only the hidden states of the recent obs-action pairs remain. **Asks:** does
+whole-episode context earn its place, or does the prompt already carry it? **Watch**
+`ccpo/phi_rel_corr`: it rose 0.01 → 0.24 over training on ALFWorld with the block in and
+stayed near 0.02 on WebShop, so this ablation may cost little there and a lot here.
+
+```bash
+python3 official-repo/ablations/run.py --ablation no-context-vector --benchmark alfworld --gpus <4+ ids>   # 1.5B, ≥4 GPUs
+python3 official-repo/ablations/run.py --ablation no-context-vector --benchmark webshop  --gpus <4+ ids>   # 1.5B, ≥4 GPUs
+```
+
+### A5 · `CCPO-ATTNCRED-COS` — cosine similarity instead of the attention kernel
+
+```
+(K₅)  w_b = max( cos(φ_i, φ_b), 0 )          no τ   (if all clip to 0, the nearest is kept)
+```
+
+Weight falls off linearly in the angle instead of exponentially in the distance, so
+distant neighbours keep far more weight. Negative cosines clip to zero — a weighted mean
+needs non-negative weights, and a neighbour pointing the other way is evidence of
+nothing, not evidence against. **Asks:** does `exp(−d/τ)` earn its place over a plain
+similarity score? **Watch** `ccpo/E_w` rise sharply; if `effect_rel` collapses, the
+kernel's sharpness was the mechanism.
+
+```bash
+python3 official-repo/ablations/run.py --ablation cosine --benchmark alfworld --gpus <4+ ids>   # 1.5B, ≥4 GPUs
+python3 official-repo/ablations/run.py --ablation cosine --benchmark webshop  --gpus <4+ ids>   # 1.5B, ≥4 GPUs
+```
+
+---
+
+## 4. Run matrix
+
+| variant | ALFWorld 1.5B | ALFWorld 7B | WebShop 1.5B | WebShop 7B |
+|---|---|---|---|---|
+| | **≥4 GPUs** | **≥8 GPUs** | **≥4 GPUs** | **≥8 GPUs** |
+| `CCPO-ATTNCRED` | M1·E1 | M1·E2 | M2·E1 | M2·E2 |
+| `CCPO-ATTNCRED-CTXADV` | M3·E1 | M3·E2 | M4·E3 | M4·E4 |
+| `CCPO-ATTNCRED-HARDGATE` | A1 | — | A1 | — |
+| `CCPO-ATTNCRED-NOTASK` | A2 | — | A2 | — |
+| `CCPO-ATTNCRED-EVENBLEND` | A3 | — | A3 | — |
+| `CCPO-ATTNCRED-NOCTX` | A4 | — | A4 | — |
+| `CCPO-ATTNCRED-COS` | A5 | — | A5 | — |
+
+**Every run must be given its devices explicitly** — `--gpus` is required and there is
+no default. `run.py` warns when the count is below the floor for that backbone: **≥4
+GPUs for 1.5B, ≥8 for 7B**. All ten ablations are 1.5B, so all ten need ≥4.
+
+`trainer.n_gpus_per_node` is derived from the number of ids you pass, and verl asserts
+`train_batch_size × rollout.n % n_gpus == 0` — 16 × 8 = 128, so 4 and 8 both divide it
+and 6 does not.
+
+## 5. Reporting
+
+One command per run. `--paper-table` prints the table below; without it you get the
+per-type block plus the training-behaviour block.
+
+```bash
+python3 scripts/report_results.py --exp experiments/<exp-id> --paper-table [--markdown]
+python3 scripts/report_results.py --exp experiments/<exp-id> --rows best,last,100,150   # full block
+```
+
+Rows are **step 100**, **best** (the highest held-out evaluation) and **final**
+(step 150), each reported for both splits:
+
+* **train** — that step's rollout batch, 16 tasks × 8 rollouts. It is *not* a
+  checkpoint evaluation, and per-type training cells are noisy by construction: 128
+  episodes spread over 6 task types is ~20 per type on a good step and 0 on some.
+* **held-out** — the 128-episode validation draw at that step, T=0.4 with sampling.
+
+### ALFWorld — example
+
+Filled from `ccpo-attncred-150-20260913` to show the format; success rates in %,
+turns in environment steps.
+
+| checkpoint | split | Pick | Look | Clean | Heat | Cool | Pick2 | All | Turns |
+|---|---|---|---|---|---|---|---|---|---|
+| step 100 | train | 100.0 | 100.0 | 93.8 | 84.4 | 100.0 | 87.5 | 93.8 | 14.7 |
+| step 100 | held-out | 89.2 | 50.0 | 86.4 | 80.0 | 72.5 | 76.4 | 78.9 | 15.2 |
+| best @150 | train | 81.2 | 100.0 | 87.5 | 100.0 | 100.0 | 95.8 | 94.5 | 14.5 |
+| best @150 | held-out | 100.0 | 100.0 | 100.0 | 100.0 | 95.8 | 71.7 | 94.5 | 13.8 |
+| final @150 | train | 81.2 | 100.0 | 87.5 | 100.0 | 100.0 | 95.8 | 94.5 | 14.5 |
+| final @150 | held-out | 100.0 | 100.0 | 100.0 | 100.0 | 95.8 | 71.7 | 94.5 | 13.8 |
+
+The held-out **Turns** cells are illustrative: `val/length/mean` landed with this
+revision, so runs predating it print `--` there and every new run fills it.
+
+### WebShop — example
+
+Both **Success** and **Score** are reported; every published WebShop table gives both
+and one alone is not comparable. Filled from `ccpo-attncred-ws-20260914`, which stopped
+at step 80 — hence the `n/a` row, which is what an incomplete run looks like.
+
+| checkpoint | split | Success | Score | Turns |
+|---|---|---|---|---|
+| step 100 | train | n/a | n/a | n/a |
+| step 100 | held-out | n/a | n/a | n/a |
+| best @80 | train | 43.8 | 60.2 | 8.2 |
+| best @80 | held-out | 45.7 | 67.7 | 8.5 |
+| final @80 | train | 43.8 | 60.2 | 8.2 |
+| final @80 | held-out | 45.7 | 67.7 | 8.5 |
+
+### Where each cell comes from
+
+Every column is a metric the trainer already writes to
+`experiments/<exp-id>/outputs/metrics.jsonl`; nothing is derived after the fact.
+
+| column | train | held-out |
+|---|---|---|
+| Pick … Pick2 | `episode/<type>_success_rate` | `val/<type>_success_rate` |
+| All / Success | `episode/success_rate` | `val/success_rate` |
+| Score (WebShop) | `episode/webshop_task_score (not success_rate)` | `val/webshop_task_score (not success_rate)` |
+| Turns | `episode/length/mean` | `val/length/mean` |
+
+`val/length/mean` is averaged over unique **trajectories**, not rows — the batch is
+expanded by step, so a row-wise mean would weight long episodes by their own length.
+
+### Alongside the table
+
+**Window means are the statistic to trust:** 70–100 and 120–150, plus the mean over all
+evaluations. A single evaluation carries SE ≈ ±3.3 points, and `best` is the maximum of
+a noisy series, biased up by roughly 1.5 sd. One seed per arm: on ALFWorld the
+same-config replicate spread is 1.79 points on a window mean and up to 15 on a single
+step — no difference smaller than that is a result.
+
+**Estimator diagnostics, by phase (1–50 / 51–100 / 101–150):** `effect_rel`,
+`live_frac`, `lam_k_mean`, `n_eff_mean`, `bucket_size_mean`, `bucket_singleton_frac`,
+`n_buckets`, `phi_rel_corr`. An arm with `effect_rel ≈ 0` changed nothing, and its
+success number says nothing about the method.
+
+**Cost and provenance:** step time, wall clock, peak disk, GPU count, exp-id, git sha,
+seed, and the resolved paths of the three checkpoints.
+
+## 6. Plots — written while the run trains
+
+`scripts/exp_run.py` starts `scripts/plot_metrics.py --watch` on every launch (pass
+`--no-plot` to suppress it), so both figures refresh during training and are on disk
+whether or not the run finishes:
+
+```
+experiments/<exp-id>/plots/progress.png   training and held-out curves
+experiments/<exp-id>/plots/ccpo.png       the estimator's own terms
+```
+
+`progress.png` carries the reported columns as curves — **held-out success rate**,
+**train success rate**, **held-out and train success by task type** (ALFWorld, one
+labelled line per type), **WebShop task score** (train and held-out), and **turns per
+episode** (train and held-out on the same axes) — beside return, KL, entropy, response
+length, truncation, valid-action ratio, grad norm, clip fraction, step time and the
+time breakdown. Panels with no data are skipped, so each benchmark draws only its own.
+
+`ccpo.png` is the panel that says whether the method did anything: `lam`, `n_eff`,
+bucket occupancy and singleton fraction, `live_frac` / `lvl1_frac`, `E[w]`,
+`phi_rel_corr`, `effect_mean` / `effect_rel`, correlation against the GiGPO and G²PO
+references, and the ratio of the two advantage terms.
+
+To refresh by hand, or to put two arms side by side:
+
+```bash
+python3 scripts/plot_metrics.py --exp experiments/<exp-id>
+python3 scripts/plot_metrics.py --compare experiments/<a> experiments/<b> -o plots/compare.png
+```
+
+**Decision gate, step 1 of every run:** if `bucket_singleton_frac > 0.9` or
+`effect_rel < 0.02`, the estimator is inert on that benchmark. Stop and report it — that
+is a finding about where the method applies, and it costs one step instead of the budget.
+
+---
+
+## 7. Training hyperparameters
+
+Resolved values, one table per benchmark, with the hydra key each one sets so any cell
+can be checked against a run's `config.json` or `run.sh`. Both tables are identical
+except where marked — the WebShop column of §7.2 lists only what *differs*, and the
+differences are the published WebShop protocol (`exp_run.WEBSHOP_PROTOCOL`, G²PO's
+`run_webshop.sh` verbatim, asserted by `tests/test_webshop_protocol.py`).
+
+### 7.1 ALFWorld
+
+| | value | hydra key |
+|---|---|---|
+| **Batch geometry** | | |
+| tasks per step | 16 | `data.train_batch_size` |
+| rollouts per task (group) | 8 | `env.rollout.n` |
+| episodes per step | **128** | 16 × 8 |
+| PPO mini-batch | 256 | `actor_rollout_ref.actor.ppo_mini_batch_size` |
+| dynamic batching | on | `actor_rollout_ref.actor.use_dynamic_bsz` |
+| token budget / GPU, update | 12288 | `actor_rollout_ref.actor.ppo_max_token_len_per_gpu` |
+| token budget / GPU, log-prob | 24576 | `actor_rollout_ref.{ref,rollout}.log_prob_max_token_len_per_gpu` |
+| micro-batch / GPU, update | 32 | `actor_rollout_ref.actor.ppo_micro_batch_size_per_gpu` |
+| micro-batch / GPU, log-prob | 64 | `actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu` |
+| **Sequence lengths** | | |
+| max prompt | 2048 tokens | `data.max_prompt_length` |
+| max response | 512 tokens | `data.max_response_length` |
+| over-long prompts | filtered; truncation is an error | `data.filter_overlong_prompts`, `data.truncation` |
+| **Optimisation** | | |
+| learning rate | 1e-6 | `actor_rollout_ref.actor.optim.lr` |
+| critic warmup | 0 | `trainer.critic_warmup` |
+| gradient checkpointing | on | `actor_rollout_ref.model.enable_gradient_checkpointing` |
+| sequence packing | on | `actor_rollout_ref.model.use_remove_padding` |
+| clip ratio, entropy coef, weight decay, LR schedule | **not overridden — verl defaults** | `actor_rollout_ref.actor.clip_ratio`, … |
+| **Objective** | | |
+| KL loss | on, coef 0.01, `low_var_kl` | `actor.use_kl_loss`, `actor.kl_loss_coef`, `actor.kl_loss_type` |
+| KL in reward | off | `algorithm.use_kl_in_reward` |
+| discount γ | 0.95 | `algorithm.gamma` |
+| step advantage weight | 1.0 | `algorithm.gigpo.step_advantage_w` |
+| advantage normalisation | `mean_std_norm` | `algorithm.gigpo.mode` |
+| invalid-action penalty | 0.1 | `actor_rollout_ref.actor.invalid_action_penalty_coef` |
+| **Sampling** | | |
+| train | T=1.0, top-p 1.0, top-k −1 | `actor_rollout_ref.rollout.{temperature,top_p,top_k}` |
+| eval | T=0.4, top-p 1.0, top-k −1, sampling on | `actor_rollout_ref.rollout.val_kwargs.*` |
+| **Environment** | | |
+| env | `alfworld/AlfredTWEnv` | `env.env_name` |
+| max turns per episode | 50 | `env.max_steps` |
+| history in prompt | 2 turns | `env.history_length` |
+| seed | 0 | `env.seed` |
+| eval split | `eval_in_distribution` (valid_seen) | `env.alfworld.eval_dataset` |
+| **Schedule** | | |
+| steps | 150 | `trainer.total_epochs` |
+| evaluate / checkpoint every | 5 steps | `trainer.test_freq`, `trainer.save_freq` |
+| held-out episodes | 128, in chunks of 64 | `data.val_batch_size` |
+| early stopping | off | `ACG_EARLY_STOP_PATIENCE=0` |
+| **Runtime** | | |
+| vLLM memory fraction | 0.25 | `actor_rollout_ref.rollout.gpu_memory_utilization` |
+| tensor parallel | 1 | `actor_rollout_ref.rollout.tensor_model_parallel_size` |
+| attention | FA2 both sides | `VLLM_ATTENTION_BACKEND=FLASH_ATTN`, `use_remove_padding` |
+
+### 7.2 WebShop
+
+Everything above holds except these, which arrive with the published WebShop protocol:
+
+| | ALFWorld | **WebShop** | hydra key |
+|---|---|---|---|
+| max prompt | 2048 | **4096** tokens — pages are long | `data.max_prompt_length` |
+| max turns per episode | 50 | **15** | `env.max_steps` |
+| PPO mini-batch | 256 | **64** | `actor.ppo_mini_batch_size` |
+| micro-batch / GPU, update | 32 | **8** | `actor.ppo_micro_batch_size_per_gpu` |
+| micro-batch / GPU, log-prob | 64 | **16** | `rollout.log_prob_micro_batch_size_per_gpu` |
+| advantage normalisation | `mean_std_norm` | **`mean_norm`** | `algorithm.gigpo.mode` |
+| held-out chunk size | 64 | **128** | `data.val_batch_size` |
+| CPU per env worker | 0.1 | **0.05** | `env.resources_per_worker.num_cpus` |
+| step target | return-to-go of the binary reward | **dense task score** (D) | `ACG_CCPO_TARGET=score` |
+| catalogue | — | 1,000-product subset | `env.webshop.use_small=True` |
+| venv | `.venv` | **`.venv-webshop`** | selected by `exp_run` |
+| JVM | — | one per env worker, pinned | `JAVA_TOOL_OPTIONS`, set by `exp_run` |
+
+`mean_norm` is not bookkeeping: it changes the update. With it, `_remove_std` is true, so
+**neither** advantage term is standardised on WebShop and both stay in reward units,
+where on ALFWorld both are unit-variance. That is `Z` in equation (T) of §1.
+
+The micro-batch rows are inert while `use_dynamic_bsz` is on — the token budgets govern.
+They are kept at the reference values so that turning dynamic batching off reproduces
+the published script exactly.
+
+## 8. Checkpoints, disk and GPUs
+
+Each run keeps three checkpoints: `step<N>-best`, `step100-pin`, `step<N>-last`.
+
+| backbone | checkpoint | GPUs | peak disk per run |
+|---|---|---|---|
+| Qwen2.5-1.5B-Instruct | **~25 GB** | **≥4** | ~100 GB |
+| Qwen2.5-7B-Instruct | **~125 GB** | **≥8** | ~500 GB |
+
+A checkpoint holds model, optimizer, extra state and an HF copy
+(`actor_rollout_ref.actor.checkpoint.contents`), which is why it is far larger than the
+weights alone.
+
+Peak disk is four distinct step-copies: the rolling one (`keep_ckpts=1`), the in-flight
+save, the best, and the pin. `step<N>-best` and `step100-pin` are made with `cp -al`, so
+they cost nothing while the rolling copy at that step still exists and only become
+distinct once it is pruned — the peak above is the worst case, not the steady state.
+
+**If a 7B host cannot hold ~500 GB**, drop `--set pin_steps=` (keeping best and last,
+~375 GB) and record that choice in the run's `NOTES.md`. Do not lower `keep_ckpts`: 1 is
+already the minimum that can resume.
+
+Ten ablations × ~100 GB run sequentially on one 4-GPU host; the eight main runs need a
+host per backbone. `scripts/exp_status.py` reports what is running and what it has used.
