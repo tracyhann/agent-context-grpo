@@ -1,7 +1,7 @@
 # CCPO experiments
 
-Eighteen runs: **8 main** (4 method variants × 2 backbones) and **10 ablations**
-(5 variants × 2 benchmarks, 1.5B only).
+Twenty runs: **8 main** (4 method variants × 2 backbones) and **12 ablations**
+(6 variants × 2 benchmarks, 1.5B only).
 
 Every method variant below has a name, a location in the repo, and the one equation
 that separates it from the base estimator in §1. Nothing else differs between any two
@@ -238,7 +238,7 @@ launcher `run.py`, guard `test_ablations.py`.
 python3 official-repo/ablations/run.py --list
 ```
 
-All ten are **Qwen2.5-1.5B, ≥4 GPUs, 150 steps**. Each runs on both benchmarks, and the
+All twelve are **Qwen2.5-1.5B, ≥4 GPUs, 150 steps**. Each runs on both benchmarks, and the
 control is the main arm of the *same* benchmark — so a WebShop ablation inherits (D)
 and stays paired with what it ablates.
 
@@ -249,6 +249,7 @@ and stays paired with what it ablates.
 | A3 | `CCPO-ATTNCRED-EVENBLEND` | (C) → constant ½ | `ccpo_lk_fix=0.5` |
 | A4 | `CCPO-ATTNCRED-NOCTX` | φ → hidden state only | `ccpo_phi=hidden` |
 | A5 | `CCPO-ATTNCRED-COS` | (K) → cosine, no kernel | `ccpo_wmode=cos` |
+| A6 | `CCPO-ATTNCRED-NOEDGE` | (S) → node term only | `ccpo_edge_w=0` |
 
 ### A1 · `CCPO-ATTNCRED-HARDGATE` — binary hard gating
 
@@ -339,6 +340,37 @@ python3 official-repo/ablations/run.py --ablation cosine --benchmark alfworld --
 python3 official-repo/ablations/run.py --ablation cosine --benchmark webshop  --gpus <4+ ids>   # 1.5B, ≥4 GPUs
 ```
 
+### A6 · `CCPO-ATTNCRED-NOEDGE` — without the edge advantage
+
+```
+(S₆)  A_CC,i = TGT_i − base_i                    the value-gain term dropped
+```
+
+The second half of (S), `z_task( V(next_i) − V(cur_i) )`, is G²PO's edge term: `V` is
+the group-aggregated node value, so it scores **where the action moved the agent**
+rather than the value of where it stood. Removing it leaves the node term alone — the
+context-conditioned baseline and nothing else.
+
+**Asks:** how much of the step credit's effect is the context-conditioned baseline, and
+how much is the edge term it is summed with? Every arm in this project has carried
+`ccpo_edge_w=1.0`, so no run to date separates the two.
+
+**Watch** `ccpo/edge_cov` → 0 and `ccpo/adv_cc_absmean`. The edge term is standardised
+per task, so it contributes about one unit of scale that the node term no longer has
+beside it. On ALFWorld `A_CC` is standardised again per task afterwards (`Z` in (T)), so
+the arm mostly reweights the two halves; on WebShop `Z` is the identity, so the step
+channel gets absolutely smaller as well as differently shaped.
+
+This is **`ccpo_edge_w`, not `ccpo_target=nextnode`.** Both involve the successor node
+and they are different knobs: `edge_w` weights the value-*gain* term added to the step
+credit, while `target=nextnode` would change what the node term *predicts* — from the
+return-to-go to `V(next(u))`. This ablation leaves the target alone.
+
+```bash
+python3 official-repo/ablations/run.py --ablation no-edge --benchmark alfworld --gpus <4+ ids>   # 1.5B, ≥4 GPUs
+python3 official-repo/ablations/run.py --ablation no-edge --benchmark webshop  --gpus <4+ ids>   # 1.5B, ≥4 GPUs
+```
+
 ---
 
 ## 4. Run matrix
@@ -353,10 +385,11 @@ python3 official-repo/ablations/run.py --ablation cosine --benchmark webshop  --
 | `CCPO-ATTNCRED-EVENBLEND` | A3 | — | A3 | — |
 | `CCPO-ATTNCRED-NOCTX` | A4 | — | A4 | — |
 | `CCPO-ATTNCRED-COS` | A5 | — | A5 | — |
+| `CCPO-ATTNCRED-NOEDGE` | A6 | — | A6 | — |
 
 **Every run must be given its devices explicitly** — `--gpus` is required and there is
 no default. `run.py` warns when the count is below the floor for that backbone: **≥4
-GPUs for 1.5B, ≥8 for 7B**. All ten ablations are 1.5B, so all ten need ≥4.
+GPUs for 1.5B, ≥8 for 7B**. All twelve ablations are 1.5B, so all twelve need ≥4.
 
 `trainer.n_gpus_per_node` is derived from the number of ids you pass, and verl asserts
 `train_batch_size × rollout.n % n_gpus == 0` — 16 × 8 = 128, so 4 and 8 both divide it
@@ -586,5 +619,5 @@ distinct once it is pruned — the peak above is the worst case, not the steady 
 ~375 GB) and record that choice in the run's `NOTES.md`. Do not lower `keep_ckpts`: 1 is
 already the minimum that can resume.
 
-Ten ablations × ~100 GB run sequentially on one 4-GPU host; the eight main runs need a
+Twelve ablations × ~100 GB run sequentially on one 4-GPU host; the eight main runs need a
 host per backbone. `scripts/exp_status.py` reports what is running and what it has used.

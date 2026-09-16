@@ -9,7 +9,7 @@ isolates the estimator and nothing else.
 * Target hardware: **A100 (sm_80)** and **H100 (sm_90)**
 * Checkpoint backups: **https://huggingface.co/tracyhan816/ccpo-variants**
 
-**The spec is [`experiments/experiments.md`](experiments/experiments.md)** — 18 runs,
+**The spec is [`experiments/experiments.md`](experiments/experiments.md)** — 20 runs,
 each with its variant name, its equations, its GPU floor and the command that launches
 it, plus the hyperparameter tables and the results-table format.
 
@@ -90,7 +90,7 @@ ccpo/            the estimator AND the main-method arms
   core_ccpo.py     CCPO itself: gate, phi kernel, leave-one-out baseline, credibility prior
   arms.py          BASE / BENCHMARK / BACKBONE / METHODS — every arm is BASE plus a delta
   run.py           launcher for the four main variants        test_arms.py   guards
-ablations/       the five ablations, as single-key deltas on the main arm
+ablations/       the six ablations, as single-key deltas on the main arm
   ablations.py     run.py     test_ablations.py
 scripts/         exp_run.py (training entry point), setup_env.sh, sync_patches.sh,
                  report_results.py, chain_eval.py, plot_metrics.py, exp_status.py,
@@ -114,7 +114,7 @@ this directory — `ccpo/test_arms.py` fails if any file names a path outside it
 
 ```bash
 python3 ccpo/run.py --list                 # the 8 main runs
-python3 ablations/run.py --list            # the 10 ablation runs
+python3 ablations/run.py --list            # the 12 ablation runs
 
 python3 ccpo/run.py --method attncred --benchmark webshop --backbone 7b --gpus 0,1,2,3,4,5,6,7
 python3 ablations/run.py --ablation cosine --benchmark alfworld --gpus 0,1,2,3

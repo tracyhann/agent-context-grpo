@@ -1,4 +1,4 @@
-# `ablations/` — the five CCPO-ATTNCRED ablations
+# `ablations/` — the six CCPO-ATTNCRED ablations
 
 Each removes one component of the main arm, on both benchmarks, 1.5B, 150 steps
 (`experiments/experiments.md`). The control is the main arm of the **same** benchmark —
@@ -17,8 +17,9 @@ python3 official-repo/ablations/run.py --ablation cosine    --benchmark webshop 
 | `even-blend` | `ccpo_lk_fix=0.5` | the *support weighting* of the prior | the credibility form, or any fixed ratio? |
 | `no-context-vector` | `ccpo_phi=hidden` | the trajectory-context block of φ | does whole-episode context earn its place? |
 | `cosine` | `ccpo_wmode=cos` | the exponential kernel | does `exp(−d/τ)` beat a plain similarity? |
+| `no-edge` | `ccpo_edge_w=0` | G²PO's value-gain term | baseline or edge — which carries the effect? |
 
-Ten runs. Each is a **single-key** delta from its control, asserted by the guard.
+Twelve runs. Each is a **single-key** delta from its control, asserted by the guard.
 
 ## What each one does to the math
 

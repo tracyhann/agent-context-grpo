@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The five CCPO-ATTNCRED ablations, per experiments/experiments.md.
+"""The six CCPO-ATTNCRED ablations, per experiments/experiments.md.
 
 Each is the main `attncred` arm of the SAME benchmark with one component removed,
 1.5B backbone, 150 steps. The control for an ALFWorld ablation is
@@ -106,6 +106,31 @@ ABLATIONS = {
         watch="ccpo/E_w rises sharply -- cosine over whitened unit vectors sits near 0 "
               "for unrelated states, against exp(-d/tau) which is ~0.008 on average. "
               "If effect_rel collapses, the kernel's sharpness was the mechanism.",
+    ),
+    # -----------------------------------------------------------------------
+    "no-edge": dict(
+        name="CCPO-ATTNCRED-NOEDGE",
+        tag="noedge",
+        title="Without the edge advantage",
+        delta={"ccpo_edge_w": 0.0},
+        removes="G2PO's value-gain term",
+        # A_CC keeps only the node term, TGT_i - base_i; the second half of (S),
+        # z_task(V(next_i) - V(cur_i)), is dropped. V is G2PO's group-aggregated node
+        # value, so the edge term is the part that scores MOVEMENT toward the goal --
+        # where the action took the agent -- rather than the value of where it stood.
+        #
+        # NOTE this is `ccpo_edge_w`, not `ccpo_target=nextnode`. The two both involve
+        # the successor node and are different knobs: edge_w weights the value-GAIN
+        # term added to the step credit, while target=nextnode would change what the
+        # node term PREDICTS from the return-to-go to V(next(u)). This ablation leaves
+        # the target alone.
+        asks="how much of the step credit's effect is the context-conditioned baseline, "
+             "and how much is the edge term it is summed with?",
+        watch="ccpo/edge_cov drops to 0 and ccpo/adv_cc_absmean falls -- the edge term is "
+              "standardised per task, so it contributes ~1 unit of scale that the node "
+              "term no longer has beside it. On ALFWorld A_CC is standardised again per "
+              "task afterwards, so the arm mostly reweights; on WebShop (mean_norm) "
+              "nothing rescales it, and the step channel gets absolutely smaller.",
     ),
 }
 
