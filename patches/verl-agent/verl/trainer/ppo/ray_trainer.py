@@ -465,6 +465,12 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
         # makes that visible as a curve rather than a line in the log.
         _m['ccpo/phi_is_hidden'] = 1.0 if str(diag.get('phi_mode', '')).startswith('hidden') else 0.0
         _m['ccpo/adv_ep_absmean'] = float(episode_adv[data.batch['response_mask'].bool()].abs().mean())
+        # adv_ep_absmean is the RAW episode term, so it reads the same whether the term
+        # is used or dropped -- which made an ACG_CCPO_EP_W=0 arm look identical to a
+        # normal one in its own metrics. Record the weight and the effective magnitude
+        # too, so a run's record says what actually entered the advantage.
+        _m['ccpo/ep_w'] = _ep_w
+        _m['ccpo/adv_ep_eff_absmean'] = _ep_w * _m['ccpo/adv_ep_absmean']
         _sa_live = step_adv[torch.as_tensor(diag['live_mask'])] if diag.get('live_mask') is not None else step_adv
         _m['ccpo/adv_cc_absmean'] = float(_sa_live.abs().mean()) if _sa_live.numel() else 0.0
         # the ratio the mean_std_norm fix exists to keep near 1
