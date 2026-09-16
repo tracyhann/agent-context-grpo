@@ -1,7 +1,8 @@
 # CCPO experiments
 
-Twenty-one runs: **8 main** (4 method variants × 2 backbones) and **13 ablations**
-(6 variants × 2 benchmarks, plus one WebShop-only variant, 1.5B throughout).
+Twenty-three runs: **10 main** (4 variants × 2 backbones, plus one WebShop-only
+variant × 2 backbones) and **13 ablations** (6 variants × 2 benchmarks, plus one
+WebShop-only variant, 1.5B throughout).
 
 Every method variant below has a name, a location in the repo, and the one equation
 that separates it from the base estimator in §1. Nothing else differs between any two
@@ -116,6 +117,7 @@ python3 official-repo/ccpo/run.py --list
 | M2 | `CCPO-ATTNCRED-WS` | (D) dense target | WebShop |
 | M3 | `CCPO-ATTNCRED-CTXADV` | (T) `ep_w = 0` | ALFWorld |
 | M4 | `CCPO-ATTNCRED-CTXADV-WS` | (T) `ep_w = 0` **and** (D) | WebShop |
+| M5 | `CCPO-ATTNCRED-CTXADV-RETURN-WS` | (T) `ep_w = 0`, **without** (D) | WebShop |
 
 ### M1 · `CCPO-ATTNCRED` — ALFWorld
 
@@ -226,6 +228,43 @@ python3 official-repo/ccpo/run.py --method attncred-context-adv-only \
 ```
 
 exp-ids: `ccpo-attncred-ctxadv-ws-1.5b`, `ccpo-attncred-ctxadv-ws-7b`.
+
+### M5 · `CCPO-ATTNCRED-CTXADV-RETURN-WS` — context advantage only, binary target, WebShop
+
+M4 on WebShop's **own** reward. Same context-advantage-only shape, but the step channel
+predicts the published binary return-to-go instead of the dense score:
+
+```
+(T′)   A[i,t] = step_w · Z( A_CC,i ) · mask[i,t]            ep_w = 0
+(D⁻)   TGT_i  = Σ_{t ≥ i} γ^(t−i) · r_t  −  0.1·1[invalid]  r = the binary 10/0
+```
+
+So M5 borrows nothing from this project's WebShop adaptation. Against **M4** it isolates
+the dense target under the no-episode-term condition — the only place in the main set
+where `score` and `return` are compared on the same shape, same benchmark, same
+backbone. Against **M3** it asks whether the ALFWorld reading survives the benchmark
+change once the target is held fixed.
+
+Note this is *context advantage only*, not *ours only*: `A_CC` still carries G²PO's edge
+term (`ccpo_edge_w=1.0`), as M3 and M4 do. A6-R is the arm that drops both.
+
+**WebShop only.** On ALFWorld `ccpo_target` is already `return`, so the delta would
+collapse to M3 and the run would be a duplicate; `run.py` refuses `--benchmark alfworld`
+for it.
+
+**Watch the zero-advantage population.** Under the binary reward 30–69% of task groups
+score zero on *every* rollout, where a group-relative estimator computes exactly zero
+advantage — and with `ep_w = 0` there is no episode term to cover those rows either.
+Read `ccpo/live_frac` and `ccpo/effect_rel` at step 1 before trusting anything later.
+
+```bash
+python3 official-repo/ccpo/run.py --method attncred-context-adv-only-return \
+    --benchmark webshop --backbone 1.5b --gpus <4+ ids>  # Experiment 1: 1.5B, ≥4 GPUs
+python3 official-repo/ccpo/run.py --method attncred-context-adv-only-return \
+    --benchmark webshop --backbone 7b   --gpus <8+ ids>  # Experiment 2: 7B,   ≥8 GPUs
+```
+
+exp-ids: `ccpo-attncred-ctxadv-ret-ws-1.5b`, `ccpo-attncred-ctxadv-ret-ws-7b`.
 
 ---
 
@@ -415,6 +454,7 @@ python3 official-repo/ablations/run.py --ablation no-edge-return-ws --benchmark 
 | | **≥4 GPUs** | **≥8 GPUs** | **≥4 GPUs** | **≥8 GPUs** |
 | `CCPO-ATTNCRED` | M1·E1 | M1·E2 | M2·E1 | M2·E2 |
 | `CCPO-ATTNCRED-CTXADV` | M3·E1 | M3·E2 | M4·E3 | M4·E4 |
+| `CCPO-ATTNCRED-CTXADV-RETURN-WS` | — | — | M5·E1 | M5·E2 |
 | `CCPO-ATTNCRED-HARDGATE` | A1 | — | A1 | — |
 | `CCPO-ATTNCRED-NOTASK` | A2 | — | A2 | — |
 | `CCPO-ATTNCRED-EVENBLEND` | A3 | — | A3 | — |
@@ -655,5 +695,5 @@ distinct once it is pruned — the peak above is the worst case, not the steady 
 ~375 GB) and record that choice in the run's `NOTES.md`. Do not lower `keep_ckpts`: 1 is
 already the minimum that can resume.
 
-Thirteen ablation runs × ~100 GB run sequentially on one 4-GPU host; the eight main runs need a
+Thirteen ablation runs × ~100 GB run sequentially on one 4-GPU host; the ten main runs need a
 host per backbone. `scripts/exp_status.py` reports what is running and what it has used.

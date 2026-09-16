@@ -138,10 +138,27 @@ METHODS = {
     # baselines; dropping it leaves context + edge. (HGPO ships this shape and reports
     # that adding the episode term hurt.)
     "attncred-context-adv-only": {"ccpo_ep_w": 0.0},
+    # M5: the context-advantage-only shape on WebShop's OWN reward. Same as
+    # attncred-context-adv-only except the step channel predicts the published binary
+    # return-to-go instead of the dense task score -- so the arm borrows nothing from
+    # this project's WebShop adaptation. WebShop only: on ALFWorld ccpo_target is
+    # already `return`, and the delta would collapse to M3.
+    "attncred-context-adv-only-return": {"ccpo_ep_w": 0.0, "ccpo_target": "return"},
 }
 
+# Methods that are only meaningful on one benchmark. Everything else runs on both.
+METHOD_BENCHMARKS = {
+    "attncred-context-adv-only-return": ("webshop",),
+}
+
+
+def benchmarks_for(method):
+    """The benchmarks a method is defined on. Both, unless it says otherwise."""
+    return tuple(METHOD_BENCHMARKS.get(method, tuple(BENCHMARK)))
+
 # Short tags for experiment ids.
-_TAG = {"attncred": "attncred", "attncred-context-adv-only": "attncred-ctxadv"}
+_TAG = {"attncred": "attncred", "attncred-context-adv-only": "attncred-ctxadv",
+        "attncred-context-adv-only-return": "attncred-ctxadv-ret"}
 
 # Canonical variant names. These are what experiments/experiments.md calls each arm;
 # the guard asserts the two agree, so the doc cannot drift from the code.
@@ -150,6 +167,7 @@ VARIANT = {
     ("attncred", "webshop"): "CCPO-ATTNCRED-WS",
     ("attncred-context-adv-only", "alfworld"): "CCPO-ATTNCRED-CTXADV",
     ("attncred-context-adv-only", "webshop"): "CCPO-ATTNCRED-CTXADV-WS",
+    ("attncred-context-adv-only-return", "webshop"): "CCPO-ATTNCRED-CTXADV-RETURN-WS",
 }
 
 
@@ -165,6 +183,10 @@ def build(method, benchmark, backbone, extra=None):
         raise KeyError(f"unknown benchmark {benchmark!r}; known: {', '.join(BENCHMARK)}")
     if backbone not in BACKBONE:
         raise KeyError(f"unknown backbone {backbone!r}; known: {', '.join(BACKBONE)}")
+    allowed = benchmarks_for(method)
+    if benchmark not in allowed:
+        raise KeyError(f"{method!r} is defined for {', '.join(allowed)} only, "
+                       f"not {benchmark!r}")
     cfg = dict(BASE)
     cfg.update(BENCHMARK[benchmark])
     cfg.update({"model": BACKBONE[backbone]["model"]})

@@ -29,7 +29,7 @@ def describe():
     print("methods:")
     for m, delta in arms.METHODS.items():
         d = ", ".join(f"{k}={v}" for k, v in delta.items()) or "(the published arm)"
-        print(f"  {m:28s} {d}")
+        print(f"  {m:36s} {d:44s} {'+'.join(arms.benchmarks_for(m))}")
     print("benchmarks:")
     for b, delta in arms.BENCHMARK.items():
         print(f"  {b:28s} env={delta['env_name']}, max_steps={delta['max_steps']}, "
@@ -37,9 +37,10 @@ def describe():
     print("backbones:")
     for b, d in arms.BACKBONE.items():
         print(f"  {b:28s} {d['model']}  (>= {d['min_gpus']} GPUs)")
-    print("\nall eight main runs:")
+    total = sum(len(arms.BACKBONE) * len(arms.benchmarks_for(m)) for m in arms.METHODS)
+    print(f"\nall {total} main runs:")
     for m in arms.METHODS:
-        for b in arms.BENCHMARK:
+        for b in arms.benchmarks_for(m):
             print(f"  {arms.variant_name(m, b)}")
             for k in arms.BACKBONE:
                 name, _ = arms.build(m, b, k)
@@ -59,6 +60,10 @@ def main():
         return 0
     a, passthrough = ap.parse_known_args()
 
+    allowed = arms.benchmarks_for(a.method)
+    if a.benchmark not in allowed:
+        ap.error(f"{a.method} is defined for {', '.join(allowed)} only "
+                 f"(see --list); got --benchmark {a.benchmark}")
     name, cfg = arms.build(a.method, a.benchmark, a.backbone)
     arms.check_gpus(a.gpus, a.backbone)
     return arms.launch(a.name or name, cfg, a.benchmark, a.gpus, passthrough,

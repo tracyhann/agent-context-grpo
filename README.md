@@ -9,7 +9,7 @@ isolates the estimator and nothing else.
 * Target hardware: **A100 (sm_80)** and **H100 (sm_90)**
 * Checkpoint backups: **https://huggingface.co/tracyhan816/ccpo-variants**
 
-**The spec is [`experiments/experiments.md`](experiments/experiments.md)** — 21 runs,
+**The spec is [`experiments/experiments.md`](experiments/experiments.md)** — 23 runs,
 each with its variant name, its equations, its GPU floor and the command that launches
 it, plus the hyperparameter tables and the results-table format.
 
@@ -113,7 +113,7 @@ this directory — `ccpo/test_arms.py` fails if any file names a path outside it
 ## 5. Running experiments
 
 ```bash
-python3 ccpo/run.py --list                 # the 8 main runs
+python3 ccpo/run.py --list                 # the 10 main runs
 python3 ablations/run.py --list            # the 13 ablation runs
 
 python3 ccpo/run.py --method attncred --benchmark webshop --backbone 7b --gpus 0,1,2,3,4,5,6,7

@@ -53,7 +53,7 @@ def _resolved(cfg):
 def test_keys_are_real():
     bad = {}
     for m in arms.METHODS:
-        for b in arms.BENCHMARK:
+        for b in arms.benchmarks_for(m):
             for k in arms.BACKBONE:
                 _, cfg = arms.build(m, b, k)
                 for key in cfg:
@@ -62,8 +62,8 @@ def test_keys_are_real():
     for key, where in bad.items():
         print(f"  unknown exp_run key {key!r} in {where[0]} -- launch would exit")
     ok = not bad
-    print(f"  every key of all {len(arms.METHODS) * len(arms.BENCHMARK) * len(arms.BACKBONE)} "
-          f"arms is a real config key: {'OK' if ok else 'FAIL'}")
+    n = sum(len(arms.BACKBONE) * len(arms.benchmarks_for(m)) for m in arms.METHODS)
+    print(f"  every key of all {n} arms is a real config key: {'OK' if ok else 'FAIL'}")
     return ok
 
 
@@ -92,16 +92,25 @@ def test_matches_control():
 def test_overlays():
     """Each overlay must move exactly the keys it claims and nothing else."""
     base = _resolved(arms.build("attncred", "alfworld", "1.5b")[1])
+    ws_base = _resolved(arms.build("attncred", "webshop", "1.5b")[1])
     cases = {
         "benchmark webshop": (arms.build("attncred", "webshop", "1.5b")[1],
                               {"env_name", "max_steps", "ccpo_target"}),
         "backbone 7b": (arms.build("attncred", "alfworld", "7b")[1], {"model"}),
         "method context-adv-only": (arms.build("attncred-context-adv-only", "alfworld", "1.5b")[1],
                                     {"ccpo_ep_w"}),
+        # M5 is a WebShop arm, so it is judged against the WebShop control, not the
+        # ALFWorld one -- otherwise env_name/max_steps show up as "moved" and the two
+        # keys that actually define it are buried.
+        "method context-adv-only-return (vs the webshop control)": (
+            arms.build("attncred-context-adv-only-return", "webshop", "1.5b")[1],
+            {"ccpo_ep_w", "ccpo_target"}, ws_base),
     }
     ok = True
-    for label, (cfg, expect) in cases.items():
-        moved = {k for k, v in _resolved(cfg).items() if base.get(k) != v}
+    for label, case in cases.items():
+        cfg, expect = case[0], case[1]
+        against = case[2] if len(case) > 2 else base
+        moved = {k for k, v in _resolved(cfg).items() if against.get(k) != v}
         good = moved == expect
         ok &= good
         print(f"  {label}: moved {sorted(moved)} (expected {sorted(expect)}) "
@@ -184,10 +193,11 @@ def test_doc_matches_code():
     doc = open(doc_path).read()
     abl = _load("ablations", os.path.join(ROOT, "ablations", "ablations.py"))
 
-    code_names = {arms.variant_name(m, b) for m in arms.METHODS for b in arms.BENCHMARK}
+    code_names = {arms.variant_name(m, b) for m in arms.METHODS
+                  for b in arms.benchmarks_for(m)}
     code_names |= {spec["name"] for spec in abl.ABLATIONS.values()}
-    code_ids = {arms.build(m, b, k)[0] for m in arms.METHODS for b in arms.BENCHMARK
-                for k in arms.BACKBONE}
+    code_ids = {arms.build(m, b, k)[0] for m in arms.METHODS
+                for b in arms.benchmarks_for(m) for k in arms.BACKBONE}
     code_ids |= {abl.build(a, b)[0] for a in abl.ABLATIONS
                  for b in abl.benchmarks_for(a)}
 
