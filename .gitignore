@@ -12,7 +12,7 @@ hf/
 # scripts/sync_patches.sh; patches/ is the source of truth for our edits.
 /verl-agent/
 
-# environment and data, rebuilt by scripts/setup_env.sh
+# environments and data, rebuilt by the benchmark setup scripts
 /.venv/
 /.venv-webshop/
 /alfworld_data/
@@ -29,3 +29,14 @@ experiments/*/outputs/train.log
 experiments/*/outputs/train.pid
 experiments/*/outputs/*.csv
 experiments/*/outputs/**/*.csv
+
+# Host-local migration records, controllers and reference checkouts.
+/.local/
+/searchr1/
+/baselines
+/legacy-experiments
+
+# Generated launch scripts embed machine paths; regenerate from arm/config settings.
+experiments/*/run.sh
+experiments/*/outputs/**/*.pid
+experiments/*/outputs/startup-*/

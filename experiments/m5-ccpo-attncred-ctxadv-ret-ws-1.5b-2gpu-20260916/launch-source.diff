@@ -1,0 +1,35 @@
+diff --git a/scripts/exp_run.py b/scripts/exp_run.py
+index a8761a4..8bf2459 100755
+--- a/scripts/exp_run.py
++++ b/scripts/exp_run.py
+@@ -19,6 +19,7 @@ Usage:
+ """
+ import argparse
+ import datetime
++import hashlib
+ import json
+ import os
+ import shlex
+@@ -529,7 +530,10 @@ def build_env(cfg, exp_dir):
+         # and training) asserts against it -- "Expandable segments are not
+         # compatible with memory pool", pytorch#147851. That setting came from the
+         # old HF-rollout path, where it countered long-run fragmentation.
+-        "RAY_TMPDIR": "/tmp/ray_acg",
++        # Separate Ray clusters per run, including runs with different Ray versions.
++        # Keep the directory short enough for Ray's Unix socket paths.
++        "RAY_TMPDIR": "/tmp/ray_acg_" + hashlib.sha256(exp_dir.encode()).hexdigest()[:8],
++        "RAY_ADDRESS": "local",
+         "TOKENIZERS_PARALLELISM": "false",
+         # Persist vLLM's torch.compile / CUDA-graph cache on the data volume. Cold,
+         # the first generate() call compiles and captures graphs for every engine
+@@ -537,8 +541,8 @@ def build_env(cfg, exp_dir):
+         # which reads exactly like a hang. Warm, engine start is ~16s. Measured
+         # generation itself is 6127 tok/s per GPU on TRITON_ATTN, so throughput was
+         # never the problem.
+-        "VLLM_CACHE_ROOT": os.path.join(ROOT, ".cache", "vllm"),
+-        "TORCHINDUCTOR_CACHE_DIR": os.path.join(ROOT, ".cache", "inductor"),
++        "VLLM_CACHE_ROOT": os.path.join(ROOT, ".cache", "vllm", os.path.basename(exp_dir)),
++        "TORCHINDUCTOR_CACHE_DIR": os.path.join(ROOT, ".cache", "inductor", os.path.basename(exp_dir)),
+         # belt and braces against the pid ceiling described at ray_num_cpus
+         "RAY_num_prestart_python_workers": "4",
+         # verl-agent gives every ALFWorld environment its own ray actor, so a

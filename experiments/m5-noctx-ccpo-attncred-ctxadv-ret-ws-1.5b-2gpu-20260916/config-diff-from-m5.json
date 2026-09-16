@@ -1,0 +1,14 @@
+{
+  "ccpo_phi": {
+    "M5": "hidden+ctx",
+    "ablation": "hidden"
+  },
+  "exp_id": {
+    "M5": "m5-ccpo-attncred-ctxadv-ret-ws-1.5b-2gpu-20260916",
+    "ablation": "m5-noctx-ccpo-attncred-ctxadv-ret-ws-1.5b-2gpu-20260916"
+  },
+  "ray_num_cpus": {
+    "M5": 64,
+    "ablation": 24
+  }
+}
