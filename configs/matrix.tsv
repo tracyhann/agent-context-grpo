@@ -1,10 +1,10 @@
 # method	size	benchmark	steps	gpus	status
-# 1.5B arms are run in the main workspace (/workspace/experiments), not through this repo.
-grpo	7b	alfworld	150	4	not started
-gigpo	7b	alfworld	150	4	not started
-hgpo	7b	alfworld	150	4	done at 160 steps: 96.09 +/- 0.78 (3 seeds)
-g2po	7b	alfworld	150	4	not started
-grpo	7b	webshop	150	4	blocked: env/setup_webshop.sh
-gigpo	7b	webshop	150	4	blocked: env/setup_webshop.sh
-hgpo	7b	webshop	150	4	blocked: env/setup_webshop.sh
-g2po	7b	webshop	150	4	blocked: env/setup_webshop.sh
+# Nothing has been run yet. Update the status column as runs complete on this machine.
+grpo	7b	alfworld	150	4	to run
+gigpo	7b	alfworld	150	4	to run
+hgpo	7b	alfworld	150	4	to run
+g2po	7b	alfworld	150	4	to run
+grpo	7b	webshop	150	4	to run (env/setup_webshop.sh first)
+gigpo	7b	webshop	150	4	to run (env/setup_webshop.sh first)
+hgpo	7b	webshop	150	4	to run (env/setup_webshop.sh first)
+g2po	7b	webshop	150	4	to run (env/setup_webshop.sh first)

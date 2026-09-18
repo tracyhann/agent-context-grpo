@@ -20,12 +20,12 @@ file (`scripts/common.sh`) so no two runs differ by accident.
 
 ## The matrix
 
-| Method | 7B | Tree | Entrypoint |
+| Method | Size | Tree | Entrypoint |
 |---|---|---|---|
-| GRPO  | ✅ | `baselines/verl-agent` | `verl.trainer.main_ppo` |
-| GiGPO | ✅ | `baselines/verl-agent` | `verl.trainer.main_ppo` |
-| HGPO  | ✅ | `baselines/verl-agent` | `recipe.hgpo.main_hgpo` |
-| G2PO  | ✅ | `baselines/G2PO`       | `verl.trainer.main_ppo` |
+| GRPO  | 7B | `baselines/verl-agent` | `verl.trainer.main_ppo` |
+| GiGPO | 7B | `baselines/verl-agent` | `verl.trainer.main_ppo` |
+| HGPO  | 7B | `baselines/verl-agent` | `recipe.hgpo.main_hgpo` |
+| G2PO  | 7B | `baselines/G2PO`       | `verl.trainer.main_ppo` |
 
 Four configurations × two benchmarks (ALFWorld, WebShop) = **8 runs**, 150 steps each.
 
@@ -220,9 +220,11 @@ trainer removes its own copy).
   killed a 7B run at step 37. `run_all.sh` waits for GPUs to be idle on memory *and*
   utilization for three consecutive minutes before launching.
 
-## Reference results
+## Results
 
-`RESULTS.md` holds the numbers already measured on this host, with 3-seed error bars where
-available, and the published targets. `experiments/experiments.md` is the experiment
+**No run in this repo has been executed yet.** `RESULTS.md` has an empty table to fill in,
+the published targets to compare against, and — clearly separated — a few numbers measured
+on a *different* machine that serve only as sanity checks. Those were produced at other
+step budgets and must not be presented as outputs of this repo. `experiments/experiments.md` is the experiment
 protocol: matrix, reporting rules, metric inventory and hyperparameters.
 `related-work/` holds the four papers these methods come from.

@@ -9,12 +9,12 @@ reproductions of published baselines, not new methods — every arm runs its aut
 estimator, and the only departures from the upstream scripts are the host deviations in
 `../scripts/common.sh`, each annotated there with the failure that forced it.
 
-| Method | 7B | Defined in |
+| Method | Size | Defined in |
 |---|---|---|
-| GRPO  | ✅ | `../related-work/grpo_2402.03300.pdf` |
-| GiGPO | ✅ | `../related-work/gigpo_2505.10978.pdf` |
-| HGPO  | ✅ | `../related-work/hgpo_2602.22817.pdf` |
-| G2PO  | ✅ | `../related-work/g2po_2606.22995.pdf` |
+| GRPO  | 7B | `../related-work/grpo_2402.03300.pdf` |
+| GiGPO | 7B | `../related-work/gigpo_2505.10978.pdf` |
+| HGPO  | 7B | `../related-work/hgpo_2602.22817.pdf` |
+| G2PO  | 7B | `../related-work/g2po_2606.22995.pdf` |
 
 Benchmarks: **ALFWorld** and **WebShop**.
 
@@ -77,16 +77,20 @@ sees ~8% of the terminal reward.
 
 | # | Method | Benchmark | GPUs | Status |
 |---|---|---|---|---|
-| B1 | GRPO  | ALFWorld | 4 | not started |
-| B2 | GiGPO | ALFWorld | 4 | not started |
-| B3 | HGPO  | ALFWorld | 4 | **done at 160 steps: 96.09 ± 0.78** |
-| B4 | G2PO  | ALFWorld | 4 | not started |
-| B5–B8 | all four | WebShop | 4 | blocked — environment not installed |
+| B1 | GRPO  | ALFWorld | 4 | to run |
+| B2 | GiGPO | ALFWorld | 4 | to run |
+| B3 | HGPO  | ALFWorld | 4 | to run |
+| B4 | G2PO  | ALFWorld | 4 | to run |
+| B5 | GRPO  | WebShop  | 4 | to run — install the environment first |
+| B6 | GiGPO | WebShop  | 4 | to run — install the environment first |
+| B7 | HGPO  | WebShop  | 4 | to run — install the environment first |
+| B8 | G2PO  | WebShop  | 4 | to run — install the environment first |
 
-Reference values from the 1.5B arms run in the main workspace, for comparison only:
-HGPO 91.93 ± 0.90 (160 steps), GiGPO 86.46 ± 2.74 (150), G2PO 93.8 (150, single
-evaluation), GRPO in progress. Those means are over **3** seeds (997/101/3173), measured
-before seeds 869/2917 were added — state the seed count beside any number that mixes them.
+**Nothing here has been run yet.** This repo is the procedure; fill the status column in as
+runs complete on this machine. Prior numbers from a *different* host appear in
+`../RESULTS.md` strictly as sanity checks — they are not results of this repo, were
+produced at different step budgets (160/150/100, not 150), and must never be copied into a
+results table as if they came from here.
 
 Launch: `../scripts/train.sh <method> <size> <benchmark> [gpus] [steps]`, or
 `../scripts/run_all.sh` for the whole matrix, serialized.
