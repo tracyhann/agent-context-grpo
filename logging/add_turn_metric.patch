@@ -1,0 +1,37 @@
+# Adds val/episode_length to verl's _validate(): turns per held-out episode, overall and
+# over successful episodes only. LOGGING ONLY -- it reads data the rollout already
+# produced and changes no training path.
+#
+# Why it is needed: the upstream trees under baselines/ report success rates but never
+# episode length at validation time, so "how many turns did the policy take" cannot be
+# answered from a finished run. A failed ALFWorld episode always runs to the 50-turn cap,
+# so the all-episode mean is dominated by the failure rate; the success-only mean is the
+# one that measures efficiency.
+#
+# Apply to a verl tree's verl/trainer/ppo/ray_trainer.py (and recipe/hgpo/hgpo_ray_trainer.py
+# if that recipe defines its own _validate):
+#
+#   1. in _validate(), next to `traj_uid_list = []`:
+#          episode_length_list = []
+#          episode_reward_list = []
+#   2. next to `traj_uid_list.append(test_output_gen_batch.non_tensor_batch['traj_uid'])`:
+#          episode_length_list.append(test_output_gen_batch.non_tensor_batch['episode_lengths'])
+#          episode_reward_list.append(test_output_gen_batch.non_tensor_batch['episode_rewards'])
+#   3. next to `traj_uids = np.concatenate(traj_uid_list, axis=0)`:
+#          episode_lengths = np.concatenate(episode_length_list, axis=0)
+#          episode_rewards = np.concatenate(episode_reward_list, axis=0)
+#   4. after the tool_call_count metrics are written into metric_dict:
+#          game_lengths = episode_lengths[unique_idx].astype(float)
+#          game_won = episode_rewards[unique_idx].astype(float) > 0
+#          metric_dict['val/episode_length/mean'] = float(game_lengths.mean())
+#          metric_dict['val/episode_length/success_mean'] = (
+#              float(game_lengths[game_won].mean()) if game_won.any() else float('nan'))
+#
+# `unique_idx` already exists (np.unique(traj_uids, return_index=True)) because the batch is
+# expanded by step: every row of a trajectory carries that trajectory's totals, so one value
+# per traj_uid is the per-episode figure. ALFWorld's text reward is 10*won, so reward > 0
+# marks a success.
+#
+# Verified on this host: mean 26.5 / success-mean 3.0 on a two-episode fixture; and in a
+# real evaluation, HGPO 1.5B step-100 weights gave 19.60 turns overall vs 9.89 on successes,
+# reconciling exactly with its 75.8% success rate (0.758*9.89 + 0.242*50 = 19.6).

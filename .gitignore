@@ -1,0 +1,10 @@
+# Run outputs: logs, metrics and checkpoints. A single 7B checkpoint is ~81 GB.
+runs/
+# Credentials -- never commit. Tokens belong in the environment or a credential helper,
+# not in a tracked path: this branch is pushed to a public GitHub repo.
+secrets/
+*.token
+.env
+# Local bookkeeping
+backbone_download.log
+*.bak
