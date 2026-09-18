@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Launch a main-method arm: CCPO-ATTNCRED, or its context-advantage-only variant.
+"""Launch a main-method arm: CCPO-ATTNCRED, context advantage, or future outlook.
 
 Four main experiments per method (experiments/experiments.md):
 

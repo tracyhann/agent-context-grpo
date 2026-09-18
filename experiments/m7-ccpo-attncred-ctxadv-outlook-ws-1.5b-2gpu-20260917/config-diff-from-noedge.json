@@ -1,0 +1,14 @@
+{
+  "ccpo_outlook_beta": [
+    null,
+    0.25
+  ],
+  "ccpo_outlook_horizon": [
+    null,
+    2
+  ],
+  "exp_id": [
+    "m5-noedge-ccpo-attncred-ctxadv-ret-ws-1.5b-2gpu-20260916",
+    "m7-ccpo-attncred-ctxadv-outlook-ws-1.5b-2gpu-20260917"
+  ]
+}

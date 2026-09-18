@@ -1,0 +1,12 @@
+{
+  "status": "launched",
+  "benchmark": "webshop",
+  "horizon": 1,
+  "gpus": "2,3",
+  "control": "m5-ccpo-attncred-ctxadv-ret-ws-1.5b-2gpu-20260916",
+  "run_directory": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918",
+  "authorization": "User explicitly authorized M10/M11 launch after preparation.",
+  "preparation_authorization": "Implementation and preparation only. User explicitly requested no launch.",
+  "launched_at": "2026-09-18T04:14:39+00:00",
+  "launch_record": "LAUNCH.json"
+}

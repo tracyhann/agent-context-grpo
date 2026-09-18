@@ -1,0 +1,43 @@
+{
+  "benchmark": "webshop",
+  "verified": true,
+  "step": 1,
+  "latest_step": 1,
+  "rows": 1646,
+  "fixed_scalar_metrics": 165,
+  "csv_fields": 38,
+  "snapshot_fields": 45,
+  "gpus": [
+    2,
+    3
+  ],
+  "trainer_pid": 269060,
+  "holder_released": "2026-09-18T01:43:49+00:00",
+  "feature_shapes": {
+    "history_hidden": [
+      1646,
+      1536
+    ],
+    "future_hidden": [
+      1646,
+      1536
+    ],
+    "history_phi": [
+      1646,
+      1573
+    ],
+    "future_phi": [
+      1646,
+      1610
+    ]
+  },
+  "future_gain_absmean": 0.0711479430978482,
+  "identity_error": 4.6261709130135387e-07,
+  "applied_identity_error": 4.3758446288677533e-07,
+  "reference_future_seconds": 43.099664891982684,
+  "prompt_truncated_frac": 0.0,
+  "verified_at": "2026-09-18T01:47:38.165446+00:00",
+  "plot_verified": true,
+  "plot": "/workspace/agent-context-grpo/experiments/m9-ccpo-attncred-ctxadv-fixed-anchor-ws-1.5b-2gpu-20260918/plots/fixed_anchor.png",
+  "gpu_handoff_verified": true
+}

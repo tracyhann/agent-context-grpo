@@ -1,0 +1,14 @@
+{
+  "ccpo_outlook_beta": [
+    null,
+    0.25
+  ],
+  "ccpo_outlook_horizon": [
+    null,
+    2
+  ],
+  "exp_id": [
+    "m3-noedge-ccpo-attncred-ctxadv-alfworld-1.5b-2gpu-20260917",
+    "m6-ccpo-attncred-ctxadv-outlook-alfworld-1.5b-2gpu-20260917"
+  ]
+}

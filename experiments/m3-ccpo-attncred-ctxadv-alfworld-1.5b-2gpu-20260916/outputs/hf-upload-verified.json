@@ -1,0 +1,13 @@
+{
+  "completed_at": "2026-09-17T10:37:08+00:00",
+  "repo": "tracyhan816/ccpo-variants",
+  "prefix": "m3-ccpo-attncred-ctxadv-alfworld-1.5b-2gpu-20260916",
+  "commit": "6e262027d24a4cc4ee5710a9ed52f0028b8bbb5a",
+  "commit_url": "https://huggingface.co/tracyhan816/ccpo-variants/commit/6e262027d24a4cc4ee5710a9ed52f0028b8bbb5a",
+  "url": "https://huggingface.co/tracyhan816/ccpo-variants/tree/main/m3-ccpo-attncred-ctxadv-alfworld-1.5b-2gpu-20260916",
+  "checkpoint_files": 84,
+  "checkpoint_bytes": 79796129748,
+  "metadata_files": 7,
+  "all_checkpoint_hashes_match": true,
+  "local_checkpoints_retained": true
+}

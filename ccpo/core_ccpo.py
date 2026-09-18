@@ -572,7 +572,8 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
                         episode_rewards=None, is_action_valid=None,
                         gamma=0.95, success_reward=10.0, target=None,
                         edge_w=None, sim=None, sim_backoff=None,
-                        dense_scores=None):
+                        dense_scores=None, value_targets=None, prepared_phi=None,
+                        exact_only=False, dump_enabled=True):
     """Weighted cross-trajectory leave-one-out step advantage.
 
     phi_feats: optional (n, d) array of per-sample affinity features. When given
@@ -599,6 +600,11 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
     scores = (step_rewards * response_mask).sum(-1) if step_rewards.dim() > 1 else step_rewards
     G = scores.detach().float().cpu().numpy().astype(np.float64)
     n = len(G)
+    # Optional unpenalised return channel for outlook bootstrapping. It uses
+    # exactly the same neighbours, weights and credibility as the main target.
+    VALUE = None if value_targets is None else np.asarray(value_targets, dtype=np.float64)
+    if VALUE is not None and (VALUE.shape != (n,) or not np.isfinite(VALUE).all()):
+        raise ValueError("value_targets must contain one finite scalar per step")
     ctx = ctx_override if ctx_override is not None else derive_context(anchor_obs, index, traj_index)
 
     # ---- G2PO node values, when the trainer supplied what they need ---------
@@ -657,19 +663,39 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
             if _m > 0:
                 B_TASK[_i] = (_ts[_t] - _js[(_t, _j)]) / _m
 
+    B_VALUE_TASK = None
+    if VALUE is not None and B_TASK is not None:
+        sums, counts, own_sums, own_counts = defaultdict(float), defaultdict(int), defaultdict(float), defaultdict(int)
+        for i in range(n):
+            task, traj = str(index[i]), str(traj_index[i])
+            sums[task] += VALUE[i]; counts[task] += 1
+            own_sums[(task, traj)] += VALUE[i]; own_counts[(task, traj)] += 1
+        B_VALUE_TASK = np.full(n, np.nan)
+        for i in range(n):
+            task, traj = str(index[i]), str(traj_index[i])
+            count = counts[task] - own_counts[(task, traj)]
+            if count:
+                B_VALUE_TASK[i] = (sums[task] - own_sums[(task, traj)]) / count
+
     adv = np.zeros(n, dtype=np.float64)
+    baseline_values = np.full(n, np.nan)
+    bootstrap_values = np.full(n, np.nan)
     lam_all, neff_all, w_all, _rec = [], [], [], []
     lamk_all = []
     _rel_all, _rel_slope = [], []
     _eff_all = []
-    _dump = os.environ.get("ACG_CCPO_DUMP")
+    _dump = os.environ.get("ACG_CCPO_DUMP") if dump_enabled else None
     _rows = [] if _dump else None
 
     # Whitening is batch-wide, not per bucket: the directions being removed are
     # corpus-level register, and estimating them inside a 4-member bucket would
     # delete the very variation the gate is meant to see.
     PHI = None
-    if _PHI_MODE.startswith("hidden") and phi_feats is not None:
+    if prepared_phi is not None:
+        PHI = np.asarray(prepared_phi, dtype=float)
+        if PHI.ndim != 2 or len(PHI) != n or not np.isfinite(PHI).all():
+            raise ValueError("prepared_phi must have one finite feature vector per row")
+    elif _PHI_MODE.startswith("hidden") and phi_feats is not None:
         _pf = phi_feats.detach().float().cpu().numpy() if hasattr(phi_feats, "detach") \
             else np.asarray(phi_feats, dtype=float)
         if _pf.ndim == 2 and _pf.shape[0] == n:
@@ -727,7 +753,7 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
         if sim_backoff > 0.0:
             levels.append((1, cluster_keys(anchor_obs, index, sim_backoff),
                            rho * _BACKOFF_RHO))
-        if _BACKOFF_TASK and _GATE != "global":
+        if _BACKOFF_TASK and _GATE != "global" and not exact_only:
             # last-resort level: the whole task. Credits only rows every finer
             # level left unassigned, so level-0 rows are untouched.
             _kt = np.empty(n, dtype=object)
@@ -851,7 +877,9 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
                 # because "eb_pooled" needs the whole batch before it can choose one.
                 _rec.append(dict(i=i, lvl=lvl, bhash=_bhash, b_loo=b_loo, b_obs=b_obs,
                                  s2=s2, ne=ne, J=J, var_gain=var_gain, rho=rho_l,
-                                 sig=_sig))
+                                 sig=_sig,
+                                 value_loo=(float(np.dot(_wv, VALUE[oth])) if VALUE is not None else None),
+                                 value_obs=(float(VALUE[oth].mean()) if VALUE is not None else None)))
                 assigned[i] = True
                 level_of[i] = lvl
 
@@ -945,6 +973,7 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
             lam = float(_LAM_FIX)
         lam = min(1.0, max(0.0, lam))
         _base = lam * b_loo + (1 - lam) * b_obs
+        _value_base = None if VALUE is None else lam * _r["value_loo"] + (1 - lam) * _r["value_obs"]
         _lk = 1.0
         if B_TASK is not None and _r["lvl"] == 0 and np.isfinite(B_TASK[i]):
             # credibility: trust the node in proportion to its sibling support J
@@ -957,7 +986,12 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
                 # compute B_TASK at all.
                 _lk = min(1.0, max(0.0, float(_LK_FIX)))
             _base = _lk * _base + (1.0 - _lk) * B_TASK[i]
+            if VALUE is not None:
+                _value_base = _lk * _value_base + (1.0 - _lk) * B_VALUE_TASK[i]
         lamk_all.append(_lk)
+        baseline_values[i] = _base
+        if VALUE is not None:
+            bootstrap_values[i] = _value_base
         adv[i] = TGT[i] - _base
         if _STD_MODE == "local":
             # Coherent standardisation: the kernel that chose the neighbourhood also
@@ -1048,7 +1082,7 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
     # ACG_CCPO_GDUMP is set, because it carries full observation text and is
     # ~100x larger per step. This is what lets an alternative gate be evaluated
     # without spending a training run on it.
-    _gdump = os.environ.get("ACG_CCPO_GDUMP")
+    _gdump = os.environ.get("ACG_CCPO_GDUMP") if dump_enabled else None
     if _gdump:
         try:
             import json as _json
@@ -1098,7 +1132,22 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
         except OSError:
             pass
 
+    detail = {k: np.full(n, np.nan) for k in
+              ('kernel_values', 'uniform_values', 'task_prior_values', 'support_values',
+               'effective_support_values', 'credibility_values')}
+    for rec in _rec:
+        i = rec['i']
+        detail['kernel_values'][i] = rec['b_loo']
+        detail['uniform_values'][i] = rec['b_obs']
+        detail['task_prior_values'][i] = B_TASK[i] if B_TASK is not None else np.nan
+        detail['support_values'][i] = rec['J']
+        detail['effective_support_values'][i] = rec['ne']
+        lk = rec['J']/(rec['J']+_PRIOR_KAPPA) if B_TASK is not None and rec['lvl']==0 else 1.
+        if _LK_FIX != "" and B_TASK is not None and rec['lvl']==0:
+            lk = min(1.,max(0.,float(_LK_FIX)))
+        detail['credibility_values'][i] = lk
     return out, dict(
+        **detail, level_values=level_of, prepared_phi_values=PHI,
         lam_u_mean=float(np.mean(lam_all)) if lam_all else 0.0,
         lam_u_gt50=float(np.mean(np.array(lam_all) > 0.5)) if lam_all else 0.0,
         lam_pooled=(float(lam_pooled) if lam_pooled is not None else float('nan')),
@@ -1116,6 +1165,7 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
         n_eff_mean=float(np.mean(neff_all)) if neff_all else 0.0,
         E_w=float(np.mean(w_all)) if w_all else float("nan"),
         live_frac=float(_live.mean()), live_mask=_live,
+        baseline_values=baseline_values, bootstrap_values=bootstrap_values,
         n_buckets=len(_exact),
         lvl1_frac=float((level_of == 1).mean()),
         phi_mode=(_PHI_MODE if PHI is not None else "bow"), rho=rho,

@@ -156,6 +156,8 @@ class TrajectoryCollector:
         
         # Initialize return dict
         row_dict = {}
+        if os.environ.get('ACG_CCPO_FIXED_ANCHOR', '0') == '1':
+            row_dict['ccpo_prompt_text'] = obs_content
         
         # Process multimodal data
         if is_multi_modal:
@@ -320,9 +322,11 @@ class TrajectoryCollector:
         effective_batch = []
         for bs in range(batch_size):
             # sum the rewards for each data in total_batch_list[bs]
-            for data in total_batch_list[bs]:
+            for turn_index, data in enumerate(total_batch_list[bs]):
                 assert traj_uid[bs] == data['traj_uid'], "data is not from the same trajectory"
                 if data['active_masks']:
+                    # Travels with the row through padding and length balancing.
+                    data['ccpo_turn_index'] = turn_index
                     # episode_rewards
                     data['episode_rewards'] = episode_rewards[bs]
                     # episode_lengths
@@ -437,6 +441,13 @@ class TrajectoryCollector:
                     print(f"[resp-debug] tail={text_actions[0][-200:]!r}", flush=True)
             
             next_obs, rewards, dones, infos = envs.step(text_actions)
+            if os.environ.get('ACG_CCPO_FIXED_ANCHOR', '0') == '1':
+                # Post-action metadata for credit estimation only. Never enters
+                # the prompt used to choose the action at this turn.
+                batch.non_tensor_batch['ccpo_next_obs'] = np.asarray(next_obs['anchor'], dtype=object)
+                batch.non_tensor_batch['ccpo_action'] = np.asarray(
+                    [str(envs.memory[i][-1]['action']) for i in range(batch_size)], dtype=object)
+
 
             
             if len(rewards.shape) == 2:

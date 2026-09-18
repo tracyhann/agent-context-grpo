@@ -242,6 +242,16 @@ DEFAULTS = {
     "ccpo_ep_w": 1.0,
     "ccpo_wmode": "soft",         # "1.0": use the phi-weighted (attention) readout instead of the EB-estimated lam
     "ccpo_edge_w": 0.0,
+    "ccpo_progress_horizon": 0,  # 1/2 enables contextual endpoint value progress
+    "ccpo_progress_weight": 1.0,
+    "ccpo_progress_snapshot_every": 1,
+    "ccpo_fixed_anchor": 0,
+    "ccpo_fixed_horizon": 2,
+    "ccpo_fixed_gain_weight": 1.0,
+    "ccpo_fixed_max_prompt": 8192,
+    "ccpo_fixed_snapshot_every": 1,
+    "ccpo_outlook_horizon": 0,   # 0 preserves the existing estimator
+    "ccpo_outlook_beta": 0.0,    # convex weight on the n-step outlook advantage
     # "hard" = the GiGPO/G2PO exact (task, observation) gate. "global" makes the
     # task one bucket and lets exp(-d/tau) gate softly; ccpo_tau is then the
     # kernel width as a multiple of the median phi-distance and is the parameter
@@ -345,6 +355,16 @@ ENV_KEYS = {
     "ccpo_gate": "ACG_CCPO_GATE", "ccpo_tau": "ACG_CCPO_TAU",
     "ccpo_std": "ACG_CCPO_STD", "ccpo_std_floor": "ACG_CCPO_STD_FLOOR",
     "ccpo_step_norm": "ACG_CCPO_STEP_NORM",
+    "ccpo_progress_horizon": "ACG_CCPO_PROGRESS_HORIZON",
+    "ccpo_progress_weight": "ACG_CCPO_PROGRESS_WEIGHT",
+    "ccpo_progress_snapshot_every": "ACG_CCPO_PROGRESS_SNAPSHOT_EVERY",
+    "ccpo_fixed_anchor": "ACG_CCPO_FIXED_ANCHOR",
+    "ccpo_fixed_horizon": "ACG_CCPO_FIXED_HORIZON",
+    "ccpo_fixed_gain_weight": "ACG_CCPO_FIXED_GAIN_WEIGHT",
+    "ccpo_fixed_max_prompt": "ACG_CCPO_FIXED_MAX_PROMPT",
+    "ccpo_fixed_snapshot_every": "ACG_CCPO_FIXED_SNAPSHOT_EVERY",
+    "ccpo_outlook_horizon": "ACG_CCPO_OUTLOOK_HORIZON",
+    "ccpo_outlook_beta": "ACG_CCPO_OUTLOOK_BETA",
     "compact_budget": "ACG_COMPACT_BUDGET", "compact_stall": "ACG_COMPACT_STALL",
     "compact_mode": "ACG_COMPACT_MODE", "obs_repair": "ACG_OBS_REPAIR", "anchor_aff": "ACG_ANCHOR_AFF",
     "align_val_on_resume": "ACG_ALIGN_VAL_ON_RESUME",

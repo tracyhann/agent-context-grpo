@@ -40,3 +40,19 @@ experiments/*/outputs/**/*.csv
 experiments/*/run.sh
 experiments/*/outputs/**/*.pid
 experiments/*/outputs/startup-*/
+
+# Large per-sample research diagnostics stay local; aggregate metrics and plots
+# remain versioned alongside experiment configs and method notes.
+experiments/**/*.npz
+experiments/**/*.prompts.jsonl.gz
+experiments/**/*.tmp
+experiments/**/outputs/future_progress/
+experiments/**/outputs/fixed_anchor/
+experiments/*/failure-analysis-*/**/episodes.jsonl
+experiments/*/failure-analysis-*/**/launch.json
+experiments/*/failure-analysis-*/**/exit.json
+experiments/*/failure-analysis-*/run_pair.py
+experiments/*/failure-analysis-*/behavior_diagnostics.json
+experiments/*/failure-analysis-*/oracle_targets.json
+experiments/*/failure-analysis-*/option_rescoring.json
+experiments/*/failure-analysis-*/trace_analysis.json

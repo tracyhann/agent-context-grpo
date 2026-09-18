@@ -1,0 +1,9 @@
+{
+  "status": "prepared_not_launched",
+  "benchmark": "alfworld",
+  "horizon": 2,
+  "gpus": "0,1",
+  "control": "m3-ccpo-attncred-ctxadv-alfworld-1.5b-2gpu-20260916",
+  "run_directory": "/workspace/agent-context-grpo/experiments/m10-h2-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918",
+  "authorization": "Implementation and preparation only. User explicitly requested no launch."
+}

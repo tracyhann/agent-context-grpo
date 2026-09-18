@@ -1,0 +1,7 @@
+{
+  "val/text/test_score": 7.148093841642229,
+  "val/length/mean": 5.328125,
+  "val/text/tool_call_count/mean": 0.0,
+  "val/success_rate": 0.69921875,
+  "val/webshop_task_score (not success_rate)": 0.8555680549918832
+}

@@ -697,3 +697,60 @@ already the minimum that can resume.
 
 Thirteen ablation runs × ~100 GB run sequentially on one 4-GPU host; the ten main runs need a
 host per backbone. `scripts/exp_status.py` reports what is running and what it has used.
+
+
+### Context outlook variant (ALFWorld and WebShop)
+
+`CCPO-ATTNCRED-CTXADV-OUTLOOK` and `CCPO-ATTNCRED-CTXADV-OUTLOOK-WS`
+are the `attncred-context-outlook` main-method variant. They retain our historical
+context-conditioned credit with weight 0.75 and add a two-step outlook estimate
+with weight 0.25. Both use the binary return target, `ccpo_ep_w=0`,
+`ccpo_edge_w=0`, `ccpo_outlook_horizon=2`, and `ccpo_outlook_beta=0.25`.
+See [the estimator, terminal/penalty conventions, and ordering caveat](../ccpo/OUTLOOK.md).
+
+Canonical experiment IDs: `ccpo-attncred-ctxadv-outlook-alfworld-1.5b`,
+`ccpo-attncred-ctxadv-outlook-alfworld-7b`,
+`ccpo-attncred-ctxadv-outlook-ws-1.5b`,
+`ccpo-attncred-ctxadv-outlook-ws-7b`.
+
+The requested initial runs use 1.5B with two GPUs per benchmark, the existing
+M3/M5-NOEDGE batch/memory settings, seed 0 and 150 training steps.
+
+
+### Fixed-anchor gain: history plus two observed future steps (2026-09-18)
+
+`CCPO-ATTNCRED-CTXADV-FIXED-ANCHOR` and `CCPO-ATTNCRED-CTXADV-FIXED-ANCHOR-WS`
+are registered under `attncred-context-fixed-anchor`. IDs are
+`ccpo-attncred-ctxadv-fixed-anchor-alfworld-1.5b`,
+`ccpo-attncred-ctxadv-fixed-anchor-alfworld-7b`,
+`ccpo-attncred-ctxadv-fixed-anchor-ws-1.5b`, and
+`ccpo-attncred-ctxadv-fixed-anchor-ws-7b`.
+
+The authorized M8/M9 runs use 1.5B and two GPUs each. Their advantage is
+`H + (B_joint - B_history)`, where `H = Y - B_history`. Both readouts retain
+the exact current `(task, observation)` anchor and exclude the whole query
+trajectory. The joint readout encodes the original historical prompt plus
+the next two observed action/observation transitions, including terminal
+observations, and both historical and future accumulated statistics.
+No exact peer means zero added gain; the historical task fallback remains.
+The original edge and episode advantage coefficients are zero.
+
+Both use binary return targets, gamma .95, gain coefficient 1, kappa 2, and
+the existing ALFWorld/WebShop outer normalization conventions. No optimizer
+state or weights are resumed from the preempted OUTLOOK runs: these are fresh
+seed-0 comparisons from Qwen2.5-1.5B-Instruct. Scalar metrics, canonical CSV,
+raw/processed feature NPZ and exact joint-prompt tokens are saved each step.
+See `ccpo/fixed_anchor.py`, `tests/test_fixed_anchor.py`, and the new run NOTES.
+
+### Contextual future-state progress
+
+`attncred-context-future-progress` replaces M3/M5's edge with the task-standardized difference of contextual values at the next and current observations. `attncred-context-future-progress-h2` is the separate two-step ablation. Both retain history coefficient 1, future coefficient 1, episode coefficient 0, return targets and each benchmark's original final normalization. No fixed-anchor or endpoint-bootstrap OUTLOOK term is mixed in.
+
+| Variant | Method | Registry experiment names (1.5B / 7B) |
+|---|---|---|
+| CCPO-ATTNCRED-CTXADV-FUTURE-PROGRESS | attncred-context-future-progress | ccpo-attncred-ctxadv-future-progress-alfworld-1.5b / ccpo-attncred-ctxadv-future-progress-alfworld-7b |
+| CCPO-ATTNCRED-CTXADV-FUTURE-PROGRESS-WS | attncred-context-future-progress | ccpo-attncred-ctxadv-future-progress-ws-1.5b / ccpo-attncred-ctxadv-future-progress-ws-7b |
+| CCPO-ATTNCRED-CTXADV-FUTURE-PROGRESS-TWO-STEP | attncred-context-future-progress-h2 | ccpo-attncred-ctxadv-future-progress-h2-alfworld-1.5b / ccpo-attncred-ctxadv-future-progress-h2-alfworld-7b |
+| CCPO-ATTNCRED-CTXADV-FUTURE-PROGRESS-TWO-STEP-WS | attncred-context-future-progress-h2 | ccpo-attncred-ctxadv-future-progress-h2-ws-1.5b / ccpo-attncred-ctxadv-future-progress-h2-ws-7b |
+
+The prepared M10/M11 local configs clone the recorded two-GPU 1.5B M3/M5 protocol. Horizon 1 is primary; optional H2 configs change only the future horizon. **Primary M10/M11 launched at 04:14 UTC on 2026-09-18 by explicit user request, on GPUs 0–1 and 2–3. M8/M9 are paused with saved checkpoints pinned at steps 10/25. The separate H2 variants remain unlaunched.** Full math and terminal/grouping conventions are in [FUTURE_PROGRESS.md](../ccpo/FUTURE_PROGRESS.md).

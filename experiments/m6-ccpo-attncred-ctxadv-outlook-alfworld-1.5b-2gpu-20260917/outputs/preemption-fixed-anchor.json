@@ -1,0 +1,13 @@
+{
+  "time": "2026-09-18T01:15:05.765921+00:00",
+  "reason": "User requested fixed-anchor gain experiments on the same four GPUs",
+  "status": "paused_for_fixed_anchor",
+  "benchmark": "alfworld",
+  "controller": 212347,
+  "trainer": 212450,
+  "raytmp": "/tmp/ray_acg_8505bd87",
+  "directory": "/workspace/agent-context-grpo/experiments/m6-ccpo-attncred-ctxadv-outlook-alfworld-1.5b-2gpu-20260917",
+  "checkpoint": 15,
+  "latest_step": 19,
+  "checkpoint_pin": "/workspace/agent-context-grpo/experiments/m6-ccpo-attncred-ctxadv-outlook-alfworld-1.5b-2gpu-20260917/outputs/checkpoints/step15-paused-fixed-anchor"
+}

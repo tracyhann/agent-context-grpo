@@ -4,16 +4,19 @@
     scripts/plot_metrics.py --exp experiments/<id> [--watch] [--every 120]
     scripts/plot_metrics.py --compare experiments/a experiments/b -o plots/compare.png
 
-Two panels of figures are produced:
+The available metrics determine which figures are produced:
   progress.png    the standard curves -- success rate, reward, KL, entropy,
                   response length, grad norm, clip fraction, valid-action ratio
-  ccpo.png        the estimator's own terms -- lambda, n_eff, bucket occupancy,
+  ccpo.png        the estimator's own terms -- credibility shrinkage, attention
+                  mixing, n_eff, bucket occupancy,
                   effect size, correlation against the GiGPO and G2PO references,
                   and the ratio of the two advantage terms
-The second panel is the one that says whether the method is doing anything.
+  outlook.png     historical and future advantage magnitudes, weighted terms,
+                  correlation, mixture change, and endpoint coverage
 """
 import argparse
 import json
+import math
 import os
 import time
 
@@ -101,6 +104,10 @@ def panel(rows, specs, out, title):
         drew += 1
         ax.set_title(label, fontsize=10)
         ax.set_xlabel("step", fontsize=8)
+        if kw.get("ylabel"):
+            ax.set_ylabel(kw["ylabel"], fontsize=8)
+        if kw.get("ylim") is not None:
+            ax.set_ylim(*kw["ylim"])
         ax.tick_params(labelsize=8)
         ax.grid(alpha=0.25, lw=0.5)
         if kw.get("hline") is not None:
@@ -161,8 +168,14 @@ STANDARD = [
 ]
 
 CCPO = [
-    ("lambda* applied", ["ccpo/lam_u_mean", "ccpo/lam_u_gt50"], {}),
-    ("lambda* by rule (only one applies)", ["ccpo/lam_eb_obs", "ccpo/lam_pooled_obs",
+    # This is the applied node-to-task credibility blend, distinct from the
+    # attention-versus-uniform blend below. It is J/(J+kappa) for supported
+    # nodes unless overridden; the metric also includes task-backoff rows.
+    (r"credibility: mean $\lambda_k$ (applied)", ["ccpo/lam_k_mean"],
+     {"ylabel": "0 = task prior; 1 = node baseline", "ylim": (-0.03, 1.03)}),
+    (r"attention mix $\lambda$ (applied)", ["ccpo/lam_u_mean", "ccpo/lam_u_gt50"],
+     {"labels": {"ccpo/lam_u_mean": "mean lambda", "ccpo/lam_u_gt50": "fraction > 0.5"}}),
+    ("EB lambda estimates (diagnostics)", ["ccpo/lam_eb_obs", "ccpo/lam_pooled_obs",
                                            "ccpo/lam_eb_obs_gt0"], {}),
     ("effective neighbourhood n_eff", ["ccpo/n_eff_mean"], {}),
     ("bucket size", ["ccpo/bucket_size_mean", "ccpo/bucket_size_p90"], {}),
@@ -184,6 +197,121 @@ CCPO = [
 ]
 
 
+OUTLOOK = [
+    ("raw component magnitudes", ["ccpo/history_adv_absmean", "ccpo/outlook_adv_absmean"],
+     {"labels": {"ccpo/history_adv_absmean": "mean |history|",
+                 "ccpo/outlook_adv_absmean": "mean |future|"}}),
+    ("component magnitudes after mixing weights",
+     ["plot/history_weighted_absmean", "plot/outlook_weighted_absmean"],
+     {"labels": {"plot/history_weighted_absmean": "mean |(1-beta) history|",
+                 "plot/outlook_weighted_absmean": "mean |beta future|"}}),
+    ("future / history magnitude", ["plot/outlook_history_absratio", "plot/outlook_history_weighted_absratio"],
+     {"labels": {"plot/outlook_history_absratio": "raw ratio",
+                 "plot/outlook_history_weighted_absratio": "after mixing weights"}, "hline": 1.0}),
+    ("history / future correlation", ["ccpo/outlook_history_corr"],
+     {"ylim": (-1.03, 1.03), "hline": 0.0}),
+    ("change from history: mean |mixed - history|", ["ccpo/outlook_delta_absmean"], {}),
+    ("outlook endpoint coverage", ["ccpo/outlook_used_frac", "ccpo/outlook_terminal_frac", "ccpo/outlook_fallback_frac"],
+     {"labels": {"ccpo/outlook_used_frac": "used (includes terminal)",
+                 "ccpo/outlook_terminal_frac": "terminal endpoint",
+                 "ccpo/outlook_fallback_frac": "fallback to history"}, "ylim": (-0.03, 1.03)}),
+]
+
+
+
+FIXED_ANCHOR = [
+    ("readout means", ["ccpo/fixed_history_baseline_mean", "ccpo/fixed_future_baseline_mean"], {}),
+    ("readout standard deviations", ["ccpo/fixed_history_baseline_std", "ccpo/fixed_future_baseline_std"], {}),
+    ("history and joint-future kernel means", ["ccpo/fixed_history_kernel_mean", "ccpo/fixed_future_kernel_mean"], {}),
+    ("task-prior means", ["ccpo/fixed_history_task_prior_mean", "ccpo/fixed_future_task_prior_mean"], {}),
+    ("applied credibility coefficients", ["ccpo/fixed_history_lambda_k_mean", "ccpo/fixed_future_lambda_k_mean"], {"ylim":(-.03,1.03)}),
+    ("distinct peer trajectories", ["ccpo/fixed_history_J_mean", "ccpo/fixed_future_J_mean"], {}),
+    ("effective peer trajectories", ["ccpo/fixed_history_n_eff_mean", "ccpo/fixed_future_n_eff_mean"], {}),
+    ("signed credit means", ["ccpo/fixed_history_adv_mean", "ccpo/fixed_future_gain_mean", "ccpo/fixed_future_residual_mean"], {"hline":0.}),
+    ("credit standard deviations", ["ccpo/fixed_history_adv_std", "ccpo/fixed_future_gain_std", "ccpo/fixed_future_residual_std"], {}),
+    ("credit magnitudes before task normalization", ["ccpo/fixed_history_adv_absmean", "ccpo/fixed_future_gain_absmean", "ccpo/fixed_future_residual_absmean", "ccpo/fixed_combined_pre_absmean"], {}),
+    ("applied actor component magnitudes", ["ccpo/fixed_history_applied_absmean", "ccpo/fixed_gain_applied_absmean", "ccpo/fixed_combined_applied_absmean"], {}),
+    ("gain / history magnitude", ["ccpo/fixed_future_history_absratio"], {}),
+    ("gain correlations", ["ccpo/fixed_gain_history_corr", "ccpo/fixed_gain_edge_corr", "ccpo/fixed_baselines_corr"], {"ylim":(-1.03,1.03),"hline":0.}),
+    ("correlations excluding terminal windows", ["ccpo/fixed_gain_history_nonterminal_corr", "ccpo/fixed_gain_edge_nonterminal_corr"], {"ylim":(-1.03,1.03),"hline":0.}),
+    ("support and terminal windows", ["ccpo/fixed_eligible_frac", "ccpo/fixed_no_peer_frac", "ccpo/fixed_terminal_frac"], {"ylim":(-.03,1.03)}),
+    ("future prompt length", ["ccpo/fixed_future_prompt_tokens_mean", "ccpo/fixed_future_prompt_tokens_max"], {}),
+    ("future prompt truncation", ["ccpo/fixed_future_prompt_truncated_frac"], {"ylim":(-.03,1.03)}),
+    ("applied component coefficients", ["ccpo/fixed_history_weight", "ccpo/fixed_gain_weight", "ccpo/fixed_episode_weight", "ccpo/fixed_edge_weight"], {}),
+    ("credit identity errors", ["ccpo/fixed_identity_error", "ccpo/fixed_applied_identity_error"], {"hline":0.}),
+    ("reference feature encoding time", ["timing_s/ref", "timing_s/ref_future"], {}),
+]
+
+for _title, _keys, _opts in FIXED_ANCHOR:
+    _opts.setdefault("labels", {k:k.removeprefix("ccpo/fixed_").replace("_", " ") for k in _keys})
+    if any(k.endswith(("_kernel_mean", "_task_prior_mean", "_lambda_k_mean", "_J_mean", "_n_eff_mean")) for k in _keys):
+        _opts["labels"] = {k: ("history (includes task fallback)" if "fixed_history_" in k
+                               else "future (exact anchors)") for k in _keys}
+
+FUTURE_PROGRESS = [
+    ("current / future contextual potentials", ["ccpo/progress_current_value_mean", "ccpo/progress_future_value_mean"], {}),
+    ("potential standard deviations", ["ccpo/progress_current_value_std", "ccpo/progress_future_value_std"], {}),
+    ("current / future kernel readouts", ["ccpo/progress_current_kernel_mean", "ccpo/progress_future_kernel_mean"], {}),
+    ("current / future task priors", ["ccpo/progress_current_task_prior_mean", "ccpo/progress_future_task_prior_mean"], {}),
+    ("applied credibility (future excludes terminals)", ["ccpo/progress_current_lambda_k_mean", "ccpo/progress_future_lambda_k_mean"], {"ylim":(-.03,1.03)}),
+    ("peer trajectories (future excludes terminals)", ["ccpo/progress_current_J_mean", "ccpo/progress_future_J_mean"], {}),
+    ("effective peers (future excludes terminals)", ["ccpo/progress_current_n_eff_mean", "ccpo/progress_future_n_eff_mean"], {}),
+    ("raw progress / task normalization scale", ["ccpo/progress_raw_progress_absmean", "ccpo/progress_progress_norm_std_mean"], {}),
+    ("history / standardized future / combined", ["ccpo/progress_history_adv_absmean", "ccpo/progress_progress_normalized_absmean", "ccpo/progress_combined_pre_absmean"], {}),
+    ("actual actor component magnitudes", ["ccpo/progress_history_applied_absmean", "ccpo/progress_future_applied_absmean", "ccpo/progress_combined_applied_absmean"], {}),
+    ("correlation with original M5 edge", ["ccpo/progress_future_edge_corr", "ccpo/progress_history_edge_corr", "ccpo/progress_combined_edge_corr"], {"ylim":(-1.03,1.03)}),
+    ("future / edge correlation, nonterminal", ["ccpo/progress_future_edge_nonterminal_corr"], {"ylim":(-1.03,1.03)}),
+    ("support / terminal coverage", ["ccpo/progress_eligible_frac", "ccpo/progress_terminal_frac", "ccpo/progress_current_exact_frac", "ccpo/progress_current_backoff_frac"], {"ylim":(-.03,1.03)}),
+    ("future / history magnitude ratio", ["ccpo/progress_future_history_absratio"], {}),
+    ("applied weights", ["ccpo/progress_weight", "ccpo/progress_history_weight", "ccpo/progress_episode_weight", "ccpo/progress_original_edge_weight"], {}),
+    ("applied credit identity error", ["ccpo/progress_applied_identity_error"], {}),
+]
+for _title, _keys, _opts in FUTURE_PROGRESS:
+    _opts.setdefault("labels", {k:k.removeprefix("ccpo/progress_").replace("_", " ") for k in _keys})
+
+
+def outlook_rows(rows):
+    """Derive display-only scales from logged raw magnitudes and each row's beta.
+
+    These components share a pre-normalization scale. Do not overlay them with
+    adv_cc_absmean: that metric is computed after the trainer's normalization
+    and restoration of padded rows. No derived values are written to metrics.
+    """
+    result = []
+    for row in rows:
+        if "ccpo/history_adv_absmean" not in row or "ccpo/outlook_adv_absmean" not in row:
+            continue
+        item = dict(row)
+        history, future, beta = (row.get(k) for k in
+                                ("ccpo/history_adv_absmean", "ccpo/outlook_adv_absmean", "ccpo/outlook_beta"))
+        if all(isinstance(v, (int, float)) and math.isfinite(v) for v in (history, future, beta)) and 0 <= beta <= 1:
+            weighted_history, weighted_future = (1 - beta) * history, beta * future
+            item["plot/history_weighted_absmean"] = weighted_history
+            item["plot/outlook_weighted_absmean"] = weighted_future
+            if history > 1e-12:
+                item["plot/outlook_history_absratio"] = future / history
+            if weighted_history > 1e-12:
+                item["plot/outlook_history_weighted_absratio"] = weighted_future / weighted_history
+        result.append(item)
+    return result
+
+
+def ccpo_specs(exp):
+    """Label a configured fixed attention mix without changing metric values."""
+    try:
+        with open(os.path.join(exp, "config.json")) as fh:
+            config = json.load(fh)
+    except (OSError, ValueError):
+        config = {}
+    fixed = config.get("env", {}).get("ACG_CCPO_LAM_FIX",
+                                   config.get("config", {}).get("ccpo_lam_fix"))
+    specs = list(CCPO)
+    if fixed is not None and str(fixed) != "":
+        label, keys, options = specs[1]
+        specs[1] = (rf"attention mix $\lambda$ (fixed at {fixed})", keys, options)
+    return specs
+
+
 def render(exp):
     rows = load(exp)
     if not rows:
@@ -193,7 +321,15 @@ def render(exp):
     name = os.path.basename(exp.rstrip("/"))
     k = 0
     k += panel(rows, STANDARD, os.path.join(out, "progress.png"), f"{name} — training")
-    k += panel(rows, CCPO, os.path.join(out, "ccpo.png"), f"{name} — estimator terms")
+    k += panel(rows, ccpo_specs(exp), os.path.join(out, "ccpo.png"), f"{name} — estimator terms")
+    k += panel(outlook_rows(rows), OUTLOOK, os.path.join(out, "outlook.png"),
+               f"{name} — history / future credit (before task normalization)")
+    if any("ccpo/fixed_enabled" in r for r in rows):
+        k += panel(rows, FIXED_ANCHOR, os.path.join(out, "fixed_anchor.png"),
+                   f"{name} — fixed-anchor history and joint-future credit")
+    if any("ccpo/progress_enabled" in r for r in rows):
+        k += panel(rows, FUTURE_PROGRESS, os.path.join(out, "future_progress.png"),
+                   f"{name} — contextual future-state value progress")
     return k
 
 

@@ -1,0 +1,9 @@
+{
+  "status": "prepared_not_launched",
+  "benchmark": "webshop",
+  "horizon": 2,
+  "gpus": "2,3",
+  "control": "m5-ccpo-attncred-ctxadv-ret-ws-1.5b-2gpu-20260916",
+  "run_directory": "/workspace/agent-context-grpo/experiments/m11-h2-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918",
+  "authorization": "Implementation and preparation only. User explicitly requested no launch."
+}

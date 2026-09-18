@@ -130,6 +130,28 @@ BACKBONE = {
 }
 
 METHODS = {
+    "attncred-context-future-progress": {
+        "ccpo_ep_w": 0., "ccpo_edge_w": 0., "ccpo_target": "return",
+        "ccpo_progress_horizon": 1, "ccpo_progress_weight": 1.,
+        "ccpo_progress_snapshot_every": 1, "ccpo_fixed_anchor": 0,
+        "ccpo_outlook_horizon": 0, "ccpo_outlook_beta": 0.,
+    },
+    "attncred-context-future-progress-h2": {
+        "ccpo_ep_w": 0., "ccpo_edge_w": 0., "ccpo_target": "return",
+        "ccpo_progress_horizon": 2, "ccpo_progress_weight": 1.,
+        "ccpo_progress_snapshot_every": 1, "ccpo_fixed_anchor": 0,
+        "ccpo_outlook_horizon": 0, "ccpo_outlook_beta": 0.,
+    },
+    "attncred-context-fixed-anchor": {
+        "ccpo_ep_w": 0.0, "ccpo_edge_w": 0.0, "ccpo_target": "return",
+        "ccpo_fixed_anchor": 1, "ccpo_fixed_horizon": 2,
+        "ccpo_fixed_gain_weight": 1.0, "ccpo_fixed_snapshot_every": 1,
+        "ccpo_outlook_horizon": 0, "ccpo_outlook_beta": 0.0,
+    },
+    "attncred-context-outlook": {
+        "ccpo_ep_w": 0.0, "ccpo_edge_w": 0.0, "ccpo_target": "return",
+        "ccpo_outlook_horizon": 2, "ccpo_outlook_beta": 0.25,
+    },
     # The published method.
     "attncred": {},
     # experiments.md, "Main method experiments": the episode advantage removed, so the
@@ -157,12 +179,21 @@ def benchmarks_for(method):
     return tuple(METHOD_BENCHMARKS.get(method, tuple(BENCHMARK)))
 
 # Short tags for experiment ids.
-_TAG = {"attncred": "attncred", "attncred-context-adv-only": "attncred-ctxadv",
+_TAG = {"attncred-context-future-progress": "attncred-ctxadv-future-progress",
+        "attncred-context-future-progress-h2": "attncred-ctxadv-future-progress-h2", "attncred-context-fixed-anchor": "attncred-ctxadv-fixed-anchor", "attncred-context-outlook": "attncred-ctxadv-outlook", "attncred": "attncred", "attncred-context-adv-only": "attncred-ctxadv",
         "attncred-context-adv-only-return": "attncred-ctxadv-ret"}
 
 # Canonical variant names. These are what experiments/experiments.md calls each arm;
 # the guard asserts the two agree, so the doc cannot drift from the code.
 VARIANT = {
+    ("attncred-context-future-progress", "alfworld"): "CCPO-ATTNCRED-CTXADV-FUTURE-PROGRESS",
+    ("attncred-context-future-progress", "webshop"): "CCPO-ATTNCRED-CTXADV-FUTURE-PROGRESS-WS",
+    ("attncred-context-future-progress-h2", "alfworld"): "CCPO-ATTNCRED-CTXADV-FUTURE-PROGRESS-TWO-STEP",
+    ("attncred-context-future-progress-h2", "webshop"): "CCPO-ATTNCRED-CTXADV-FUTURE-PROGRESS-TWO-STEP-WS",
+    ("attncred-context-fixed-anchor", "alfworld"): "CCPO-ATTNCRED-CTXADV-FIXED-ANCHOR",
+    ("attncred-context-fixed-anchor", "webshop"): "CCPO-ATTNCRED-CTXADV-FIXED-ANCHOR-WS",
+    ("attncred-context-outlook", "alfworld"): "CCPO-ATTNCRED-CTXADV-OUTLOOK",
+    ("attncred-context-outlook", "webshop"): "CCPO-ATTNCRED-CTXADV-OUTLOOK-WS",
     ("attncred", "alfworld"): "CCPO-ATTNCRED",
     ("attncred", "webshop"): "CCPO-ATTNCRED-WS",
     ("attncred-context-adv-only", "alfworld"): "CCPO-ATTNCRED-CTXADV",

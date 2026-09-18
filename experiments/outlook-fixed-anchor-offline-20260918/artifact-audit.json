@@ -1,0 +1,42 @@
+{
+  "m6-ccpo-attncred-ctxadv-outlook-alfworld-1.5b-2gpu-20260917": {
+    "steps": [
+      10,
+      11,
+      12,
+      13,
+      14
+    ],
+    "rows": 29767,
+    "exact_anchor_rows": 26889,
+    "exact_anchor_coverage": 0.9033157523431988,
+    "history_hidden_saved": false,
+    "future_hidden_saved": false,
+    "full_rollout_text_saved": false,
+    "grouping_dump_enabled": false,
+    "rollout_data_dir": null,
+    "validation_data_dir": null,
+    "measured_fixed_anchor_correlations": null,
+    "status": "awaiting_full_context_batch"
+  },
+  "m7-ccpo-attncred-ctxadv-outlook-ws-1.5b-2gpu-20260917": {
+    "steps": [
+      28,
+      29,
+      30,
+      31,
+      32
+    ],
+    "rows": 5242,
+    "exact_anchor_rows": 4072,
+    "exact_anchor_coverage": 0.7768027470431134,
+    "history_hidden_saved": false,
+    "future_hidden_saved": false,
+    "full_rollout_text_saved": false,
+    "grouping_dump_enabled": false,
+    "rollout_data_dir": null,
+    "validation_data_dir": null,
+    "measured_fixed_anchor_correlations": null,
+    "status": "awaiting_full_context_batch"
+  }
+}

@@ -374,7 +374,51 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
         _dense = (core_ccpo.dense_step_returns(data, gamma=gamma)
                   if str(kwargs.get('ccpo_target') or os.environ.get('ACG_CCPO_TARGET', 'return')).lower() == 'score'
                   else None)
-        step_adv, diag = core_ccpo.ccpo_step_advantage(
+        _outlook_horizon = int(os.environ.get('ACG_CCPO_OUTLOOK_HORIZON', '0'))
+        _outlook_beta = float(os.environ.get('ACG_CCPO_OUTLOOK_BETA', '0'))
+        _step_estimator = core_ccpo.ccpo_step_advantage
+        _outlook_kwargs = {}
+        if _outlook_horizon < 0 or not 0.0 <= _outlook_beta <= 1.0:
+            raise ValueError("Invalid CCPO outlook horizon/beta")
+        if _outlook_beta > 0 and _outlook_horizon == 0:
+            raise ValueError("Positive outlook beta requires a positive horizon")
+        _fixed_anchor = os.environ.get('ACG_CCPO_FIXED_ANCHOR', '0') == '1'
+        _progress_horizon = int(os.environ.get('ACG_CCPO_PROGRESS_HORIZON', '0'))
+        if _progress_horizon not in (0, 1, 2):
+            raise ValueError("Future-progress horizon must be 0, 1 or 2")
+        if _progress_horizon:
+            if _fixed_anchor or _outlook_horizon != 0 or _outlook_beta != 0:
+                raise ValueError("Future progress cannot be combined with another OUTLOOK variant")
+            from ccpo.future_progress import ccpo_future_progress_advantage
+            _step_estimator = ccpo_future_progress_advantage
+            _outlook_kwargs = dict(
+                turn_index=data.non_tensor_batch['ccpo_turn_index'],
+                episode_lengths=data.non_tensor_batch['episode_lengths'],
+                horizon=_progress_horizon,
+                progress_weight=float(os.environ.get('ACG_CCPO_PROGRESS_WEIGHT', '1')))
+        elif _fixed_anchor:
+            if _outlook_horizon != 0 or _outlook_beta != 0:
+                raise ValueError("Fixed-anchor gain and endpoint OUTLOOK cannot both be enabled")
+            from ccpo.fixed_anchor import ccpo_fixed_anchor_advantage
+            _step_estimator = ccpo_fixed_anchor_advantage
+            _outlook_kwargs = dict(
+                turn_index=data.non_tensor_batch['ccpo_turn_index'],
+                episode_lengths=data.non_tensor_batch['episode_lengths'],
+                immediate_rewards=data.non_tensor_batch['rewards'],
+                future_phi_feats=data.batch['ccpo_future_phi_feats'],
+                future_context=data.non_tensor_batch['ccpo_future_context'],
+                prompt_metadata=data.meta_info['ccpo_future_metadata'],
+                horizon=int(os.environ.get('ACG_CCPO_FIXED_HORIZON', '2')),
+                gain_weight=float(os.environ.get('ACG_CCPO_FIXED_GAIN_WEIGHT', '1')))
+        elif _outlook_horizon > 0:
+            from ccpo.outlook import ccpo_outlook_advantage
+            _step_estimator = ccpo_outlook_advantage
+            _outlook_kwargs = dict(
+                turn_index=data.non_tensor_batch['ccpo_turn_index'],
+                episode_lengths=data.non_tensor_batch['episode_lengths'],
+                immediate_rewards=data.non_tensor_batch['rewards'],
+                horizon=_outlook_horizon, beta=_outlook_beta)
+        step_adv, diag = _step_estimator(
             step_rewards=data.batch['step_rewards'],
             response_mask=data.batch['response_mask'],
             anchor_obs=data.non_tensor_batch['anchor_obs'],
@@ -391,7 +435,7 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
             episode_rewards=data.non_tensor_batch.get('episode_rewards'),
             is_action_valid=data.non_tensor_batch.get('is_action_valid'),
             gamma=gamma,
-            return_diag=True)
+            return_diag=True, **_outlook_kwargs)
         print(f"[ccpo] phi={diag.get('phi_mode','?')} target={diag.get('target','?')} "
               f"mode={_mode} rho={diag.get('rho', float('nan')):.2f} "
               f"lam_u={diag['lam_u_mean']:.3f} lam>.5={diag['lam_u_gt50']:.2f} "
@@ -404,7 +448,11 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
               f"phi_rel={diag.get('phi_rel_corr', float('nan')):+.4f} "
               f"tau2={diag.get('tau2', float('nan')):.6f} "
               f"r_vs_gigpo={diag.get('r_vs_gigpo', float('nan')):.4f} "
-              f"r_vs_g2po={diag.get('r_vs_g2po', float('nan')):.4f}", flush=True)
+              f"r_vs_g2po={diag.get('r_vs_g2po', float('nan')):.4f} "
+              f"outlook_horizon={_outlook_horizon} outlook_beta={_outlook_beta:.2f} "
+              f"outlook_delta={diag.get('outlook_delta_absmean', 0.0):.4f} "
+              f"progress_horizon={_progress_horizon} "
+              f"progress_edge_r={diag.get('progress_future_edge_corr', float('nan')):.4f}", flush=True)
         # Step-term scaling. 'mode' (default) follows the episode term:
         #   mean_std_norm -> standardise per task, both terms unit-variance
         #   mean_norm     -> leave A^CC in reward units, as GiGPO leaves its own
@@ -433,6 +481,19 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
                     _v = _sa[_ix]
                     _sa[_ix] = (_v - _v.mean()) / (_v.std() + 1e-6)
             step_adv = _sa
+        if _progress_horizon:
+            from ccpo.future_progress import finalize_progress_logging
+            finalize_progress_logging(diag, step_adv, data.non_tensor_batch['uid'], _do_std,
+                kwargs.get('ccpo_step_tag', ''), float(os.environ.get('ACG_CCPO_EP_W', '1')),
+                step_advantage_w)
+        if _fixed_anchor:
+            from ccpo.fixed_anchor import finalize_fixed_logging
+            finalize_fixed_logging(diag, step_adv, data.non_tensor_batch['uid'], _do_std,
+                kwargs.get('ccpo_step_tag', ''), float(os.environ.get('ACG_CCPO_EP_W', '1')))
+            # Exact joint prompts/features are now persisted; do not send the
+            # large diagnostic-only payload through PPO worker RPCs.
+            data.meta_info.pop('ccpo_future_metadata', None)
+            data.batch.pop('ccpo_future_phi_feats')
         # Weight on the EPISODE term A^EP. 1.0 is the shipped behaviour (GiGPO's
         # A_E + w*A_S, G2PO's A_EP + w(A_NC + A_EC)); 0.0 drops it entirely, leaving
         # the step term alone -- and the step term already carries G2PO's edge
@@ -458,6 +519,8 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
                       'rho', 'edge_cov', 'lam_k_mean', 'kappa_hat')
         _m = {f'ccpo/{k}': float(diag[k]) for k in _diag_keys
               if k in diag and diag[k] is not None}
+        _m.update({'ccpo/' + k: float(v) for k, v in diag.items()
+                   if k.startswith(('outlook_', 'fixed_', 'progress_')) and isinstance(v, (int, float, np.number)) or k == 'history_adv_absmean'})
         # phi_mode is a string, so it would not survive into the numeric metrics.
         # If the hidden-state features ever fail to arrive -- the packed-path capture
         # regressing, the reference forward not running -- the estimator falls back
@@ -1412,6 +1475,14 @@ class RayPPOTrainer:
                             else:
                                 ref_log_prob = self.actor_rollout_wg.compute_ref_log_prob(batch)
                             batch = batch.union(ref_log_prob)
+                        if os.environ.get('ACG_CCPO_FIXED_ANCHOR', '0') == '1':
+                            with _timer("ref_future", timing_raw):
+                                from ccpo.fixed_anchor import capture_future_features
+                                _ref = self.actor_rollout_wg if self.ref_in_actor else self.ref_policy_wg
+                                capture_future_features(batch, self.tokenizer, _ref,
+                                    horizon=int(os.environ.get('ACG_CCPO_FIXED_HORIZON', '2')),
+                                    max_tokens=int(os.environ.get('ACG_CCPO_FIXED_MAX_PROMPT', '8192')))
+
 
                     # compute values
                     if self.use_critic:

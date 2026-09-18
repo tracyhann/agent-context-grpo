@@ -1,0 +1,17 @@
+{
+  "authorized_at": "2026-09-18T04:14:25+00:00",
+  "status": "running",
+  "checked_at": "2026-09-18T04:16:36+00:00",
+  "trainer_pid": 315733,
+  "started": "2026-09-18T04:14:46+00:00",
+  "benchmark": "alfworld",
+  "directory": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918",
+  "chain": "/workspace/agent-context-grpo/.local/future-progress-alfworld-chain-20260918",
+  "gpus": [
+    0,
+    1
+  ],
+  "holder_pid": 314414,
+  "id": "M10-FUTURE-PROGRESS",
+  "controller_pid": 315540
+}
