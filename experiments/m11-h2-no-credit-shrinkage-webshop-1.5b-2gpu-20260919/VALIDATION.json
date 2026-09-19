@@ -1,0 +1,36 @@
+{
+  "ablation": "future-progress-h2-no-credit-shrinkage",
+  "benchmark": "webshop",
+  "control_command_reproduced_by_current_launcher": true,
+  "coverage": [
+    "only ccpo_lk_fix=1 differs from the recorded M11 H2 control",
+    "all three usable history/current/future baselines equal their context kernel estimate",
+    "lambda_k=1 including J=1; kappa is inert under the override",
+    "WebShop mean_norm preserves applied component units and fusion",
+    "task fallback, unsupported rows and terminal potential conventions",
+    "detached finite advantages; padding/feature guards and episode-gradient isolation"
+  ],
+  "evidence_sha256": {
+    "ablation-guards.log": "6b9213c0ba219091643a0b9168cbf118f074207cc40585fc33c246c94949e5a1",
+    "cpu-tests.log": "601b022e540e68b77dc9c853af4ed1d642e5280efebc0ccc8301bdd821289890",
+    "doc-guard.log": "03da88469848ccce451155faecf27412e79333e58d81b0af3402c0161054bd6b"
+  },
+  "gpu_preflight_performed": false,
+  "gpu_used": false,
+  "launched": false,
+  "limitations": [
+    "CPU validation only; no GPU smoke test",
+    "prepared runtime environment inherited from recorded control; package versions not re-probed",
+    "previous WebShop no-shrinkage diagnostics were offline H1 replay, not H2 training"
+  ],
+  "queued": false,
+  "status": "passed_cpu_prepared_only",
+  "tests": {
+    "ablation_registry_guard": "passed",
+    "arm_document_registry_guard": "passed",
+    "future_progress_webshop_cpu_regressions": 34,
+    "generated_run_sh_bash_syntax": "passed",
+    "git_diff_check": "passed"
+  },
+  "validated_at": "2026-09-19T23:03:49.005606+00:00"
+}

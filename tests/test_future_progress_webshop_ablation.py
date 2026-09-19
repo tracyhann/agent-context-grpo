@@ -1,4 +1,4 @@
-"""CPU checks for M11's H2/kappa4 and one-history/one-future controls."""
+"""CPU checks for M11 shrinkage and one-history/one-future controls."""
 import ast
 import copy
 import importlib.util
@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 H1 = ROOT / 'experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918'
 H2 = ROOT / 'experiments/m11-h2-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918'
 CASES = {
+    'future-progress-h2-no-credit-shrinkage': ('m11-h2-no-credit-shrinkage-webshop-1.5b-2gpu-20260919', H2, {'ccpo_lk_fix': 1.}),
     'future-progress-h2-kappa4': ('m11-h2-kappa4-webshop-1.5b-2gpu-20260919', H2, {'ccpo_prior_kappa': 4.}),
     'future-progress-history1-future1': ('m11-history1-future1-webshop-1.5b-2gpu-20260919', H1, {'history_length': 1}),
 }
@@ -81,6 +82,28 @@ class WebshopFutureProgressAblationTests(unittest.TestCase):
             np.testing.assert_allclose(a[prefix + '_lambda_k'][exact], weight)
             np.testing.assert_allclose(a[baseline][exact], weight * a[prefix + '_kernel'][exact] + (1 - weight) * a[prefix + '_task_prior'][exact])
         np.testing.assert_allclose(a['combined_pre'], a['history_adv'] + a['progress_normalized'])
+        self.assertTrue(torch.isfinite(advantage).all())
+        self.assertFalse(advantage.requires_grad)
+
+    def test_no_shrink_uses_full_context_under_webshop_mean_norm(self):
+        kw = fixture()
+        with patch.object(core, '_PRIOR_KAPPA', 2.), patch.object(core, '_LK_FIX', '1.0'):
+            advantage, diag = ccpo_future_progress_advantage(**kw, horizon=2)
+        with patch.dict(os.environ, {'ACG_EXP_DIR': ''}):
+            finalize_progress_logging(diag, advantage, kw['index'], normalize=False,
+                                      step_tag=1, episode_weight=0., step_weight=1.)
+        a = diag['progress_payload']['arrays']
+        self.assertTrue(((a['history_J'] == 1) & (a['history_level'] == 0)).any())
+        for prefix, baseline in [('history', 'history_baseline'), ('current', 'current_value'), ('future', 'future_value')]:
+            usable = np.isfinite(a[prefix + '_kernel']) & (a[prefix + '_level'] <= 1)
+            self.assertTrue(usable.any())
+            np.testing.assert_array_equal(a[prefix + '_lambda_k'][usable], 1.)
+            np.testing.assert_allclose(a[baseline][usable], a[prefix + '_kernel'][usable])
+        np.testing.assert_allclose(a['combined_applied'], a['history_applied'] + a['future_applied'], rtol=1e-6, atol=1e-6)
+        np.testing.assert_allclose(a['combined_applied'], a['combined_pre'], rtol=1e-6, atol=1e-6)
+        with patch.object(core, '_PRIOR_KAPPA', 400.), patch.object(core, '_LK_FIX', '1.0'):
+            same, _ = ccpo_future_progress_advantage(**kw, horizon=2)
+        torch.testing.assert_close(advantage, same, rtol=0, atol=0)
         self.assertTrue(torch.isfinite(advantage).all())
         self.assertFalse(advantage.requires_grad)
 

@@ -957,3 +957,38 @@ parent: M11 uses binary returns, while the older default WebShop attncred parent
 uses dense scores. Per-folder validation and source hashes record preparation;
 no GPU preflight or run result is implied. Compare controls on the same current
 source revision, including verified frozen-feature capture.
+
+
+### M11 WebShop H2 without credit shrinkage (2026-09-19)
+
+**Prepared only; not launched or queued.** Fresh Qwen2.5-1.5B-Instruct,
+two GPUs, 150 steps, seed 0, 8 rollouts per task. Both prompt history and future
+horizon are 2; accumulated context statistics remain enabled.
+
+The existing registry key `future-progress-h2-no-credit-shrinkage` now supports
+WebShop as well as ALFWorld. Variant:
+`CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK`; canonical WebShop ID:
+`ccpo-attncred-abl-fph2-noshrink-ws-1.5b`.
+
+The sole delta against the prepared M11 H2 control is **`ccpo_lk_fix=1.0`**:
+`B_s[q] = C_s[q]` on usable readouts, for the historical return baseline and both
+potential endpoints. This uses the contextual baseline at full strength even
+with one exact-group peer. κ=2 remains recorded but cannot affect the pinned
+weight. No exact peers retain the original contextual task fallback; no peers
+anywhere remain unsupported. Terminal potentials stay fixed at 10/0.
+
+`H_t = Y_t − B_t[Y]`, `F_t = z_task(V_min(t+2,T) − V_t)`, and WebShop retains
+`A_t = H_t + F_t` under `mean_norm`. History/future weights remain 1/1 and
+episode/original-edge weights remain 0/0. All history/current/future diagnostic
+terms and actual applied λ values remain logged.
+
+The local records contain no previously trained M11 WebShop no-shrinkage arm.
+The earlier −10.0% potential-MSE and +45.1% progress-SD figures came from an
+**offline H1 snapshot replay**, not a no-shrinkage training result. Relative to
+original completed M11 H1, this prepared arm changes both horizon and shrinkage;
+compare against the H2 κ=2 control to isolate shrinkage, on the same current code.
+
+[Method, configuration and validation](m11-h2-no-credit-shrinkage-webshop-1.5b-2gpu-20260919/NOTES.md).
+The [WebShop regression](../tests/test_future_progress_webshop_ablation.py)
+checks full-strength baseline identities and runtime wiring alongside the
+existing H2 fallback/terminal tests. No GPU preflight or training was performed.

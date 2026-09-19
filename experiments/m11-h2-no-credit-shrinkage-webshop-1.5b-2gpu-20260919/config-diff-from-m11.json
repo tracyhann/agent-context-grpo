@@ -1,0 +1,17 @@
+{
+  "changes": {
+    "ccpo_lk_fix": {
+      "control": "",
+      "prepared": 1.0
+    },
+    "ccpo_progress_horizon": {
+      "control": 1,
+      "prepared": 2
+    },
+    "exp_id": {
+      "control": "m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918",
+      "prepared": "m11-h2-no-credit-shrinkage-webshop-1.5b-2gpu-20260919"
+    }
+  },
+  "control": "experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918"
+}

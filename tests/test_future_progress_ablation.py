@@ -43,10 +43,11 @@ class FutureProgressAblationTests(unittest.TestCase):
                 self.assertEqual({k: v for k, v in cfg.items() if base.get(k) != v}, delta)
                 self.assertEqual(registry.control_name('alfworld', name),
                                  'ccpo-attncred-ctxadv-future-progress-h2-alfworld-1.5b')
-                if name == 'future-progress-h2-kappa4':
+                if name in ('future-progress-h2-kappa4', 'future-progress-h2-no-credit-shrinkage'):
                     _, ws_cfg = registry.build(name, 'webshop')
                     self.assertEqual(ws_cfg['ccpo_target'], 'return')
-                    self.assertEqual(ws_cfg['ccpo_prior_kappa'], 4.)
+                    for key, value in delta.items():
+                        self.assertEqual(ws_cfg[key], value)
                 else:
                     with self.assertRaises(KeyError):
                         registry.build(name, 'webshop')

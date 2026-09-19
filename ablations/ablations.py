@@ -66,9 +66,9 @@ ABLATIONS = {
     "future-progress-h2-no-credit-shrinkage": dict(
         name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK",
         tag="fph2-noshrink",
-        title="M10 H2 with full-strength usable context baselines",
+        title="M10/M11 H2 with full-strength usable context baselines",
         base_method="attncred-context-future-progress-h2",
-        benchmarks=("alfworld",),
+        benchmarks=("alfworld", "webshop"),
         delta={"ccpo_lk_fix": 1.0},
         removes="support-based shrinkage toward the task prior",
         # lam_u is already 1. Pinning lam_k=1 gives baseline=b_loo; kappa=2
