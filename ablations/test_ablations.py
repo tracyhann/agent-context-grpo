@@ -62,15 +62,17 @@ def test_one_delta_each():
                 print(f"    {key}/{bench}: moved {sorted(moved)}, declared {sorted(want)}")
         print(f"  {key:18s} delta {list(spec['delta'])} on "
               f"{'+'.join(ablations.benchmarks_for(key))}: {'OK' if good else 'FAIL'}")
-    # the WebShop ablations must inherit the dense-score target from their control
-    # every WebShop ablation inherits the dense target from its control, EXCEPT the
-    # one whose whole point is to change it back.
-    dense = all(ablations.build(k, "webshop")[1]["ccpo_target"] == "score"
-                for k in ablations.ABLATIONS
-                if "webshop" in ablations.benchmarks_for(k)
-                and "ccpo_target" not in ablations.ABLATIONS[k]["delta"])
-    ok &= dense
-    print(f"  webshop ablations keep the dense-score target: {'OK' if dense else 'FAIL'}")
+    # Inherit the declared parent target unless the ablation explicitly changes it.
+    # Legacy attncred uses dense scores; M11 future progress requires binary returns.
+    inherited = True
+    for key, spec in ablations.ABLATIONS.items():
+        if "webshop" not in ablations.benchmarks_for(key):
+            continue
+        _, parent = arms.build(spec.get("base_method", "attncred"), "webshop", "1.5b")
+        expected = spec["delta"].get("ccpo_target", parent["ccpo_target"])
+        inherited &= ablations.build(key, "webshop")[1]["ccpo_target"] == expected
+    ok &= inherited
+    print(f"  webshop ablations preserve their declared parent's target: {'OK' if inherited else 'FAIL'}")
     return bool(ok)
 
 

@@ -1,0 +1,23 @@
+{
+  "ablation": "future-progress-history1-future1",
+  "benchmark": "webshop",
+  "control": "experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918",
+  "control_config_sha256": "774586811cc590efc69ecd959750e75ee75461db404ca55cd489df7fed129797",
+  "future_horizon": 1,
+  "gpu_preflight_performed": false,
+  "gpus": "2,3",
+  "history_length": 1,
+  "kappa": 2.0,
+  "launched": false,
+  "method_delta_from_control": {
+    "history_length": 1
+  },
+  "model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "prepared_at": "2026-09-19T22:45:35.803650+00:00",
+  "queued": false,
+  "seed": 0,
+  "source_commit": "e8018d0c6efbe184881291facd6811e442659377",
+  "source_dirty": true,
+  "status": "prepared_not_launched",
+  "steps": 150
+}

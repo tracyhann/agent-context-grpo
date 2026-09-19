@@ -1,0 +1,43 @@
+{
+  "ablation": "future-progress-h2-kappa4",
+  "control_command_reproduced_by_current_launcher": true,
+  "coverage": [
+    "exact delta from recorded parent and correct WebShop protocol",
+    "resolved Hydra overrides and environment flags",
+    "history/current/future lambda equals J/(J+4) in the kappa4 arm",
+    "WebShop applied components retain mean_norm scale",
+    "actual WebShop prompt contains at most one prior pair with history_length=1",
+    "current observation, task and admissible actions preserved",
+    "full stored memory is retained for accumulated context statistics",
+    "future-progress H1/H2 invariants, hidden modes, padding checks, gradient isolation"
+  ],
+  "evidence": {
+    "ablation_guard": {
+      "path": "experiments/m11-h2-kappa4-webshop-1.5b-2gpu-20260919/ablation-guards.log",
+      "sha256": "686db57ea63c596444f2b16e76269a13667f3701f05218ef364c484197b2649d"
+    },
+    "tests": {
+      "path": "experiments/m11-h2-kappa4-webshop-1.5b-2gpu-20260919/cpu-tests.log",
+      "sha256": "fedc26834072970baf9e927e9ffe4219e0da1de78df79633ed7c841c1310d4f8"
+    }
+  },
+  "gpu_preflight_performed": false,
+  "gpu_used": false,
+  "launched": false,
+  "limitations": [
+    "CPU validation only; GPU execution not tested",
+    "prepared environment copied from recorded control; installed package versions need resolving at launch",
+    "history1/future1 means shorter actor/reference prompt with cumulative context statistics retained"
+  ],
+  "queued": false,
+  "status": "passed_cpu_prepared_only",
+  "tests": {
+    "ablation_registry_guard": "passed",
+    "arm_document_registry_guard": "passed",
+    "future_progress_webshop_cpu_regressions": 33,
+    "generated_run_sh_bash_syntax": "passed",
+    "git_diff_check": "passed",
+    "new_webshop_ablation_checks": 3
+  },
+  "validated_at": "2026-09-19T22:50:56.977285+00:00"
+}

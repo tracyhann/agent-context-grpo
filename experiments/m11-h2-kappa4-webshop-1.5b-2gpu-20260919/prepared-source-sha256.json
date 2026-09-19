@@ -1,0 +1,31 @@
+{
+  "created_at": "2026-09-19T22:50:56.977897+00:00",
+  "files": {
+    "ablations/ablations.py": "e55ff5174e92f51e42133b04e5d1eee8ec85b7ba69c2d97c12c77a3314d0be68",
+    "ablations/run.py": "bcdc4da7e06b1124560cf780d89729374a8dab6109c17423b39d9d49701eb5b2",
+    "ablations/test_ablations.py": "90ff5fe88ab9611d312cba77b2cdcea5b1145c0e766a1ca2a18bbd7b501ee060",
+    "ccpo/arms.py": "4c930ee857e7846cf4709a69b0a012f833e3f7b135757fff9d6138f37ea07585",
+    "ccpo/core_ccpo.py": "c73fb7a96a1363c39b745bbfd79721d47db8d6ba3ce783ae263d4db8215ca6ff",
+    "ccpo/future_progress.py": "0608819cbf55f49de92cc55c1d4924406c966deb6540aceb78b34e58bbda4add",
+    "ccpo/phi_capture.py": "47252330898225703558380e9eb96c0c475368bd7e2bece79be9a4f84c4c59fc",
+    "experiments/experiments.md": "bdf9253248daacfea0cdc913d20c161b1d45309084290aff0662576cf5cb355c",
+    "experiments/m11-h2-kappa4-webshop-1.5b-2gpu-20260919/NOTES.md": "33ee3bf9c70a99fca8be648bf930c6333cf236f488227d5414d8ca83fe983249",
+    "experiments/m11-h2-kappa4-webshop-1.5b-2gpu-20260919/PREPARED.json": "69658c59a66fb53aa3188b5f69341e496fff31bc0185bc5e902dcef0eaa5317f",
+    "experiments/m11-h2-kappa4-webshop-1.5b-2gpu-20260919/VALIDATION.json": "7fbfc351db6cc76dcb375f24cc3f7b34c9c19be6bf7475977c4d175c0b45813d",
+    "experiments/m11-h2-kappa4-webshop-1.5b-2gpu-20260919/config-diff-from-control.json": "bb59965b5f1a6b67670f2a5ff50ce9fae42a3aac132ead14a0c5ae3ea2abd67d",
+    "experiments/m11-h2-kappa4-webshop-1.5b-2gpu-20260919/config-diff-from-m11.json": "8e897aafe36af8df3b269b7bf4666f4a12a9b5d43818f0afa62916f7da01bc34",
+    "experiments/m11-h2-kappa4-webshop-1.5b-2gpu-20260919/config.json": "d84fcdc71b2a3d90b874e59955d24f186f3005b7c7be2e7810c2d7636e6adee8",
+    "experiments/m11-h2-kappa4-webshop-1.5b-2gpu-20260919/run.sh": "7d8354e021c7db2f1b74722ec49ed91a49d5aa48d9a06261c56976b86db0a00f",
+    "patches/verl-agent/verl/trainer/ppo/ray_trainer.py": "cf805e9c99bff5ff594fe4faf6481884aa05009422718f0aabc203344296a7cd",
+    "patches/verl-agent/verl/workers/actor/dp_actor.py": "02df759d3ae1571bfd99702c18dc3fcdee94fd302b799587b8d21f3f862cfb20",
+    "patches/verl-agent/verl/workers/fsdp_workers.py": "3c4d32094ac22a451c8b5103221e8536ddf6441305199e3451556f13c102ea11",
+    "scripts/exp_run.py": "047e3694c1df168759b5b595d0288b6bd4804cc66f1df2b87363c836000682d3",
+    "tests/test_future_progress_ablation.py": "45b1950e9e1b4e855d8ed28fc5d6a8e59a3ee7a66c2fe415e5d0bf253c56d171",
+    "tests/test_future_progress_webshop_ablation.py": "cbe6f1cb387fdbf888050e9d81b05df522e8e0c48ea80c35ab1bcb5206348f0c",
+    "verl-agent/agent_system/environments/env_manager.py": "7fb709ad7b07e959ca535a12cbc8c6835f8f9968015f5aa9ef2d772b647c1cad",
+    "verl-agent/agent_system/environments/prompts/webshop.py": "c7411b8a8fe1f8d587a5585a57ce3ae85ab87bbd7a021f2e39c03f97e214b738",
+    "verl-agent/agent_system/memory/memory.py": "d9940bf9d49442f76667b80aff7e80b7c93f37bef015b06641e60229bb3f0d9c"
+  },
+  "source_commit": "e8018d0c6efbe184881291facd6811e442659377",
+  "source_dirty": true
+}

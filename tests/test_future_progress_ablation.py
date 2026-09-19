@@ -43,8 +43,13 @@ class FutureProgressAblationTests(unittest.TestCase):
                 self.assertEqual({k: v for k, v in cfg.items() if base.get(k) != v}, delta)
                 self.assertEqual(registry.control_name('alfworld', name),
                                  'ccpo-attncred-ctxadv-future-progress-h2-alfworld-1.5b')
-                with self.assertRaises(KeyError):
-                    registry.build(name, 'webshop')
+                if name == 'future-progress-h2-kappa4':
+                    _, ws_cfg = registry.build(name, 'webshop')
+                    self.assertEqual(ws_cfg['ccpo_target'], 'return')
+                    self.assertEqual(ws_cfg['ccpo_prior_kappa'], 4.)
+                else:
+                    with self.assertRaises(KeyError):
+                        registry.build(name, 'webshop')
                 record = json.loads((ROOT / 'experiments' / folder / 'config.json').read_text())
                 actual = record['config']
                 moved = {k: v for k, v in actual.items() if control.get(k) != v}

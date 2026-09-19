@@ -39,14 +39,29 @@ ABLATIONS = {
     "future-progress-h2-kappa4": dict(
         name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-KAPPAFOUR",
         tag="fph2-kappa4",
-        title="M10 H2 with stronger support-based shrinkage (kappa=4)",
+        title="M10/M11 H2 with stronger support-based shrinkage (kappa=4)",
         base_method="attncred-context-future-progress-h2",
-        benchmarks=("alfworld",),
+        benchmarks=("alfworld", "webshop"),
         delta={"ccpo_prior_kappa": 4.0},
         removes="less of the task prior at a given peer support",
-        asks="does stronger regularization of sparsely supported context baselines improve M10 H2?",
+        asks="does stronger regularization of sparsely supported context baselines improve H2 future progress?",
         watch="history/current/future lambda_k is J/(J+4) on supported exact groups; "
               "task fallback and terminal endpoint conventions are unchanged.",
+    ),
+    "future-progress-history1-future1": dict(
+        name="CCPO-ATTNCRED-FUTURE-PROGRESS-HISTORYONE-FUTUREONE-WS",
+        tag="hist1-fut1",
+        title="M11 with one prompt-history turn and one-step future progress",
+        base_method="attncred-context-future-progress",
+        benchmarks=("webshop",),
+        delta={"history_length": 1},
+        removes="the second previous observation-action pair from the prompt",
+        # The actor and frozen reference consume the same shortened prompt.
+        # This does not truncate accumulated context statistics or return targets.
+        asks="does a one-turn history with H1 future progress improve M11 over two-turn history?",
+        watch="env.history_length=1 reaches WebShop memory.fetch; future horizon=1, "
+              "kappa=2, context statistics, whole-trajectory exclusion and fusion "
+              "weights remain the M11 defaults. This is not a strict local-only estimator.",
     ),
     "future-progress-h2-no-credit-shrinkage": dict(
         name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK",

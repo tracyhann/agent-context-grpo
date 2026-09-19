@@ -913,3 +913,47 @@ zero. Terminal steps account for 17.9% / 49.5% of applied future mass, but
 per-terminal-step amplification is similar (4.24 / 4.31), consistent with the
 different episode lengths. These diagnostics do not establish which variant
 would train a better policy. Existing run and queue configurations are unchanged.
+
+
+### M11 WebShop: H2 κ=4 and history-1/future-1 controls (2026-09-19)
+
+**Prepared only; neither launched nor queued.** Both use fresh
+Qwen2.5-1.5B-Instruct, two GPUs, 150 steps, seed 0, 8 rollouts/task, WebShop's
+1,000-product catalogue and original scorer. GPU IDs in prepared configs are
+copied protocol placeholders, not reservations. All return targets, fusion weights
+and WebShop `mean_norm` settings follow M11.
+
+| Arm | Prompt history | Future horizon | κ | Method delta / control |
+|---|---:|---:|---:|---|
+| Original M11 | 2 | 1 | 2 | Existing H1 run |
+| Prepared M11 H2 | 2 | 2 | 2 | Existing H2 control |
+| **M11 H2 κ=4** | 2 | **2** | **4** | κ only against M11 H2; horizon + κ against original M11 |
+| **M11 history-1/future-1** | **1** | **1** | **2** | `history_length=1` only against original M11 |
+
+The existing `future-progress-h2-kappa4` registry entry now supports WebShop too,
+retaining variant `CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-KAPPAFOUR` and adding
+canonical ID `ccpo-attncred-abl-fph2-kappa4-ws-1.5b`. It applies
+`λ_s = J_s/(J_s+4)` to the historical return baseline and both endpoint potential
+baselines. `F_t = z_task(V_min(t+2,T) − V_t)`. Fallback and terminal conventions
+are unchanged. [Method and files](m11-h2-kappa4-webshop-1.5b-2gpu-20260919/NOTES.md).
+
+New registry entry `future-progress-history1-future1`, variant
+`CCPO-ATTNCRED-FUTURE-PROGRESS-HISTORYONE-FUTUREONE-WS`, canonical ID
+`ccpo-attncred-abl-hist1-fut1-ws-1.5b`, inherits M11 H1 and changes only
+`history_length: 2 → 1`. The actor and frozen reference see at most one preceding
+observation-action pair; future progress remains `z_task(V_min(t+1,T) − V_t)`.
+**κ stays 2 and accumulated context statistics remain enabled.** The ±1 shorthand
+therefore describes local prompt history/future reach, not strict truncation of
+all trajectory information. This is a policy-input and representation ablation,
+not a change to the return horizon or an estimator-only history window.
+[Method and files](m11-history1-future1-webshop-1.5b-2gpu-20260919/NOTES.md).
+
+Both retain `A_t = H_t + F_t` under WebShop `mean_norm`, history/future weights
+1/1 and episode/original-edge weights 0/0. The new
+[CPU regressions](../tests/test_future_progress_webshop_ablation.py) verify exact
+config deltas and runtime flags, all three κ=4 baseline weights, and the actual
+WebShop prompt/history path. The ablation target guard now respects each declared
+parent: M11 uses binary returns, while the older default WebShop attncred parent
+uses dense scores. Per-folder validation and source hashes record preparation;
+no GPU preflight or run result is implied. Compare controls on the same current
+source revision, including verified frozen-feature capture.
