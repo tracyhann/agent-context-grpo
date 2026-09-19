@@ -18,19 +18,19 @@
   "final_normalization": "mean_std_norm_on_canonical_replay_rows",
   "applied_identity_error": 4.5836303552704294e-07,
   "config_delta": {
-    "ccpo_ctx_w": {
-      "control": 1.0,
-      "variant": 0.0
-    },
     "exp_id": {
       "control": "m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918",
       "variant": "m10-noctx-ccpo-attncred-hidden-future-progress-alfworld-1.5b-2gpu-20260919"
+    },
+    "ccpo_ctx_w": {
+      "control": 1.0,
+      "variant": 0.0
     }
   },
   "gpu_used": false,
   "environment_rollouts_started": false,
   "code_sha256": {
     "ccpo/core_ccpo.py": "c73fb7a96a1363c39b745bbfd79721d47db8d6ba3ce783ae263d4db8215ca6ff",
-    "ccpo/future_progress.py": "577c132f606d77f7f3deb1b9790085f78db7c4cabddc3ba7da32ca521929f7a5"
+    "ccpo/future_progress.py": "dadf222ca39bb989b2be885b3fce5efc44132a0268fb84202c7d0a0a0615e288"
   }
 }

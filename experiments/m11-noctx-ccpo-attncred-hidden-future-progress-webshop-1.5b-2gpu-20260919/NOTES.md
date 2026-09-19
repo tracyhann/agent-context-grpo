@@ -96,3 +96,13 @@ CUDA_VISIBLE_DEVICES='' .venv-webshop/bin/python experiments/m11-noctx-ccpo-attn
 ```
 
 Do not manually start a second copy of `run.sh` while the queue is active.
+
+## 2026-09-19: finite padding-feature validation fix
+
+The corrected [padding-feature patch](../future-progress-padded-phi.patch) was applied to the actual `ccpo/future_progress.py` at 2026-09-19T07:09:08.720316+00:00. Finite duplicate features use rtol=2^-7 and atol=1e-3; NaN/Inf in every row, including discarded padding copies, causes an error before estimation. Metadata remains exact. The estimator's first-occurrence readout and all advantage formulas are unchanged.
+
+All 20 future-progress regression tests passed. This experiment's step-100 CPU replay also passed, including exact control parity and hidden-only context-invariance checks. Original launch manifests and validation records are preserved in `../../.local/padded-phi-apply-20260919/before/`.
+
+This run started at 04:46 UTC with the original strict-equality implementation. The trainer was not restarted for this source update and retains the previously imported module. The refreshed VALIDATION.json is a CPU replay of the corrected code on disk, not evidence of a live-process upgrade.
+
+Corrected source SHA-256: `dadf222ca39bb989b2be885b3fce5efc44132a0268fb84202c7d0a0a0615e288`.

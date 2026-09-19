@@ -80,6 +80,56 @@ def _corr(x, y, mask):
     return float(np.corrcoef(x, y)[0, 1]) if len(x) > 2 and x.std() > 1e-12 and y.std() > 1e-12 else float('nan')
 
 
+# BF16 has seven explicit fraction bits. This is a numerical tolerance for
+# recomputed finite features, not a bound on end-to-end forward-pass error.
+_PHI_DUP_RTOL = 2. ** -7
+_PHI_DUP_ATOL = 1e-3
+
+
+def _check_round_trip(kwargs, canonical, restore):
+    """Check padding copies without changing the first-occurrence readout.
+
+    Metadata must match exactly. Frozen features can be recomputed in different
+    micro-batches, so finite copies may differ slightly. Every input feature must
+    still be finite, including copies that canonicalization would discard. There
+    is no missing-feature sentinel; accepting NaN/Inf only in later copies would
+    make validation depend on batch ordering and hide extraction/numeric failures.
+    """
+    for key in ('step_rewards', 'response_mask', 'anchor_obs', 'index', 'traj_index',
+                'episode_rewards', 'is_action_valid'):
+        if kwargs.get(key) is not None and not np.array_equal(_numpy(kwargs[key]), _numpy(canonical[key])[restore]):
+            raise ValueError('Inconsistent padded future-progress field: ' + key)
+    if kwargs.get('phi_feats') is None:
+        return {}
+    original, folded = _numpy(kwargs['phi_feats']), _numpy(canonical['phi_feats'])[restore]
+    if original.shape != folded.shape:
+        raise ValueError('Inconsistent padded future-progress shape: phi_feats '
+                         f'{original.shape} vs {folded.shape}')
+    feature_axes = tuple(range(1, original.ndim))
+    nonfinite = ~np.isfinite(original)
+    if nonfinite.any():
+        bad_rows = np.flatnonzero(nonfinite.any(axis=feature_axes)) if feature_axes else np.flatnonzero(nonfinite)
+        raise ValueError('Non-finite frozen features in future-progress phi_feats '
+                         f'({len(bad_rows)} row(s); first {bad_rows[:5].tolist()}); '
+                         'all rows, including padding copies, must be finite')
+    tolerance = _PHI_DUP_ATOL + _PHI_DUP_RTOL * abs(folded)
+    deviation = abs(original - folded)
+    beyond = deviation > tolerance
+    if beyond.any():
+        rows = np.flatnonzero(beyond.any(axis=feature_axes)) if feature_axes else np.flatnonzero(beyond)
+        worst = np.unravel_index(np.argmax(np.where(beyond, deviation - tolerance, -np.inf)), deviation.shape)
+        raise ValueError('Inconsistent padded future-progress field: phi_feats -- '
+                         f'{len(rows)} row(s) differ beyond bf16 tolerance '
+                         f'(first {rows[:5].tolist()}; worst element {tuple(int(i) for i in worst)} '
+                         f'|diff| {deviation[worst]:.3g} > allowed {tolerance[worst]:.3g})')
+    duplicate = np.ones(len(restore), dtype=bool)
+    duplicate[np.unique(restore, return_index=True)[1]] = False
+    return dict(progress_phi_duplicate_rows=float(duplicate.sum()),
+                progress_phi_duplicate_max_diff=float(deviation[duplicate].max()) if duplicate.any() else 0.,
+                # Nonfinite rows fail above; successful batches always report zero.
+                progress_phi_duplicate_nonfinite=0.)
+
+
 def ccpo_future_progress_advantage(*, turn_index, episode_lengths, horizon=1,
                                    progress_weight=1., readout='context', **kwargs):
     """A future-state value increase added to the unchanged historical residual.
@@ -107,10 +157,7 @@ def ccpo_future_progress_advantage(*, turn_index, episode_lengths, horizon=1,
                 'phi_feats', 'episode_rewards', 'is_action_valid', 'aff_labels', 'ctx_override'):
         if key in canonical:
             canonical[key] = _take(canonical[key], take)
-    for key in ('step_rewards', 'response_mask', 'anchor_obs', 'index', 'traj_index',
-                'phi_feats', 'episode_rewards', 'is_action_valid'):
-        if kwargs.get(key) is not None and not np.array_equal(_numpy(kwargs[key]), _numpy(canonical[key])[restore]):
-            raise ValueError('Inconsistent padded future-progress field: ' + key)
+    phi_diag = _check_round_trip(kwargs, canonical, restore)
     n = len(take); tasks = np.asarray(canonical['index']).astype(str)
     episodes = np.asarray(canonical['episode_rewards'], dtype=float)
     if episodes.shape != (n,) or not np.isfinite(episodes).all():
@@ -169,7 +216,7 @@ def ccpo_future_progress_advantage(*, turn_index, episode_lengths, horizon=1,
                 progress_history_weight=1., progress_episode_weight=0., progress_original_edge_weight=0.,
                 progress_eligible_frac=float(eligible.mean()), progress_terminal_frac=float(terminal.mean()),
                 progress_unique_rows=float(n), progress_padding_frac=float(1 - n / len(restore)),
-                progress_m5_reference_mode=float(readout == 'm5'))
+                progress_m5_reference_mode=float(readout == 'm5'), **phi_diag)
     for key in ('target', 'value_target', 'history_baseline', 'history_adv', 'current_value',
                 'future_value', 'raw_progress', 'progress_normalized', 'weighted_progress', 'combined_pre',
                 'progress_norm_mean', 'progress_norm_std', 'm5_edge_normalized'):

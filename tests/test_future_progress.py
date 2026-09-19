@@ -154,5 +154,120 @@ class FutureProgressTests(unittest.TestCase):
                 compute(make_data(fixture()),'CCPO',gamma=.95,ccpo_step_tag=1)
 
 
+class PaddedDuplicateFeatureTests(unittest.TestCase):
+    """Finite roundoff is allowed; nonfinite rows fail in every padding order."""
+
+    def padded(self, index=0):
+        kw = arguments()
+        return rows(kw, np.r_[np.arange(len(kw['index'])), index])
+
+    def orders(self, n):
+        return [np.arange(n), np.r_[n-1, np.arange(n-1)],
+                np.random.default_rng(72).permutation(n)]
+
+    def test_unpadded_features_report_zero_duplicates(self):
+        _, diag = ccpo_future_progress_advantage(**arguments())
+        for key in ('rows', 'max_diff', 'nonfinite'):
+            self.assertEqual(diag['progress_phi_duplicate_' + key], 0.)
+
+    def test_exact_duplicate_is_accepted_and_counted(self):
+        _, diag = ccpo_future_progress_advantage(**self.padded(), horizon=2)
+        self.assertEqual(diag['progress_phi_duplicate_rows'], 1.)
+        self.assertEqual(diag['progress_phi_duplicate_max_diff'], 0.)
+        self.assertEqual(diag['progress_phi_duplicate_nonfinite'], 0.)
+        self.assertAlmostEqual(diag['progress_padding_frac'], 1/15)
+
+    def test_bf16_duplicate_does_not_change_credit_or_gradients(self):
+        for ctx_weight in (0., 1.):
+            for horizon in (1, 2):
+                with self.subTest(ctx_weight=ctx_weight, horizon=horizon), patch.object(core, '_CTX_W', ctx_weight):
+                    kw = self.padded()
+                    expected, before = ccpo_future_progress_advantage(**kw, horizon=horizon)
+                    kw['phi_feats'][-1] = kw['phi_feats'][-1].to(torch.bfloat16).float()
+                    kw['phi_feats'].requires_grad_()
+                    actual, after = ccpo_future_progress_advantage(**kw, horizon=horizon)
+                    torch.testing.assert_close(actual, expected, rtol=0, atol=0)
+                    self.assertFalse(actual.requires_grad)
+                    self.assertGreater(after['progress_phi_duplicate_max_diff'], 0.)
+                    for key in ('history_adv', 'current_value', 'future_value', 'raw_progress',
+                                'progress_normalized', 'current_phi', 'combined_pre'):
+                        np.testing.assert_array_equal(before['progress_payload']['arrays'][key],
+                                                      after['progress_payload']['arrays'][key])
+                    # Same padded layout, changed only discarded frozen features.
+                    # The actual trainer must retain identical PPO loss/gradients.
+                    for mode in ('mean_norm', 'mean_std_norm'):
+                        compute = load_compute_advantage()
+                        reference = fixture(); padded_ids = np.r_[np.arange(len(reference['index'])), 0]
+                        reference = rows(reference, padded_ids)
+                        changed = rows(reference, np.arange(len(reference['index'])))
+                        changed['phi_feats'][-1] = changed['phi_feats'][-1].to(torch.bfloat16).float()
+                        settings = {'ACG_CCPO_PROGRESS_HORIZON': str(horizon), 'ACG_CCPO_PROGRESS_WEIGHT': '1',
+                                    'ACG_CCPO_EP_W': '0', 'ACG_CCPO_STEP_NORM': 'mode', 'ACG_EXP_DIR': ''}
+                        results = []
+                        for inputs in (reference, changed):
+                            data = make_data(inputs)
+                            with patch.dict(os.environ, settings), redirect_stdout(io.StringIO()):
+                                compute(data, 'CCPO', gamma=.95, gigpo_mode=mode, ccpo_step_tag=1)
+                            results.append(policy_gradient(data))
+                        for left, right in zip(*results):
+                            torch.testing.assert_close(left, right, rtol=0, atol=0)
+
+    def test_finite_rounding_is_accepted_after_reordering(self):
+        kw = self.padded()
+        kw['phi_feats'][-1] = kw['phi_feats'][-1].to(torch.bfloat16).float()
+        for order in self.orders(len(kw['index'])):
+            with self.subTest(order=order.tolist()):
+                actual, diag = ccpo_future_progress_advantage(**rows(kw, order))
+                self.assertTrue(torch.isfinite(actual).all())
+                self.assertEqual(diag['progress_phi_duplicate_rows'], 1.)
+                self.assertGreater(diag['progress_phi_duplicate_max_diff'], 0.)
+
+    def test_nonfinite_features_fail_without_padding(self):
+        for value in (float('nan'), float('inf'), -float('inf')):
+            with self.subTest(value=value):
+                kw = arguments(); kw['phi_feats'][0, 0] = value
+                with self.assertRaisesRegex(ValueError, 'Non-finite frozen features'):
+                    ccpo_future_progress_advantage(**kw)
+
+    def test_nonfinite_copies_fail_in_every_order_before_estimation(self):
+        for value in (float('nan'), float('inf'), -float('inf')):
+            for bad_row in (0, -1):
+                for partial in (False, True):
+                    kw = self.padded()
+                    if partial:
+                        kw['phi_feats'][bad_row, 0] = value
+                    else:
+                        kw['phi_feats'][bad_row] = value
+                    for order in self.orders(len(kw['index'])):
+                        with self.subTest(value=value, bad_row=bad_row, partial=partial,
+                                          order=order.tolist()), patch.object(core, 'ccpo_step_advantage') as estimator:
+                            with self.assertRaisesRegex(ValueError, 'Non-finite frozen features'):
+                                ccpo_future_progress_advantage(**rows(kw, order))
+                            estimator.assert_not_called()
+
+    def test_different_or_zero_filled_duplicate_still_fails_after_reordering(self):
+        for fill_zero in (False, True):
+            kw = self.padded()
+            kw['phi_feats'][-1] = 0. if fill_zero else kw['phi_feats'][-1] + 1.
+            for order in self.orders(len(kw['index'])):
+                with self.subTest(fill_zero=fill_zero, order=order.tolist()):
+                    with self.assertRaisesRegex(ValueError, 'beyond bf16 tolerance'):
+                        ccpo_future_progress_advantage(**rows(kw, order))
+
+    def test_metadata_mismatch_is_still_exact(self):
+        for key in ('step_rewards', 'response_mask', 'episode_rewards', 'is_action_valid',
+                    'anchor_obs', 'index', 'traj_index'):
+            with self.subTest(key=key):
+                kw = self.padded()
+                if key in ('anchor_obs', 'index', 'traj_index'):
+                    kw[key] = kw[key].astype(object); kw[key][-1] = 'different-metadata'
+                elif key == 'is_action_valid':
+                    kw[key][-1] = not kw[key][-1]
+                else:
+                    kw[key][-1] += 1
+                with self.assertRaises(ValueError):
+                    ccpo_future_progress_advantage(**kw)
+
+
 if __name__=='__main__':
     unittest.main(verbosity=2)

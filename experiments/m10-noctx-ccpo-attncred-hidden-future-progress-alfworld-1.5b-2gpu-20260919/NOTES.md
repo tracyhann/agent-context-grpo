@@ -90,3 +90,13 @@ The controller waits for successful predecessor completion and verifies its fina
 Queued does not mean training has started. Do not launch a second manual copy while the controller is active.
 
 Control: [M10 method notes](../m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/NOTES.md).
+
+## 2026-09-19: finite padding-feature validation fix
+
+The corrected [padding-feature patch](../future-progress-padded-phi.patch) was applied to the actual `ccpo/future_progress.py` at 2026-09-19T07:09:08.720316+00:00. Finite duplicate features use rtol=2^-7 and atol=1e-3; NaN/Inf in every row, including discarded padding copies, causes an error before estimation. Metadata remains exact. The estimator's first-occurrence readout and all advantage formulas are unchanged.
+
+All 20 future-progress regression tests passed. This experiment's step-100 CPU replay also passed, including exact control parity and hidden-only context-invariance checks. Original launch manifests and validation records are preserved in `../../.local/padded-phi-apply-20260919/before/`.
+
+This experiment is still queued. Its launch-input hashes have been updated after validation, so it will load the corrected implementation when the existing queue starts it.
+
+Corrected source SHA-256: `dadf222ca39bb989b2be885b3fce5efc44132a0268fb84202c7d0a0a0615e288`.
