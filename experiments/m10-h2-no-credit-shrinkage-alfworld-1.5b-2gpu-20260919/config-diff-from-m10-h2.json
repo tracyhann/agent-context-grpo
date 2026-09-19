@@ -1,0 +1,10 @@
+{
+  "ccpo_lk_fix": {
+    "control": "",
+    "variant": 1.0
+  },
+  "exp_id": {
+    "control": "m10-h2-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918",
+    "variant": "m10-h2-no-credit-shrinkage-alfworld-1.5b-2gpu-20260919"
+  }
+}

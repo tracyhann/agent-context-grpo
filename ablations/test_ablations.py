@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Guards on the five ablations. CPU only, ~3 s.
+"""Guards on the registered ablations. CPU only, ~3 s.
 
     python3 official-repo/ablations/test_ablations.py
 
@@ -50,7 +50,7 @@ def test_one_delta_each():
     ok = True
     for key, spec in ablations.ABLATIONS.items():
         for bench in ablations.benchmarks_for(key):
-            _, ctl = arms.build("attncred", bench, "1.5b")
+            _, ctl = arms.build(spec.get("base_method", "attncred"), bench, "1.5b")
             _, abl = ablations.build(key, bench)
             ctl = {k: er._coerce(str(v)) for k, v in ctl.items()}
             abl = {k: er._coerce(str(v)) for k, v in abl.items()}

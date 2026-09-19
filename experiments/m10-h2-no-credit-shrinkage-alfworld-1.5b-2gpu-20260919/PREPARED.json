@@ -1,0 +1,19 @@
+{
+  "status": "prepared_not_launched",
+  "benchmark": "alfworld",
+  "horizon": 2,
+  "gpus": "0,1",
+  "model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "steps": 150,
+  "seed": 0,
+  "ablation": "future-progress-h2-no-credit-shrinkage",
+  "method_delta": {
+    "ccpo_lk_fix": 1.0
+  },
+  "control": "experiments/m10-h2-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918",
+  "control_config_sha256": "0b927bf22f7babbc725acd6e55e84a61e8f6aab91556baa4f0c0c4a33b8ab782",
+  "queued": false,
+  "gpu_preflight_performed": false,
+  "verified_phi_code_included": true,
+  "source_commit": "b6a9026da80786d27890742c58614904d90c4fd5"
+}

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """The CCPO-ATTNCRED ablations, per experiments/experiments.md.
 
-Each is the main `attncred` arm of the SAME benchmark with one component removed,
-1.5B backbone, 150 steps. The control for an ALFWorld ablation is
+Each uses its declared base method (normally `attncred`) on the SAME benchmark,
+1.5B backbone, 150 steps. The default control for an ALFWorld ablation is
 `ccpo-attncred-alfworld-1.5b`; for a WebShop one it is `ccpo-attncred-ws-1.5b`,
 which carries the dense-score target -- so an ablation inherits it and stays paired
 with the arm it ablates.
@@ -19,6 +19,35 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(
 import arms                                                   # noqa: E402
 
 ABLATIONS = {
+    # M10 H2: the shared readout applies the delta to history and both potentials.
+    "future-progress-h2-kappa4": dict(
+        name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-KAPPAFOUR",
+        tag="fph2-kappa4",
+        title="M10 H2 with stronger support-based shrinkage (kappa=4)",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("alfworld",),
+        delta={"ccpo_prior_kappa": 4.0},
+        removes="less of the task prior at a given peer support",
+        asks="does stronger regularization of sparsely supported context baselines improve M10 H2?",
+        watch="history/current/future lambda_k is J/(J+4) on supported exact groups; "
+              "task fallback and terminal endpoint conventions are unchanged.",
+    ),
+    "future-progress-h2-no-credit-shrinkage": dict(
+        name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK",
+        tag="fph2-noshrink",
+        title="M10 H2 with full-strength usable context baselines",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("alfworld",),
+        delta={"ccpo_lk_fix": 1.0},
+        removes="support-based shrinkage toward the task prior",
+        # lam_u is already 1. Pinning lam_k=1 gives baseline=b_loo; kappa=2
+        # remains recorded but cannot affect this weight. Retain prior diagnostics
+        # and the existing task-bucket fallback when no exact peer is available.
+        asks="does an available context baseline work best at full strength even with only one peer?",
+        watch="history/current/future lambda_k is 1 on usable readouts; baseline equals "
+              "its kernel estimate. No exact peer still uses the existing task bucket; "
+              "no cross-trajectory peer anywhere still provides no usable estimate.",
+    ),
     # -----------------------------------------------------------------------
     "hard-gate": dict(
         name="CCPO-ATTNCRED-HARDGATE",
@@ -176,13 +205,14 @@ def build(ablation, benchmark, extra=None):
     if benchmark not in allowed:
         raise KeyError(f"{ablation!r} is defined for {', '.join(allowed)} only, "
                        f"not {benchmark!r}")
-    _, cfg = arms.build("attncred", benchmark, "1.5b")
+    _, cfg = arms.build(spec.get("base_method", "attncred"), benchmark, "1.5b")
     cfg.update(spec["delta"])
     cfg.update(extra or {})
     bench_tag = "alfworld" if benchmark == "alfworld" else "ws"
     return f"ccpo-attncred-abl-{spec['tag']}-{bench_tag}-1.5b", cfg
 
 
-def control_name(benchmark):
-    name, _ = arms.build("attncred", benchmark, "1.5b")
+def control_name(benchmark, ablation=None):
+    method = ABLATIONS[ablation].get("base_method", "attncred") if ablation else "attncred"
+    name, _ = arms.build(method, benchmark, "1.5b")
     return name

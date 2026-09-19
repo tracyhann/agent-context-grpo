@@ -1,12 +1,13 @@
 # CCPO experiments
 
-Twenty-three runs: **10 main** (4 variants × 2 backbones, plus one WebShop-only
-variant × 2 backbones) and **13 ablations** (6 variants × 2 benchmarks, plus one
-WebShop-only variant, 1.5B throughout).
+The original matrix contains **10 main runs** (4 variants × 2 backbones, plus one
+WebShop-only variant × 2 backbones) and **13 ablations** (6 variants × 2 benchmarks,
+plus one WebShop-only variant, 1.5B throughout). Later future-context studies are
+recorded below, including the two M10 H2 credit-shrinkage ablations added on 2026-09-19.
 
 Every method variant below has a name, a location in the repo, and the one equation
-that separates it from the base estimator in §1. Nothing else differs between any two
-arms in this document — each is a single-delta change, asserted by the guards.
+that separates it from the base estimator in §1. Each ablation declares its parent method and parameter delta, asserted by the
+guards. The M10 H2 ablations use the two-step future-progress method as their parent.
 
 ---
 
@@ -754,3 +755,77 @@ See `ccpo/fixed_anchor.py`, `tests/test_fixed_anchor.py`, and the new run NOTES.
 | CCPO-ATTNCRED-CTXADV-FUTURE-PROGRESS-TWO-STEP-WS | attncred-context-future-progress-h2 | ccpo-attncred-ctxadv-future-progress-h2-ws-1.5b / ccpo-attncred-ctxadv-future-progress-h2-ws-7b |
 
 The prepared M10/M11 local configs clone the recorded two-GPU 1.5B M3/M5 protocol. Horizon 1 is primary; optional H2 configs change only the future horizon. **Primary M10/M11 launched at 04:14 UTC on 2026-09-18 by explicit user request, on GPUs 0–1 and 2–3. M8/M9 are paused with saved checkpoints pinned at steps 10/25. The separate H2 variants remain unlaunched.** Full math and terminal/grouping conventions are in [FUTURE_PROGRESS.md](../ccpo/FUTURE_PROGRESS.md).
+
+
+### M10 H2: credit-shrinkage ablations (2026-09-19)
+
+**Prepared only; not launched or queued.** Both use ALFWorld, Qwen2.5-1.5B-Instruct,
+seed 0, 150 steps, and the recorded two-GPU M10 H2 protocol. The parent is
+`attncred-context-future-progress-h2`, with the context-statistics vector enabled,
+future horizon **2**, history/future weights **1/1**, and episode/original-edge
+weights **0/0**. Each prepared config differs from the recorded M10 H2 config only
+in the parameter below and its experiment identity. Use the same source revision,
+including verified reference-feature capture, for a fresh three-arm comparison.
+
+| Arm | Registry ablation | Single parameter change | Context credibility on usable exact groups | Prepared experiment |
+|---|---|---|---|---|
+| M10 H2 control | parent method | — | `J/(J+2)` | Parent: `attncred-context-future-progress-h2` |
+| M10 H2 κ=4 | `future-progress-h2-kappa4` | `ccpo_prior_kappa: 2 → 4` | `J/(J+4)` | [κ=4 notes/config](m10-h2-kappa4-alfworld-1.5b-2gpu-20260919/NOTES.md) |
+| M10 H2 without credit shrinkage | `future-progress-h2-no-credit-shrinkage` | `ccpo_lk_fix: "" → 1.0` | **1**, regardless of J | [Full-context notes/config](m10-h2-no-credit-shrinkage-alfworld-1.5b-2gpu-20260919/NOTES.md) |
+
+Registered variant names are `CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-KAPPAFOUR`
+and `CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK`; their canonical registry IDs
+are `ccpo-attncred-abl-fph2-kappa4-alfworld-1.5b` and
+`ccpo-attncred-abl-fph2-noshrink-alfworld-1.5b`. Definition and CLI:
+[ablations.py](../ablations/ablations.py), [run.py](../ablations/run.py).
+
+For either target q (historical return Y or potential label Z), let C_s[q] be the
+context-weighted, leave-own-trajectory-out baseline, U_s[q] the task prior, and J_s
+the number of distinct peer trajectories in the exact observation group. On a
+usable exact group:
+
+```
+B_s[q] = λ_s C_s[q] + (1 − λ_s) U_s[q]
+
+control:       λ_s = J_s / (J_s + 2)
+κ=4:           λ_s = J_s / (J_s + 4)
+no shrinkage:  λ_s = 1, so B_s[q] = C_s[q]
+```
+
+For J=1, these context weights are 1/3, 1/5, and 1. The no-shrinkage arm uses an
+available context estimate at full strength even with just one peer. It retains
+`ccpo_prior_kappa=2` as an inert setting under the explicit `ccpo_lk_fix=1` override,
+so task-prior diagnostics remain available. The separate kernel-vs-uniform weight
+`ccpo_lam_fix=1` was already pinned in the parent and remains unchanged.
+
+“Usable” retains the existing estimator's availability rules: use the exact
+observation group when it has another trajectory; otherwise keep the existing
+context-weighted task-bucket fallback. No cross-trajectory peer anywhere means
+no usable baseline, and the existing unsupported-row mask remains. This ablation
+adds no confidence threshold or new fallback rule. Task-bucket fallback uses
+λ=1 already and is unchanged in both ablations; it is distinct from the uniform
+task prior U_s. Terminal potentials remain the fixed success/failure sentinel.
+
+The setting applies to **all three readouts**: historical B_t[Y], current B_t[Z],
+and future B_(t+2)[Z], using each endpoint's own group/support. The surrounding
+M10 H2 math stays:
+
+```
+H_t = Y_t − B_t[Y]
+V_s = B_s[Z]                           (nonterminal), Z_s = γ^(T−s) R_episode
+F_t = z_task(V_min(t+2,T) − V_t)       V_T = 10 on success, otherwise 0
+A_t = mean_std_norm_task(H_t + F_t)
+```
+
+This changes baseline shrinkage, not the history/future fusion weights. Existing
+logs retain `history/current/future_lambda_k`, their kernel estimates, task priors,
+J, effective support, and fallback levels. Terminal future λ entries remain
+masked/NaN. In the no-shrinkage arm all usable readout λ values must be 1 and each
+baseline must equal its kernel estimate; in the κ=4 arm supported exact-group λ
+must equal J/(J+4).
+
+CPU regression: [test_future_progress_ablation.py](../tests/test_future_progress_ablation.py)
+checks those identities, J=1, both endpoint potentials, task fallback, no-peer rows,
+terminal behavior, inert κ under the full-strength pin, detached advantages, and
+exact one-parameter config differences. Results are recorded in each prepared
+experiment's validation file. No evaluation results exist for these ablations yet.

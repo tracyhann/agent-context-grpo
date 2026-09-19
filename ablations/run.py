@@ -6,7 +6,7 @@ Usage
         --benchmark alfworld --gpus 0,1,2,3
     python3 official-repo/ablations/run.py --list
 
-Each ablation is the main attncred arm of the same benchmark with one key changed;
+Each ablation changes its declared base method on the same benchmark;
 `--list` prints the key. Extra arguments are forwarded to scripts/exp_run.py.
 """
 import argparse
@@ -55,7 +55,7 @@ def main():
     spec = ablations.ABLATIONS[a.ablation]
     print(f"[arm] ablation   {spec['name']} -- {spec['title']}")
     print(f"[arm] removes    {spec['removes']}")
-    print(f"[arm] control    {ablations.control_name(a.benchmark)}")
+    print(f"[arm] control    {ablations.control_name(a.benchmark, a.ablation)}")
     return arms.launch(a.name or name, cfg, a.benchmark, a.gpus, passthrough,
                        allow_sdpa=a.allow_sdpa,
                        label=f"{spec['name']}  ({a.ablation}, {a.benchmark}, 1.5b)")
