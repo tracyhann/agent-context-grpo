@@ -418,7 +418,20 @@ def versions(python):
         return {"error": str(e)}
 
 
+def validate_future_progress_config(cfg):
+    """Reject unsupported feature modes before setup, model probes or launch."""
+    if cfg.get("arm", "ccpo") != "ccpo":
+        return
+    horizon = cfg.get("ccpo_progress_horizon", 0)
+    if horizon not in (0, 1, 2):
+        raise ValueError("ccpo_progress_horizon must be 0, 1 or 2")
+    if horizon and str(cfg.get("ccpo_phi", "hidden")).lower() not in ("hidden", "hidden+ctx"):
+        raise ValueError("Future progress requires ccpo_phi=hidden or hidden+ctx; "
+                         "hidden-only also supports hidden+ctx with ccpo_ctx_w=0")
+
+
 def build_command(cfg, exp_dir):
+    validate_future_progress_config(cfg)
     ngpu = len(cfg["gpus"].split(","))
     est = {"ccpo": "ccpo", "grpo": "grpo", "gigpo": "gigpo"}[cfg["arm"]]
     _is_search = "search" in str(cfg["env_name"]).lower()
@@ -628,6 +641,11 @@ def main():
         for k, v in WEBSHOP_PROTOCOL.items():
             if k not in explicit:
                 cfg[k] = v
+
+    try:
+        validate_future_progress_config(cfg)
+    except ValueError as error:
+        ap.error(str(error))
 
     cfg["exp_id"] = f"{a.name}-{a.date}"
     exp_dir = os.path.join(ROOT, "experiments", cfg["exp_id"])

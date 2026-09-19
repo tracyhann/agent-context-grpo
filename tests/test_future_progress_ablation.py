@@ -1,4 +1,4 @@
-"""M10 H2: stronger credibility shrinkage and full-strength context readouts."""
+"""M10 H2: credibility shrinkage and hidden-only context readouts."""
 import importlib.util
 import json
 from pathlib import Path
@@ -13,6 +13,7 @@ registry = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(registry)
 CONTROL = ROOT / 'experiments/m10-h2-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918'
 CASES = {
+    'future-progress-h2-no-context-vector': ('m10-h2-noctx-alfworld-1.5b-2gpu-20260919', {'ccpo_ctx_w': 0.0}),
     'future-progress-h2-kappa4': ('m10-h2-kappa4-alfworld-1.5b-2gpu-20260919', {'ccpo_prior_kappa': 4.0}),
     'future-progress-h2-no-credit-shrinkage': ('m10-h2-no-credit-shrinkage-alfworld-1.5b-2gpu-20260919', {'ccpo_lk_fix': 1.0}),
 }
@@ -52,9 +53,41 @@ class FutureProgressAblationTests(unittest.TestCase):
                 self.assertEqual(float(record['env']['ACG_CCPO_EP_W']), 0.)
                 self.assertEqual(float(record['env']['ACG_CCPO_EDGE_W']), 0.)
                 self.assertEqual(float(record['env']['ACG_CCPO_LAM_FIX']), 1.)
-                for key in ('ccpo_prior_kappa', 'ccpo_lk_fix'):
-                    env_name = {'ccpo_prior_kappa': 'ACG_CCPO_PRIOR_KAPPA', 'ccpo_lk_fix': 'ACG_CCPO_LK_FIX'}[key]
+                for key in ('ccpo_prior_kappa', 'ccpo_lk_fix', 'ccpo_ctx_w'):
+                    env_name = {'ccpo_prior_kappa': 'ACG_CCPO_PRIOR_KAPPA', 'ccpo_lk_fix': 'ACG_CCPO_LK_FIX', 'ccpo_ctx_w': 'ACG_CCPO_CTX_W'}[key]
                     self.assertEqual(record['env'][env_name], str(actual[key]))
+
+    def test_h2_noctx_uses_hidden_only_and_is_invariant_to_context_statistics(self):
+        kw = fixture()
+        kw['phi_feats'] = torch.tensor(np.random.default_rng(71).normal(
+            size=(len(kw['index']), 1536)), dtype=torch.float32)
+        with patch.object(core, '_CTX_W', 1.):
+            _, control = estimate(kw)
+        with patch.object(core, '_CTX_W', 0.):
+            advantage, diag = estimate(kw)
+            changed_kw = dict(kw, ctx_override=[dict(t=30, n_unique=25, progress=1., revisit=1.)
+                                              for _ in kw['index']])
+            changed, changed_diag = estimate(changed_kw)
+        a = diag['progress_payload']['arrays']
+        b = changed_diag['progress_payload']['arrays']
+        expected = core.whiten_feats(kw['phi_feats'].numpy())
+        self.assertEqual(control['progress_payload']['arrays']['current_phi'].shape[1], 1573)
+        self.assertEqual(a['current_phi'].shape[1], 1536)
+        np.testing.assert_allclose(a['current_phi'], expected, rtol=0, atol=0)
+        nonterminal = ~a['terminal']
+        np.testing.assert_array_equal(a['future_phi'][nonterminal], expected[a['endpoint_index'][nonterminal]])
+        np.testing.assert_array_equal(a['future_hidden'][nonterminal],
+                                      a['history_hidden'][a['endpoint_index'][nonterminal]])
+        torch.testing.assert_close(advantage, changed, rtol=0, atol=0)
+        for key in ['history_baseline', 'history_adv', 'current_value', 'future_value',
+                    'raw_progress', 'progress_normalized', 'current_phi', 'future_phi']:
+            np.testing.assert_array_equal(a[key], b[key])
+        for prefix in ['history', 'current', 'future']:
+            exact = a[prefix + '_level'] == 0
+            J = a[prefix + '_J'][exact]
+            np.testing.assert_allclose(a[prefix + '_lambda_k'][exact], J / (J + 2), rtol=0, atol=0)
+        self.assertEqual(diag['progress_horizon'], 2.)
+        self.assertFalse(advantage.requires_grad)
 
     def test_kappa_four_changes_history_and_both_potential_readouts(self):
         kw = fixture()

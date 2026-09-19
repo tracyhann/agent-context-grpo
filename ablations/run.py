@@ -21,11 +21,11 @@ import arms                                                   # noqa: E402
 
 
 def describe():
-    print(f"{'ablation':20s}{'name':34s}{'delta':42s}{'benchmarks':20s}removes")
+    print(f"{'ablation':20s} | {'name':34s} | {'delta':42s} | {'benchmarks':20s} | removes")
     for key, spec in ablations.ABLATIONS.items():
         delta = ", ".join(f"{k}={v}" for k, v in spec["delta"].items())
         bench = "+".join(ablations.benchmarks_for(key))
-        print(f"{key:20s}{spec['name']:34s}{delta:42s}{bench:20s}{spec['removes']}")
+        print(f"{key:20s} | {spec['name']:34s} | {delta:42s} | {bench:20s} | {spec['removes']}")
     print("\nruns:")
     for key in ablations.ABLATIONS:
         for b in ablations.benchmarks_for(key):

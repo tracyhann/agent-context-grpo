@@ -44,6 +44,14 @@ z_{i,s}=\operatorname{L2}\left([
 
 The context coefficient is 1. Removing three principal directions retains the hidden vector's original 1536 dimensions; the combined feature has 1573 dimensions. Whitening/centering is batch-wide and performed once; both history and potential readouts use the exact same processed matrix.
 
+Hidden-only ablations may use either `ccpo_phi=hidden` or
+`ccpo_phi=hidden+ctx` with `ccpo_ctx_w=0`. Both produce the same 1536-dimensional
+processed hidden representation in history and both potential readouts. The
+future-progress entry point accepts both spellings and still requires finite
+`phi_feats` from the frozen reference; `bow` is unsupported. The launcher rejects
+unsupported modes before preparing files or starting model probes/training.
+This compatibility fix does not change feature capture or padding checks.
+
 For each endpoint separately, define
 
 \[

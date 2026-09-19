@@ -20,6 +20,22 @@ import arms                                                   # noqa: E402
 
 ABLATIONS = {
     # M10 H2: the shared readout applies the delta to history and both potentials.
+    "future-progress-h2-no-context-vector": dict(
+        name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOCTX",
+        tag="fph2-noctx",
+        title="M10 H2 using hidden-state features without context statistics",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("alfworld",),
+        delta={"ccpo_ctx_w": 0.0},
+        removes="the accumulated context-statistics block from similarity features",
+        # CTX_W=0 skips the statistics block for history and both potentials.
+        # It is equivalent to phi=hidden, which future progress also accepts.
+        # Preserve this prepared arm's one-setting delta. M10-NOCTX is H1.
+        asks="does the context-statistics vector improve two-step future progress beyond the frozen hidden state?",
+        watch="current_phi and nonterminal future_phi have 1536 dimensions on 1.5B; "
+              "context-stat perturbations cannot change credit. Kappa=2, support "
+              "shrinkage and H2 endpoint grouping are unchanged.",
+    ),
     "future-progress-h2-kappa4": dict(
         name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-KAPPAFOUR",
         tag="fph2-kappa4",

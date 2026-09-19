@@ -144,8 +144,12 @@ def ccpo_future_progress_advantage(*, turn_index, episode_lengths, horizon=1,
     edge = core._EDGE_W if kwargs.get('edge_w') is None else float(kwargs['edge_w'])
     if edge != 0 or (kwargs.get('target') or core._TARGET) != 'return':
         raise ValueError('Future progress replaces the edge and requires the M3/M5 return target')
-    if core._PHI_MODE != 'hidden+ctx' or kwargs.get('phi_feats') is None:
-        raise ValueError('Future progress requires frozen history-plus-context features')
+    # Both modes use frozen reference hidden states. The context-statistics
+    # block is optional: phi=hidden is equivalent to hidden+ctx with CTX_W=0.
+    # Keep features mandatory; canonicalization below checks shape and finiteness.
+    if core._PHI_MODE not in ('hidden', 'hidden+ctx') or kwargs.get('phi_feats') is None:
+        raise ValueError('Future progress requires frozen hidden features '
+                         '(phi=hidden or hidden+ctx, with phi_feats supplied)')
     if core._STD_MODE == 'local' or core._JW_C != 0 or core._LAM_FIX != '1' and core._LAM_FIX != '1.0':
         raise ValueError('Future progress requires the M3/M5 attention readout without local scaling/J weighting')
     if core._GATE != 'hard' or float(kwargs.get('sim') or core._SIM) != 0 or core._SIM_BACKOFF != 0:

@@ -1,0 +1,90 @@
+{
+  "status": "PASS",
+  "time_utc": "2026-09-19T13:47:55.206576+00:00",
+  "gpu_used": false,
+  "training_launched": false,
+  "numerical_analysis_exit_code": 0,
+  "analytical_fixture_checks_passed": true,
+  "fixture_checks": [
+    "Whole query trajectory, including repeated visits, excluded from readout",
+    "Changing only own labels does not change its baseline",
+    "Paired identical endpoint readouts have zero difference variance",
+    "Terminal sentinel and progress signs match hand calculation",
+    "Unequal trajectory lengths do not change equal-trajectory task means"
+  ],
+  "exact_replay": {
+    "M10": {
+      "Y_baseline_max_abs_error": 0.0,
+      "Y_counterfactual_core_checks_passed": true,
+      "Z_baseline_max_abs_error": 0.0,
+      "Z_counterfactual_core_checks_passed": true,
+      "edge_max_abs_error": 0.0,
+      "bootstrap_point_reconstruction_passed": true
+    },
+    "M11": {
+      "Y_baseline_max_abs_error": 0.0,
+      "Y_counterfactual_core_checks_passed": true,
+      "Z_baseline_max_abs_error": 0.0,
+      "Z_counterfactual_core_checks_passed": true,
+      "edge_max_abs_error": 0.0,
+      "bootstrap_point_reconstruction_passed": true
+    }
+  },
+  "hidden_only_whitening_check": "PASS atol=2e-7",
+  "task_resampling_draws": 5000,
+  "paired_peer_draws": 512,
+  "input_files_unchanged": true,
+  "source_hashes_verified": true,
+  "csv_rows": {
+    "errors.csv": 120,
+    "support.csv": 16,
+    "stability.csv": 8,
+    "components.csv": 14,
+    "fusion.csv": 8,
+    "edge.csv": 30,
+    "temporal.csv": 10,
+    "behavior.csv": 256,
+    "cases.csv": 93
+  },
+  "limitations": [
+    "One archived H1 training batch per environment, not fresh checkpoint evaluation",
+    "Bootstrap conditional on observed task/peer pools; no training-seed uncertainty",
+    "No actor gradients, action-token replay or item-option rescoring"
+  ],
+  "output_sha256": {
+    "M10-results.json": "d587182378ee69b7920c57b4fa65044671598091d414c337a98c75ee9d7bdc17",
+    "M11-results.json": "8c6d006a3eb6f2c141a027d350a48c731ab1d0628d8c0989532ec17de51b1cec",
+    "NOTES.md": "e2594ed3651140dfc3ef4960dc72d5e6e09037ab4dcbd629e65adadd54d21409",
+    "analysis.log": "9941fb9418497788b1a3d9a0743b0f78d00105e1f36639f3ace3201860c50c6a",
+    "behavior.csv": "4b4f0e45132efba7c549498aa43af7a4e9a42f9d5fa1b1923d127b7574011c4a",
+    "cases.csv": "7a476b88e2976261c257b423e7b96eb8337a6b6a774301f84fe722efe47b9989",
+    "components.csv": "4ab4cf084f51d0f95f22b159aa4e9ae4aed05571e466bd7280fda2ccb8fac3d9",
+    "credit_and_edge.pdf": "ce6a911b4cd287c40e25be295cb02bee66d831cd410b339dbe05f1fadb2b442b",
+    "credit_and_edge.png": "4d5a19cdaa5ef9c56d0aaf64813865b74151bbf5d2723d007acf149170a53316",
+    "edge.csv": "feb4f694a5382b426a1fbf2a8da49dc3808899ceb15d0434ed3399a05ba0710b",
+    "errors.csv": "ead566eb72e34347568bac55432d0eecaf3c549fcd004e3a3c9e50bd01b91e4d",
+    "fusion.csv": "4539af8bb70f8ec847ec82e2ee606f498712db75ecec9ca339e3c1053243ce09",
+    "mechanisms.pdf": "fa0e58a874810844abeb96b31ad7ce9ca1d6c93ec178ba9675ddedac22449460",
+    "mechanisms.png": "879c31ed87c1ad54ceebc1c72479a47501bfb4d6abedbf29445c0bb2c267264e",
+    "stability.csv": "6b2f69732d51ffb45c194ff2cff829b8fd044aba92fc8c877427a354574f996d",
+    "summary.json": "72c41760b007d77936492fcec6852e143c24b9b0a4db9594c363ba3d955662d7",
+    "support.csv": "49df3ed23767cca60bb5b44026fbe4b7b5d35138ed9cdca75fee891124303da4",
+    "temporal.csv": "7e61b5cbe8211575c9444a2d1e908b2b3984839fd038d201a96608c2b845fd4d",
+    "trajectory_cases.pdf": "8eb420700a2fcd4ca77c5297d86a1c2be19d5893808a41de52610df7191878d9",
+    "trajectory_cases.png": "4bde5ddc968fd3fb3f3b276d1169b12adb5bd659a1c8f4539d311420b1b0f5bd"
+  },
+  "png_decode_checks": {
+    "mechanisms.png": [
+      2400,
+      1350
+    ],
+    "credit_and_edge.png": [
+      1950,
+      1350
+    ],
+    "trajectory_cases.png": [
+      1950,
+      1200
+    ]
+  }
+}

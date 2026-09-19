@@ -3,7 +3,8 @@
 The original matrix contains **10 main runs** (4 variants × 2 backbones, plus one
 WebShop-only variant × 2 backbones) and **13 ablations** (6 variants × 2 benchmarks,
 plus one WebShop-only variant, 1.5B throughout). Later future-context studies are
-recorded below, including the two M10 H2 credit-shrinkage ablations added on 2026-09-19.
+recorded below, including the M10 H2 credit-shrinkage and hidden-only ablations
+added on 2026-09-19.
 
 Every method variant below has a name, a location in the repo, and the one equation
 that separates it from the base estimator in §1. Each ablation declares its parent method and parameter delta, asserted by the
@@ -829,3 +830,86 @@ checks those identities, J=1, both endpoint potentials, task fallback, no-peer r
 terminal behavior, inert κ under the full-strength pin, detached advantages, and
 exact one-parameter config differences. Results are recorded in each prepared
 experiment's validation file. No evaluation results exist for these ablations yet.
+
+
+### M10 H2 without context statistics (2026-09-19)
+
+**Prepared only; not launched or queued.** `M10-H2-NOCTX` is the separate hidden-only
+ablation of `attncred-context-future-progress-h2` on ALFWorld, Qwen2.5-1.5B-Instruct,
+seed 0, 150 steps, two GPUs. It is independent of both credit-shrinkage ablations
+above. The older queued M10-NOCTX uses H1 and remains a separate experiment.
+
+| Setting | M10 H2 control | M10-H2-NOCTX |
+|---|---|---|
+| Sole method delta | `ccpo_ctx_w=1` | **`ccpo_ctx_w=0`** |
+| Future horizon | 2 | **2** |
+| Similarity representation | processed hidden + 37 context-stat dimensions | **1536-dimensional processed hidden only** |
+| Context mode flag | `ccpo_phi=hidden+ctx` | retained for the future-progress interface |
+| Credibility | κ=2, λₖ=J/(J+2), task fallback unchanged | same |
+| History/future weights | 1/1 | same |
+| Episode/original-edge weights | 0/0 | same |
+
+The registry key is `future-progress-h2-no-context-vector`, variant name
+`CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOCTX`, and canonical registry ID
+`ccpo-attncred-abl-fph2-noctx-alfworld-1.5b`. The [registry](../ablations/ablations.py)
+inherits the H2 parent and changes only `ccpo_ctx_w`. The prepared mode string
+remains `hidden+ctx`; the actual [feature construction](../ccpo/core_ccpo.py)
+skips context-block concatenation when `ACG_CCPO_CTX_W=0`. The 2026-09-19
+compatibility fix also accepts the equivalent `ccpo_phi=hidden` spelling, used
+by the generic `no-context-vector` delta; frozen features remain mandatory.
+See the [HEAD compatibility fix and tests](future-progress-hidden-compat-20260919/NOTES.md).
+
+For every nonterminal endpoint s:
+
+```
+φ_s = normalize(remove_top_3_PC(h_s − mean(h)))
+w_sj = exp(−||φ_s − φ_j||₂ / τ_group)
+B_s[q] = λ_s C_s[q; φ] + (1 − λ_s) U_s[q],   λ_s = J_s/(J_s+2)
+H_t = Y_t − B_t[Y]
+F_t = z_task(V_min(t+2,T) − V_t),             V_s = B_s[Z], Z_s = γ^(T−s) R
+A_t = mean_std_norm_task(H_t + F_t)
+```
+
+The hidden-only representation is used for the historical return baseline and
+both potential endpoints. Exact observation grouping, whole-trajectory exclusion,
+task-bucket fallback and terminal 10/0 potentials are unchanged. Prompt text still
+contains its normal two-turn history; this ablation removes the separately
+concatenated accumulated statistics, not historical text or hidden whitening.
+Context statistics remain available as diagnostics and cannot affect similarity
+or the resulting credit.
+
+Artifacts: [NOTES](m10-h2-noctx-alfworld-1.5b-2gpu-20260919/NOTES.md),
+[resolved config](m10-h2-noctx-alfworld-1.5b-2gpu-20260919/config.json),
+[exact delta](m10-h2-noctx-alfworld-1.5b-2gpu-20260919/config-diff-from-m10-h2.json),
+[validation](m10-h2-noctx-alfworld-1.5b-2gpu-20260919/VALIDATION.json).
+The [H2 regression](../tests/test_future_progress_ablation.py) checks 1536-vs-1573
+feature dimensions, t+2 hidden alignment, context-perturbation invariance of both
+baselines/potentials and combined credit, retained κ=2 shrinkage, detached
+advantages, and the single-parameter config delta. Compare this arm against an H2
+control on the same source revision, including verified reference-feature capture.
+
+
+### M10/M11 step-150 offline mechanism audit (2026-09-19)
+
+**Completed on existing H1 snapshots; no training or GPU work launched.** Each
+snapshot contains 16 task batches and 128 trajectories (M10: 2,610 canonical
+turns; M11: 691). This is a paired estimator replay on archived training data,
+not fresh evaluation from a step-150 checkpoint and not an H2 result.
+
+[Report, figures, uncertainty and limitations](step150-posthoc-analysis-20260919/NOTES.md),
+[validation](step150-posthoc-analysis-20260919/VALIDATION.json),
+[reproducible script](../scripts/analyse_step150_posthoc.py).
+
+The audit reconstructs the historical/potential baselines and original edge
+exactly, then compares hidden-only and uniform readouts, shrinkage variants,
+credit position along trajectories, history/future interactions, and edge
+rankings. It includes 512 paired peer-trajectory bootstrap draws and 5,000
+paired task-bootstrap resamples for prediction-error differences.
+
+In these batches, removing shrinkage raises ALFWorld potential-prediction MSE
+by 6.6% and lowers WebShop MSE by 10.0%, while increasing nonterminal progress
+sensitivity in both. Overall hidden-only differences have intervals crossing
+zero. Terminal steps account for 17.9% / 49.5% of applied future mass, but
+per-terminal-step amplification is similar (4.24 / 4.31), consistent with the
+different episode lengths. These diagnostics do not establish which variant
+would train a better policy. Existing run and queue configurations are unchanged.

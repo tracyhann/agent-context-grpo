@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "time_utc": "2026-09-19T20:57:23.994612+00:00",
+  "head": "8c39f4c2c119af69cfb41642f8ffaaab57b0f029",
+  "delivery": "working_tree_not_committed_or_pushed",
+  "head_rejection_reproduced": true,
+  "alfworld_future_progress_tests": 30,
+  "webshop_compatibility_tests": 4,
+  "ablation_guards": "PASS",
+  "patch_applies_to_head": true,
+  "patch_reconstructs_worktree_files": true,
+  "gpu_used": false,
+  "training_launched": false,
+  "training_restarted": false,
+  "source_sha256": {
+    "ccpo/future_progress.py": "0608819cbf55f49de92cc55c1d4924406c966deb6540aceb78b34e58bbda4add",
+    "scripts/exp_run.py": "047e3694c1df168759b5b595d0288b6bd4804cc66f1df2b87363c836000682d3",
+    "ccpo/FUTURE_PROGRESS.md": "fc6261262e44b7c41c28cf8b83bbc145d36d3e26b7f5b9f48d7fb4d1a343144b",
+    "tests/test_future_progress_hidden_compat.py": "929b37ae8d82c3e694ebd4836c71c41ddd3ffd28a2876be4c7403114b2cbf785"
+  },
+  "patch_sha256": "21f1f7d2f794c4ea81480d0796e0697287f87788eeca59587fbcbc0f764370e7"
+}
