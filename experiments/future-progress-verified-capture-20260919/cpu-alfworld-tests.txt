@@ -1,0 +1,69 @@
+test_capture_failure_removes_hook_and_next_call_is_clean (test_phi_capture.CaptureTests) ... ok
+test_false_padding_and_lost_source_rows_fail_before_forward (test_phi_capture.CaptureTests) ... ok
+test_legacy_capture_still_returns_unpacketized_hidden_features (test_phi_capture.CaptureTests) ... ok
+test_packing_rejects_wrong_indices_and_missing_prompt (test_phi_capture.CaptureTests) ... ok
+test_real_worker_split_forward_sort_collect_and_restore (test_phi_capture.CaptureTests) ... ok
+test_recovered_features_preserve_actual_advantage_and_ppo_gradient (test_phi_capture.CaptureTests) ... ok
+test_small_batch_and_1598_padding_counts (test_phi_capture.CaptureTests) ... ok
+test_transport_drift_logged_but_source_features_are_retained (test_phi_capture.CaptureTests) ... ok
+test_verified_capture_rejects_unsupported_capture_instead_of_fallback (test_phi_capture.CaptureTests) ... ok
+test_wrong_inputs_bad_collection_missing_features_and_nonfinite_fail (test_phi_capture.CaptureTests) ... ok
+test_future_uses_destination_group_from_other_origins (test_future_progress.FutureProgressTests) ... ok
+test_invalid_settings_and_ambiguous_trajectory_fail (test_future_progress.FutureProgressTests) ... ok
+test_m5_targets_discount_and_terminal_convention (test_future_progress.FutureProgressTests) ... ok
+test_no_other_trajectory_produces_no_supported_progress (test_future_progress.FutureProgressTests) ... ok
+test_one_step_m5_reference_recovers_original_edge_and_combined_credit (test_future_progress.FutureProgressTests) ... ok
+test_penalty_changes_history_but_not_progress (test_future_progress.FutureProgressTests) ... ok
+test_shuffle_and_duplicate_padding_do_not_change_estimator (test_future_progress.FutureProgressTests) ... ok
+test_trainer_components_logging_normalization_and_gradient_isolation (test_future_progress.FutureProgressTests) ... ok
+test_trainer_rejects_duplicate_future_and_nonzero_episode (test_future_progress.FutureProgressTests) ... ok
+test_two_step_telescopes_and_clips_at_terminal (test_future_progress.FutureProgressTests) ... ok
+test_values_exclude_whole_query_trajectory (test_future_progress.FutureProgressTests) ... ok
+test_weight_zero_retains_history_exactly (test_future_progress.FutureProgressTests) ... ok
+test_bf16_duplicate_does_not_change_credit_or_gradients (test_future_progress.PaddedDuplicateFeatureTests) ... ok
+test_different_or_zero_filled_duplicate_still_fails_after_reordering (test_future_progress.PaddedDuplicateFeatureTests) ... ok
+test_exact_duplicate_is_accepted_and_counted (test_future_progress.PaddedDuplicateFeatureTests) ... ok
+test_finite_rounding_is_accepted_after_reordering (test_future_progress.PaddedDuplicateFeatureTests) ... ok
+test_metadata_mismatch_is_still_exact (test_future_progress.PaddedDuplicateFeatureTests) ... ok
+test_nonfinite_copies_fail_in_every_order_before_estimation (test_future_progress.PaddedDuplicateFeatureTests) ... ok
+test_nonfinite_features_fail_without_padding (test_future_progress.PaddedDuplicateFeatureTests) ... ok
+test_unpadded_features_report_zero_duplicates (test_future_progress.PaddedDuplicateFeatureTests) ... ok
+test_bad_configuration_fails (test_outlook.OutlookTests) ... ok
+test_beta_zero_matches_ordered_history (test_outlook.OutlookTests) ... ok
+test_complete_estimator_has_nonzero_finite_effect (test_outlook.OutlookTests) ... ok
+test_credibility_blends_node_and_task_prior (test_outlook.OutlookTests) ... ok
+test_exact_future_values_recover_mc (test_outlook.OutlookTests) ... ok
+test_future_baseline_excludes_own_trajectory_targets (test_outlook.OutlookTests) ... ok
+test_future_channel_matches_independent_unpenalised_readout (test_outlook.OutlookTests) ... ok
+test_local_invalid_penalty_once (test_outlook.OutlookTests) ... ok
+test_missing_hidden_features_fails (test_outlook.OutlookTests) ... ok
+test_missing_turn_fails (test_outlook.OutlookTests) ... ok
+test_no_supported_endpoint_preserves_history (test_outlook.OutlookTests) ... ok
+test_shuffle_and_padding_invariance (test_outlook.OutlookTests) ... ok
+test_terminal_success_and_failure_no_bootstrap (test_outlook.OutlookTests) ... ok
+test_trainer_integration_both_normalization_modes (test_outlook.OutlookTests) ... [ccpo] phi=hidden+ctx target=return mode=mean_norm rho=0.59 lam_u=1.000 lam>.5=1.00 n_eff=1.50 E[w]=0.008 live=1.00 lvl1=0.00 buckets=2 acc_len_r=nan effect=3.4734 effect_rel=0.781 phi_rel=+0.2821 tau2=2.673204 r_vs_gigpo=0.8983 r_vs_g2po=0.6298 outlook_horizon=2 outlook_beta=0.25 outlook_delta=0.5643 progress_horizon=0 progress_edge_r=nan
+[ccpo] phi=hidden+ctx target=return mode=mean_std_norm rho=0.59 lam_u=1.000 lam>.5=1.00 n_eff=1.50 E[w]=0.008 live=1.00 lvl1=0.00 buckets=2 acc_len_r=nan effect=3.4734 effect_rel=0.781 phi_rel=+0.2821 tau2=2.673204 r_vs_gigpo=0.8983 r_vs_g2po=0.6298 outlook_horizon=2 outlook_beta=0.25 outlook_delta=0.5643 progress_horizon=0 progress_edge_r=nan
+ok
+test_two_step_discount_and_mixture (test_outlook.OutlookTests) ... ok
+test_all_terms_saved_and_applied_components_sum (test_fixed_anchor.FixedAnchorTests) ... ok
+test_capture_is_separate_and_aligned (test_fixed_anchor.FixedAnchorTests) ... ok
+test_episode_advantage_cannot_enter_arm (test_fixed_anchor.FixedAnchorTests) ... ok
+test_episode_diagnostic_perturbation_cannot_change_policy_gradient (test_fixed_anchor.FixedAnchorTests) ... [ccpo] phi=hidden+ctx target=return mode=mean_std_norm rho=0.59 lam_u=1.000 lam>.5=1.00 n_eff=1.50 E[w]=0.008 live=1.00 lvl1=0.00 buckets=2 acc_len_r=nan effect=3.4734 effect_rel=0.713 phi_rel=+0.2821 tau2=2.673204 r_vs_gigpo=0.6658 r_vs_g2po=0.5652 outlook_horizon=0 outlook_beta=0.00 outlook_delta=0.0000 progress_horizon=0 progress_edge_r=nan
+[ccpo] phi=hidden+ctx target=return mode=mean_std_norm rho=0.59 lam_u=1.000 lam>.5=1.00 n_eff=1.50 E[w]=0.008 live=1.00 lvl1=0.00 buckets=2 acc_len_r=nan effect=3.4734 effect_rel=0.713 phi_rel=+0.2821 tau2=2.673204 r_vs_gigpo=0.6658 r_vs_g2po=0.5652 outlook_horizon=0 outlook_beta=0.00 outlook_delta=0.0000 progress_horizon=0 progress_edge_r=nan
+ok
+test_future_targets_exclude_entire_own_trajectory (test_fixed_anchor.FixedAnchorTests) ... ok
+test_gain_identity_and_anchor_support (test_fixed_anchor.FixedAnchorTests) ... ok
+test_gain_zero_preserves_history (test_fixed_anchor.FixedAnchorTests) ... ok
+test_no_peer_gets_zero_gain_and_retains_history (test_fixed_anchor.FixedAnchorTests) ... ok
+test_shuffle_padding_invariance (test_fixed_anchor.FixedAnchorTests) ... ok
+test_terminal_future_includes_last_action_and_observation (test_fixed_anchor.FixedAnchorTests) ... ok
+test_trainer_dispatch_metrics_and_normalization (test_fixed_anchor.FixedAnchorTests) ... [ccpo] phi=hidden+ctx target=return mode=mean_norm rho=0.59 lam_u=1.000 lam>.5=1.00 n_eff=1.50 E[w]=0.008 live=1.00 lvl1=0.00 buckets=2 acc_len_r=nan effect=3.4734 effect_rel=0.713 phi_rel=+0.2821 tau2=2.673204 r_vs_gigpo=0.6658 r_vs_g2po=0.5652 outlook_horizon=0 outlook_beta=0.00 outlook_delta=0.0000 progress_horizon=0 progress_edge_r=nan
+[ccpo] phi=hidden+ctx target=return mode=mean_std_norm rho=0.59 lam_u=1.000 lam>.5=1.00 n_eff=1.50 E[w]=0.008 live=1.00 lvl1=0.00 buckets=2 acc_len_r=nan effect=3.4734 effect_rel=0.713 phi_rel=+0.2821 tau2=2.673204 r_vs_gigpo=0.6658 r_vs_g2po=0.5652 outlook_horizon=0 outlook_beta=0.00 outlook_delta=0.0000 progress_horizon=0 progress_edge_r=nan
+ok
+test_raw_episode_normalization_is_detached (test_episode_adv_isolation.EpisodeAdvIsolationTests) ... ok
+test_zero_episode_weight_preserves_loss_and_gradient (test_episode_adv_isolation.EpisodeAdvIsolationTests) ... ok
+
+----------------------------------------------------------------------
+Ran 58 tests in 7.346s
+
+OK

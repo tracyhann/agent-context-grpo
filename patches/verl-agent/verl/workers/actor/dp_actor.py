@@ -237,9 +237,22 @@ class DataParallelPPOActor(BasePPOActor):
             # that disambiguates the state.
             # A hook on the final norm keeps one (bs, seq, d) tensor alive rather
             # than the whole output_hidden_states tuple (29 x that, ~3.3 GB here).
-            # Only valid on the padded path: with remove_padding the sequence is
-            # packed to (1, total_nnz) and a per-row position index is meaningless.
-            if getattr(self, "_acg_capture_hidden", False):
+            # Verified capture binds the actual input identity to the selected
+            # feature before any dynamic batching or distributed reordering.
+            if getattr(self, "_acg_verified_phi", False):
+                from ccpo.phi_capture import pool_last_prompt, pack_features
+                try:
+                    features = pool_last_prompt(self._acg_hook_out, micro_batch,
+                                                indices if self.use_remove_padding else None)
+                    self._acg_hidden_buf.append(pack_features(features, micro_batch))
+                except ValueError as error:
+                    # Finish the same FSDP forwards on every rank before failing.
+                    # A rank-local capture failure must not strand other ranks in
+                    # their next model-forward collective. No optimizer runs here.
+                    self._acg_capture_errors.append(str(error))
+                finally:
+                    self._acg_hook_out = None
+            elif getattr(self, "_acg_capture_hidden", False):
                 h = getattr(self, "_acg_hook_out", None)
                 if h is not None and h.dim() == 3:
                     if not self.use_remove_padding and h.shape[0] == batch_size:
@@ -334,7 +347,12 @@ class DataParallelPPOActor(BasePPOActor):
         temperature = data.meta_info["temperature"]  # temperature must be in the data.meta_info to avoid silent error
         use_dynamic_bsz = data.meta_info["use_dynamic_bsz"]
 
+        self._acg_verified_phi = bool(data.meta_info.get("ccpo_verified_phi", False))
         select_keys = ["responses", "input_ids", "attention_mask", "position_ids"]
+        if self._acg_verified_phi:
+            if not getattr(self, "_acg_capture_hidden", False) or self.use_ulysses_sp:
+                raise ValueError("Verified future-progress capture requires frozen hidden features and SP=1")
+            select_keys.append("ccpo_source_row")
         batch = data.select(batch_keys=select_keys).batch
         has_multi_modal_inputs = "multi_modal_inputs" in data.non_tensor_batch.keys()
 
@@ -353,27 +371,41 @@ class DataParallelPPOActor(BasePPOActor):
         entropy_lst = []
         # ACG: arm the affinity-feature hook for this call only.
         self._acg_hidden_buf, self._acg_hook_out, _acg_h = [], None, None
+        self._acg_hidden = None
+        self._acg_capture_errors = []
         if getattr(self, "_acg_capture_hidden", False):
             _mod = None if self.use_ulysses_sp else self._acg_final_norm()
             if _mod is None:
+                if self._acg_verified_phi:
+                    raise ValueError("Verified future-progress capture: final norm not found")
                 self._acg_capture_hidden = False
                 print("[ccpo-phi] no affinity features "
                       f"({'ulysses sequence parallelism slices the packed run' if self.use_ulysses_sp else 'final norm not found'}); "
                       "the estimator falls back to bag-of-words phi", flush=True)
             else:
                 _acg_h = _mod.register_forward_hook(self._acg_hidden_hook)
-        for micro_batch in micro_batches:
-            if isinstance(micro_batch, DataProto):
-                micro_batch = {**micro_batch.batch, **micro_batch.non_tensor_batch}
-            with torch.no_grad():
-                entropy, log_probs = self._forward_micro_batch(micro_batch, temperature=temperature, calculate_entropy=calculate_entropy)
-            log_probs_lst.append(log_probs)
-            if calculate_entropy:
-                entropy_lst.append(entropy)
+        try:
+            for micro_batch in micro_batches:
+                if isinstance(micro_batch, DataProto):
+                    micro_batch = {**micro_batch.batch, **micro_batch.non_tensor_batch}
+                with torch.no_grad():
+                    entropy, log_probs = self._forward_micro_batch(micro_batch, temperature=temperature, calculate_entropy=calculate_entropy)
+                log_probs_lst.append(log_probs)
+                if calculate_entropy:
+                    entropy_lst.append(entropy)
+        except Exception:
+            self._acg_hidden_buf = []
+            raise
+        finally:
+            if _acg_h is not None:
+                _acg_h.remove()
+            self._acg_hook_out = None
 
-        if _acg_h is not None:
-            _acg_h.remove()
-
+        if self._acg_capture_errors:
+            errors = self._acg_capture_errors
+            self._acg_hidden_buf = []
+            raise ValueError("Frozen feature capture failed after completing reference forwards: "
+                             + "; ".join(errors[:3]))
         log_probs = torch.concat(log_probs_lst, dim=0)
         entropys = None
         if calculate_entropy:
@@ -382,6 +414,8 @@ class DataParallelPPOActor(BasePPOActor):
         # sample's affinity vector would be attributed to a different sample.
         self._acg_hidden = torch.concat(self._acg_hidden_buf, dim=0) \
             if self._acg_hidden_buf else None
+        if self._acg_verified_phi and (self._acg_hidden is None or self._acg_hidden.size(0) != log_probs.size(0)):
+            raise ValueError("Verified feature coverage differs from reference log probabilities")
         if use_dynamic_bsz:
             indices = list(itertools.chain.from_iterable(indices))
             assert len(indices) == log_probs.size(0), f"{len(indices)} vs. {log_probs.size()}"

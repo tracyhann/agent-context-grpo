@@ -100,3 +100,13 @@ All 20 future-progress regression tests passed. This experiment's step-100 CPU r
 This experiment is still queued. Its launch-input hashes have been updated after validation, so it will load the corrected implementation when the existing queue starts it.
 
 Corrected source SHA-256: `dadf222ca39bb989b2be885b3fce5efc44132a0268fb84202c7d0a0a0615e288`.
+
+## 2026-09-19: verified canonical reference capture
+
+The actual trainer/reference-worker source and tracked overlays now use [verified canonical reference capture](../future-progress-verified-capture-20260919/NOTES.md). Source IDs are assigned before training padding; one reference feature/log-probability pair is retained per original row and restored by ID. Actual input fingerprints travel in the same tensor as hidden features through micro-batch reordering and DP collection. Identity errors, missing features, and nonfinite values still abort before optimization. Finite differences in temporary dispatch copies are logged separately.
+
+CPU validation passed: 58 regressions in the ALFWorld environment and 10 capture regressions in the WebShop environment, including exact advantage/PPO-gradient parity with identical retained features. No real 8-H200 validation was performed. Advantage formulas and this experiment configuration are unchanged; canonical reference batching changes the floating-point execution layout, so comparisons to the older control include this implementation difference.
+
+This experiment remains queued behind M11-NOCTX. Its next fresh process will load the repaired source. Prepared-input hashes now include the new module and the actual actor/ref-worker files as well as their tracked overlays.
+
+Previous runtime sources and queue hashes are preserved under `../../.local/phi-row-mapping-fix-20260919/before/`. Validation evidence is in [VALIDATION.json](../future-progress-verified-capture-20260919/VALIDATION.json).

@@ -106,3 +106,13 @@ All 20 future-progress regression tests passed. This experiment's step-100 CPU r
 This run started at 04:46 UTC with the original strict-equality implementation. The trainer was not restarted for this source update and retains the previously imported module. The refreshed VALIDATION.json is a CPU replay of the corrected code on disk, not evidence of a live-process upgrade.
 
 Corrected source SHA-256: `dadf222ca39bb989b2be885b3fce5efc44132a0268fb84202c7d0a0a0615e288`.
+
+## 2026-09-19: verified canonical reference capture
+
+The actual trainer/reference-worker source and tracked overlays now use [verified canonical reference capture](../future-progress-verified-capture-20260919/NOTES.md). Source IDs are assigned before training padding; one reference feature/log-probability pair is retained per original row and restored by ID. Actual input fingerprints travel in the same tensor as hidden features through micro-batch reordering and DP collection. Identity errors, missing features, and nonfinite values still abort before optimization. Finite differences in temporary dispatch copies are logged separately.
+
+CPU validation passed: 58 regressions in the ALFWorld environment and 10 capture regressions in the WebShop environment, including exact advantage/PPO-gradient parity with identical retained features. No real 8-H200 validation was performed. Advantage formulas and this experiment configuration are unchanged; canonical reference batching changes the floating-point execution layout, so comparisons to the older control include this implementation difference.
+
+This already-running trainer was not restarted and retains its earlier imported source. The source update and refreshed prepared-input hashes do not constitute a live-process upgrade.
+
+Previous runtime sources and queue hashes are preserved under `../../.local/phi-row-mapping-fix-20260919/before/`. Validation evidence is in [VALIDATION.json](../future-progress-verified-capture-20260919/VALIDATION.json).

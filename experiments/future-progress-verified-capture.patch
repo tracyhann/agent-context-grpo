@@ -1,0 +1,690 @@
+From 812af475e3c0169a1a03f7a222edaafd48357306 Mon Sep 17 00:00:00 2001
+From: Codex <codex@local>
+Date: Sat, 19 Sep 2026 10:35:52 +0000
+Subject: [PATCH] Preserve canonical reference features and verify distributed
+ input identity
+
+---
+ ccpo/phi_capture.py                           | 178 ++++++++++
+ .../verl/trainer/ppo/ray_trainer.py           |  15 +-
+ .../verl-agent/verl/workers/actor/dp_actor.py |  64 +++-
+ .../verl-agent/verl/workers/fsdp_workers.py   |   9 +-
+ tests/test_phi_capture.py                     | 314 ++++++++++++++++++
+ 5 files changed, 561 insertions(+), 19 deletions(-)
+ create mode 100644 ccpo/phi_capture.py
+ create mode 100644 tests/test_phi_capture.py
+
+diff --git a/ccpo/phi_capture.py b/ccpo/phi_capture.py
+new file mode 100644
+index 0000000..b55a188
+--- /dev/null
++++ b/ccpo/phi_capture.py
+@@ -0,0 +1,178 @@
++"""One retained reference readout per source row, with verified input identity.
++
++Training padding is NOT additional experience. Collapse it before reference
++dispatch, retain one feature/log-probability pair, and restore by source ID.
++The few copies required by DP dispatch are checked and measured separately.
++"""
++import hashlib
++import json
++
++import numpy as np
++import torch
++
++
++SOURCE_ID = 'ccpo_source_row'
++SOURCE_COUNT = 'ccpo_source_count'
++VERIFIED = 'ccpo_verified_phi'
++PACKET = 'ccpo_phi_packet'
++HASH_BYTES = 32
++INPUT_KEYS = ('input_ids', 'attention_mask', 'position_ids', 'responses', SOURCE_ID)
++
++
++def mark_source_rows(data):
++    """Assign BEFORE adjust_batch; tensor IDs follow padding and balancing."""
++    if len(data) == 0 or SOURCE_ID in data.batch:
++        raise ValueError('Expected a nonempty, unmarked rollout batch')
++    data.batch[SOURCE_ID] = torch.arange(len(data), device=data.batch['input_ids'].device)
++    data.meta_info[SOURCE_COUNT] = len(data)
++
++
++def input_fingerprints(batch):
++    """SHA-256 of each actual micro-batch row, including pooling geometry/ID.
++
++    Run independently on the driver and at hidden-state capture. Never echo a
++    precomputed driver hash through the worker: that would miss input mixups.
++    """
++    arrays, headers = [], []
++    for key in INPUT_KEYS:
++        value = batch[key].detach().cpu().contiguous().numpy()
++        if value.dtype.kind not in 'biu':
++            raise ValueError('Expected integer reference input: ' + key)
++        arrays.append(value)
++        headers.append(json.dumps([key, value.dtype.str, value.shape[1:]]).encode())
++    n = len(arrays[0])
++    if any(len(value) != n for value in arrays):
++        raise ValueError('Reference input row counts differ')
++    result = np.empty((n, HASH_BYTES), dtype=np.uint8)
++    for row in range(n):
++        digest = hashlib.sha256()
++        for header, value in zip(headers, arrays):
++            digest.update(header)
++            digest.update(value[row].tobytes())
++        result[row] = np.frombuffer(digest.digest(), dtype=np.uint8)
++    return torch.from_numpy(result)
++
++
++def pool_last_prompt(hidden, batch, indices=None):
++    """Select the final prompt token, checking the padded/packed row mapping."""
++    n, seqlen = batch['input_ids'].shape
++    col = seqlen - batch['responses'].shape[-1] - 1
++    if hidden is None or hidden.ndim != 3 or not 0 <= col < seqlen:
++        raise ValueError('Missing or malformed frozen hidden states / prompt boundary')
++    mask = batch['attention_mask']
++    if mask.shape != (n, seqlen) or not bool(mask[:, col].bool().all()):
++        raise ValueError('Last prompt token is masked or input geometry is inconsistent')
++    if indices is None:
++        if tuple(hidden.shape[:2]) != (n, seqlen):
++            raise ValueError('Padded frozen hidden states do not match model inputs')
++        features = hidden[:, col, :]
++    else:
++        expected = torch.nonzero(mask.reshape(-1), as_tuple=True)[0]
++        if not torch.equal(indices, expected):
++            raise ValueError('Packed token indices do not match the attention mask')
++        if tuple(hidden.shape[:2]) != (1, indices.numel()):
++            raise ValueError('Packed frozen hidden states do not match model inputs')
++        flat = torch.arange(n, device=indices.device) * seqlen + col
++        positions = torch.searchsorted(indices, flat)
++        if bool((positions >= len(indices)).any()) or not torch.equal(indices[positions], flat):
++            raise ValueError('Packed last-prompt positions are missing')
++        features = hidden[0, positions, :]
++    return features.detach().float().cpu()
++
++
++def pack_features(features, batch):
++    """Bind fingerprints and features BEFORE any micro-batch inverse permutation.
++
++    Fingerprint bytes are exactly representable in float32. A SINGLE tensor is
++    reordered and gathered so identity cannot take a different permutation.
++    """
++    if features.ndim != 2 or len(features) != len(batch['input_ids']) or features.shape[1] == 0:
++        raise ValueError('Frozen feature coverage does not match the micro-batch')
++    features = features.detach().float().cpu()
++    if not bool(torch.isfinite(features).all()):
++        rows = (~torch.isfinite(features).all(dim=1)).nonzero().flatten().tolist()
++        raise ValueError(f'Non-finite frozen features at capture; micro-batch rows {rows[:5]}')
++    return torch.cat((features, input_fingerprints(batch).float()), dim=1)
++
++
++def compute_verified_ref(data, worker_group):
++    """Reference forward for future-progress arms, without training-pad rereads.
++
++    No extra model pass. Ref log-probs and phi share the same canonical forward.
++    Unsupported capture, nonfinite values, and identity mismatches fail before
++    advantage computation / optimizer update. Finite transport-copy variation
++    is recorded, never averaged into a source row's retained representation.
++    """
++    from verl import DataProto
++    from verl.protocol import pad_dataproto_to_divisor
++
++    if 'multi_modal_inputs' in data.non_tensor_batch:
++        raise ValueError('Verified future-progress capture currently requires text-only inputs')
++    if SOURCE_ID not in data.batch:
++        raise ValueError('Missing source IDs: mark rows before training padding')
++    source = data.batch[SOURCE_ID].detach().cpu().numpy()
++    if source.shape != (len(data),) or source.dtype.kind not in 'iu' or len(source) == 0:
++        raise ValueError('Malformed source row IDs')
++    unique, first, inverse = np.unique(source, return_index=True, return_inverse=True)
++    if data.meta_info.get(SOURCE_COUNT) != len(unique) or not np.array_equal(unique, np.arange(len(unique))):
++        raise ValueError('Lost or invalid source row IDs during padding/balancing')
++    # Preserve the balanced batch's first-occurrence order, rather than sorting
++    # back into trajectory order and undoing the driver's length balancing.
++    order = np.argsort(first)
++    take = first[order]
++    restore = np.argsort(order)[inverse]
++    expected = input_fingerprints(data.batch)
++    if not torch.equal(expected, expected[take][restore]):
++        rows = (expected != expected[take][restore]).any(dim=1).nonzero().flatten().tolist()
++        raise ValueError(f'Training padding changed reference inputs; rows {rows[:5]}')
++
++    canonical = data.select_idxs(take)
++    # Pass only model inputs/IDs. Avoid old log-probs, rewards and trajectory
++    # metadata, which are unrelated to the reference forward.
++    canonical = canonical.select(batch_keys=list(INPUT_KEYS), non_tensor_batch_keys=[])
++    canonical.meta_info = dict(data.meta_info, **{VERIFIED: True})
++    request, padding = pad_dataproto_to_divisor(canonical, int(worker_group.world_size))
++    request_ids = request.batch[SOURCE_ID].detach().cpu().clone()
++    request_hash = input_fingerprints(request.batch)
++    output = worker_group.compute_ref_log_prob(request)
++    if len(output) != len(request) or PACKET not in output.batch:
++        raise ValueError('Reference worker returned missing/incomplete verified feature packets')
++    packet = output.batch[PACKET].detach().cpu()
++    if packet.ndim != 2 or packet.shape[1] <= HASH_BYTES or packet.dtype != torch.float32:
++        raise ValueError('Malformed verified feature packet (requires float32)')
++    if not bool(torch.isfinite(packet).all()):
++        raise ValueError('Non-finite frozen features in reference output, including transport padding')
++    actual_hash = packet[:, -HASH_BYTES:]
++    bad = (actual_hash != request_hash.float()).any(dim=1)
++    if bool(bad.any()):
++        rows = bad.nonzero().flatten()[:5].tolist()
++        raise ValueError(f'Reference feature/input identity mismatch; rows {rows}, '
++                         f'source IDs {request_ids[rows].tolist()}')
++    features = packet[:, :-HASH_BYTES]
++    log_probs = output.batch['ref_log_prob'].detach().cpu()
++    if log_probs.shape != request.batch['responses'].shape or not bool(torch.isfinite(log_probs).all()):
++        raise ValueError('Non-finite or malformed reference log probabilities')
++    n = len(take)
++    max_diff = 0.
++    differing_rows = 0
++    if padding:
++        lookup = {int(value): row for row, value in enumerate(request_ids[:n])}
++        originals = torch.tensor([lookup[int(value)] for value in request_ids[n:]])
++        difference = (features[n:] - features[originals]).abs()
++        max_diff = float(difference.max())
++        differing_rows = int((difference != 0).any(dim=1).sum())
++    result = DataProto.from_dict(tensors={
++        'ref_log_prob': log_probs[:n][restore],
++        'ccpo_phi_feats': features[:n][restore].clone(),
++    })
++    metrics = {
++        'ccpo/phi_verified_capture': 1.,
++        'ccpo/phi_source_rows': float(n),
++        'ccpo/phi_training_padding_rows': float(len(data) - n),
++        'ccpo/phi_transport_padding_rows': float(padding),
++        'ccpo/phi_transport_duplicate_max_diff': max_diff,
++        'ccpo/phi_transport_duplicate_differing_rows': float(differing_rows),
++        'ccpo/phi_input_identity_mismatches': 0.,
++        'ccpo/phi_nonfinite_rows': 0.,
++    }
++    return result, metrics
+diff --git a/patches/verl-agent/verl/trainer/ppo/ray_trainer.py b/patches/verl-agent/verl/trainer/ppo/ray_trainer.py
+index 6127073..364cafc 100644
+--- a/patches/verl-agent/verl/trainer/ppo/ray_trainer.py
++++ b/patches/verl-agent/verl/trainer/ppo/ray_trainer.py
+@@ -1408,6 +1408,12 @@ class RayPPOTrainer:
+                         )
+                         batch.batch['step_rewards'] = step_rewards_tensor
+                     
++                    # Source IDs must predate copy padding and length balancing.
++                    _verified_phi = (self.config.algorithm.adv_estimator == AdvantageEstimator.CCPO
++                                     and int(os.environ.get('ACG_CCPO_PROGRESS_HORIZON', '0')) > 0)
++                    if _verified_phi:
++                        from ccpo.phi_capture import mark_source_rows
++                        mark_source_rows(batch)
+                     batch = adjust_batch(self.config, batch)
+ 
+                     batch.batch["response_mask"] = compute_response_mask(batch)
+@@ -1470,10 +1476,13 @@ class RayPPOTrainer:
+                     if self.use_reference_policy:
+                         # compute reference log_prob
+                         with _timer("ref", timing_raw):
+-                            if not self.ref_in_actor:
+-                                ref_log_prob = self.ref_policy_wg.compute_ref_log_prob(batch)
++                            _ref = self.actor_rollout_wg if self.ref_in_actor else self.ref_policy_wg
++                            if _verified_phi:
++                                from ccpo.phi_capture import compute_verified_ref
++                                ref_log_prob, phi_metrics = compute_verified_ref(batch, _ref)
++                                metrics.update(phi_metrics)
+                             else:
+-                                ref_log_prob = self.actor_rollout_wg.compute_ref_log_prob(batch)
++                                ref_log_prob = _ref.compute_ref_log_prob(batch)
+                             batch = batch.union(ref_log_prob)
+                         if os.environ.get('ACG_CCPO_FIXED_ANCHOR', '0') == '1':
+                             with _timer("ref_future", timing_raw):
+diff --git a/patches/verl-agent/verl/workers/actor/dp_actor.py b/patches/verl-agent/verl/workers/actor/dp_actor.py
+index c114f6a..bc478c6 100644
+--- a/patches/verl-agent/verl/workers/actor/dp_actor.py
++++ b/patches/verl-agent/verl/workers/actor/dp_actor.py
+@@ -237,9 +237,22 @@ class DataParallelPPOActor(BasePPOActor):
+             # that disambiguates the state.
+             # A hook on the final norm keeps one (bs, seq, d) tensor alive rather
+             # than the whole output_hidden_states tuple (29 x that, ~3.3 GB here).
+-            # Only valid on the padded path: with remove_padding the sequence is
+-            # packed to (1, total_nnz) and a per-row position index is meaningless.
+-            if getattr(self, "_acg_capture_hidden", False):
++            # Verified capture binds the actual input identity to the selected
++            # feature before any dynamic batching or distributed reordering.
++            if getattr(self, "_acg_verified_phi", False):
++                from ccpo.phi_capture import pool_last_prompt, pack_features
++                try:
++                    features = pool_last_prompt(self._acg_hook_out, micro_batch,
++                                                indices if self.use_remove_padding else None)
++                    self._acg_hidden_buf.append(pack_features(features, micro_batch))
++                except ValueError as error:
++                    # Finish the same FSDP forwards on every rank before failing.
++                    # A rank-local capture failure must not strand other ranks in
++                    # their next model-forward collective. No optimizer runs here.
++                    self._acg_capture_errors.append(str(error))
++                finally:
++                    self._acg_hook_out = None
++            elif getattr(self, "_acg_capture_hidden", False):
+                 h = getattr(self, "_acg_hook_out", None)
+                 if h is not None and h.dim() == 3:
+                     if not self.use_remove_padding and h.shape[0] == batch_size:
+@@ -334,7 +347,12 @@ class DataParallelPPOActor(BasePPOActor):
+         temperature = data.meta_info["temperature"]  # temperature must be in the data.meta_info to avoid silent error
+         use_dynamic_bsz = data.meta_info["use_dynamic_bsz"]
+ 
++        self._acg_verified_phi = bool(data.meta_info.get("ccpo_verified_phi", False))
+         select_keys = ["responses", "input_ids", "attention_mask", "position_ids"]
++        if self._acg_verified_phi:
++            if not getattr(self, "_acg_capture_hidden", False) or self.use_ulysses_sp:
++                raise ValueError("Verified future-progress capture requires frozen hidden features and SP=1")
++            select_keys.append("ccpo_source_row")
+         batch = data.select(batch_keys=select_keys).batch
+         has_multi_modal_inputs = "multi_modal_inputs" in data.non_tensor_batch.keys()
+ 
+@@ -353,27 +371,41 @@ class DataParallelPPOActor(BasePPOActor):
+         entropy_lst = []
+         # ACG: arm the affinity-feature hook for this call only.
+         self._acg_hidden_buf, self._acg_hook_out, _acg_h = [], None, None
++        self._acg_hidden = None
++        self._acg_capture_errors = []
+         if getattr(self, "_acg_capture_hidden", False):
+             _mod = None if self.use_ulysses_sp else self._acg_final_norm()
+             if _mod is None:
++                if self._acg_verified_phi:
++                    raise ValueError("Verified future-progress capture: final norm not found")
+                 self._acg_capture_hidden = False
+                 print("[ccpo-phi] no affinity features "
+                       f"({'ulysses sequence parallelism slices the packed run' if self.use_ulysses_sp else 'final norm not found'}); "
+                       "the estimator falls back to bag-of-words phi", flush=True)
+             else:
+                 _acg_h = _mod.register_forward_hook(self._acg_hidden_hook)
+-        for micro_batch in micro_batches:
+-            if isinstance(micro_batch, DataProto):
+-                micro_batch = {**micro_batch.batch, **micro_batch.non_tensor_batch}
+-            with torch.no_grad():
+-                entropy, log_probs = self._forward_micro_batch(micro_batch, temperature=temperature, calculate_entropy=calculate_entropy)
+-            log_probs_lst.append(log_probs)
+-            if calculate_entropy:
+-                entropy_lst.append(entropy)
+-
+-        if _acg_h is not None:
+-            _acg_h.remove()
+-
++        try:
++            for micro_batch in micro_batches:
++                if isinstance(micro_batch, DataProto):
++                    micro_batch = {**micro_batch.batch, **micro_batch.non_tensor_batch}
++                with torch.no_grad():
++                    entropy, log_probs = self._forward_micro_batch(micro_batch, temperature=temperature, calculate_entropy=calculate_entropy)
++                log_probs_lst.append(log_probs)
++                if calculate_entropy:
++                    entropy_lst.append(entropy)
++        except Exception:
++            self._acg_hidden_buf = []
++            raise
++        finally:
++            if _acg_h is not None:
++                _acg_h.remove()
++            self._acg_hook_out = None
++
++        if self._acg_capture_errors:
++            errors = self._acg_capture_errors
++            self._acg_hidden_buf = []
++            raise ValueError("Frozen feature capture failed after completing reference forwards: "
++                             + "; ".join(errors[:3]))
+         log_probs = torch.concat(log_probs_lst, dim=0)
+         entropys = None
+         if calculate_entropy:
+@@ -382,6 +414,8 @@ class DataParallelPPOActor(BasePPOActor):
+         # sample's affinity vector would be attributed to a different sample.
+         self._acg_hidden = torch.concat(self._acg_hidden_buf, dim=0) \
+             if self._acg_hidden_buf else None
++        if self._acg_verified_phi and (self._acg_hidden is None or self._acg_hidden.size(0) != log_probs.size(0)):
++            raise ValueError("Verified feature coverage differs from reference log probabilities")
+         if use_dynamic_bsz:
+             indices = list(itertools.chain.from_iterable(indices))
+             assert len(indices) == log_probs.size(0), f"{len(indices)} vs. {log_probs.size()}"
+diff --git a/patches/verl-agent/verl/workers/fsdp_workers.py b/patches/verl-agent/verl/workers/fsdp_workers.py
+index 610b3be..e47bcdf 100644
+--- a/patches/verl-agent/verl/workers/fsdp_workers.py
++++ b/patches/verl-agent/verl/workers/fsdp_workers.py
+@@ -713,6 +713,8 @@ class ActorRolloutRefWorker(Worker):
+ 
+     @register(dispatch_mode=Dispatch.DP_COMPUTE_PROTO)
+     def compute_ref_log_prob(self, data: DataProto):
++        if self._is_lora and data.meta_info.get("ccpo_verified_phi", False):
++            raise ValueError("Verified future-progress capture requires the standalone frozen reference")
+         if self._is_lora:
+             # if _is_lora, actor without lora applied is the ref
+             data.meta_info['is_lora'] = True
+@@ -747,7 +749,12 @@ class ActorRolloutRefWorker(Worker):
+             _feats = getattr(self.ref_policy, "_acg_hidden", None)
+             _t = {"ref_log_prob": output}
+             if _feats is not None and _feats.size(0) == output.size(0):
+-                _t["ccpo_phi_feats"] = _feats.to(output.device)
++                # Keep identity bytes and hidden coordinates in ONE tensor until
++                # the driver verifies the post-gather row mapping.
++                _key = "ccpo_phi_packet" if data.meta_info.get("ccpo_verified_phi", False) else "ccpo_phi_feats"
++                _t[_key] = _feats.to(output.device)
++            elif data.meta_info.get("ccpo_verified_phi", False):
++                raise ValueError("Reference worker did not capture every frozen feature row")
+             self.ref_policy._acg_hidden = None
+             output = DataProto.from_dict(tensors=_t)
+             output = self.ulysses_sharding_manager.postprocess_data(output)
+diff --git a/tests/test_phi_capture.py b/tests/test_phi_capture.py
+new file mode 100644
+index 0000000..b66f878
+--- /dev/null
++++ b/tests/test_phi_capture.py
+@@ -0,0 +1,314 @@
++"""CPU regression for the actual forward, micro-batch sort, DP split/collect.
++
++Uses the live worker methods with a deterministic tiny model; no Ray processes
++or GPUs. This verifies row plumbing, not H200/FlashAttention numerical accuracy.
++"""
++import ast
++from contextlib import redirect_stdout
++import io
++import itertools
++import os
++from pathlib import Path
++import sys
++from types import SimpleNamespace
++from typing import Tuple
++import unittest
++from unittest.mock import patch
++
++os.environ.update(CUDA_VISIBLE_DEVICES='', OMP_NUM_THREADS='1', OPENBLAS_NUM_THREADS='1')
++ROOT = Path(__file__).resolve().parents[1]
++sys.path[:0] = [str(ROOT), str(ROOT / 'verl-agent'), str(ROOT / 'tests')]
++import numpy as np
++import torch
++from einops import rearrange
++from verl import DataProto
++from verl.single_controller.base.worker_group import WorkerGroup
++from verl.single_controller.base.decorator import dispatch_dp_compute_data_proto, collect_dp_compute_data_proto
++from verl.utils.seqlen_balancing import get_reverse_idx, rearrange_micro_batches
++from ccpo.phi_capture import (SOURCE_ID, VERIFIED, PACKET, HASH_BYTES, mark_source_rows,
++                              input_fingerprints, pool_last_prompt, compute_verified_ref)
++
++
++def load_methods(relative, names, namespace):
++    path = ROOT / 'verl-agent' / relative
++    assert path.read_bytes() == (ROOT / 'patches/verl-agent' / relative).read_bytes()
++    methods = [node for node in ast.walk(ast.parse(path.read_text()))
++               if isinstance(node, ast.FunctionDef) and node.name in names]
++    assert len(methods) == len(names)
++    for method in methods:
++        method.decorator_list = []
++    exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), namespace)
++    return {name: namespace[name] for name in names}
++
++
++def unpad_input(value, mask):
++    indices = torch.nonzero(mask.reshape(-1), as_tuple=True)[0]
++    return value.flatten(0, 1)[indices], indices
++
++
++def pad_input(hidden_states, indices, batch, seqlen):
++    result = hidden_states.new_zeros((batch * seqlen, hidden_states.shape[-1]))
++    result[indices] = hidden_states
++    return result.reshape(batch, seqlen, -1)
++
++
++def logprobs_from_logits(logits, labels, **kwargs):
++    return logits.log_softmax(-1).gather(-1, labels[..., None]).squeeze(-1)
++
++
++class TinyModel(torch.nn.Module):
++    def __init__(self):
++        super().__init__()
++        self.norm = torch.nn.Identity()
++        self.calls = 0
++        self.table = torch.randn(128, 8, generator=torch.Generator().manual_seed(71))
++
++    def forward(self, input_ids, position_ids, **kwargs):
++        self.calls += 1
++        hidden = self.norm(self.table[input_ids] + position_ids[..., None].float() / 100)
++        logits = hidden[..., :1] * torch.linspace(-1, 1, 128)
++        return SimpleNamespace(logits=logits)
++
++
++actor_namespace = dict(torch=torch, Tuple=Tuple, DataProto=DataProto, itertools=itertools,
++                       get_reverse_idx=get_reverse_idx, rearrange_micro_batches=rearrange_micro_batches,
++                       unpad_input=unpad_input, pad_input=pad_input, rearrange=rearrange,
++                       index_first_axis=lambda value, indices: value[indices],
++                       logprobs_from_logits=logprobs_from_logits)
++Actor = type('Actor', (), load_methods('verl/workers/actor/dp_actor.py',
++             ['_forward_micro_batch', '_acg_hidden_hook', '_acg_final_norm', 'compute_log_prob'], actor_namespace))
++worker_namespace = dict(torch=torch, DataProto=DataProto, os=os,
++                        get_torch_device=lambda: SimpleNamespace(current_device=lambda: 'cpu'))
++RefWorker = type('RefWorker', (), load_methods('verl/workers/fsdp_workers.py',
++               ['compute_ref_log_prob'], worker_namespace))
++
++
++def actor(packed):
++    result = Actor()
++    result.actor_module = TinyModel()
++    result.use_remove_padding = packed
++    result.use_ulysses_sp = False
++    result.ulysses_sequence_parallel_size = 1
++    result.use_fused_kernels = False
++    result.device_name = 'cpu'
++    return result
++
++
++class Sharding:
++    def __enter__(self): return self
++    def __exit__(self, *exc): return False
++    def preprocess_data(self, data): return data
++    def postprocess_data(self, data): return data
++
++
++class Group(WorkerGroup):
++    def __init__(self, size=4, packed=True, dynamic=True, corruption=None):
++        self._workers = [None] * size
++        self.packed, self.dynamic, self.corruption = packed, dynamic, corruption
++        self.request = None
++
++    def compute_ref_log_prob(self, data):
++        self.request = data
++        args, kwargs = dispatch_dp_compute_data_proto(self, data)
++        outputs = []
++        for rank, shard in enumerate(args[0]):
++            if self.corruption == 'inputs' and rank == 0:
++                shard.batch['input_ids'][0, -5] += 1
++            worker = RefWorker()
++            worker._is_lora, worker._is_ref, worker.world_size = False, True, 1
++            worker.ulysses_sharding_manager = Sharding()
++            worker.ref_policy = actor(self.packed)
++            worker.config = SimpleNamespace(
++                ref=SimpleNamespace(log_prob_micro_batch_size_per_gpu=2,
++                                    log_prob_max_token_len_per_gpu=16,
++                                    log_prob_use_dynamic_bsz=self.dynamic),
++                rollout=SimpleNamespace(temperature=1.))
++            outputs.append(worker.compute_ref_log_prob(shard))
++        result = collect_dp_compute_data_proto(self, outputs)
++        packet = result.batch[PACKET]
++        if self.corruption == 'swap':
++            packet[[0, 1]] = packet[[1, 0]]
++        elif self.corruption == 'drop':
++            return result[:-1]
++        elif self.corruption == 'missing':
++            result.batch.pop(PACKET)
++        elif self.corruption == 'nan':
++            packet[-1, 0] = float('nan')
++        elif self.corruption == 'drift':
++            ids = data.batch[SOURCE_ID].tolist()
++            seen = set()
++            for row, source in enumerate(ids):
++                if source in seen:
++                    packet[row, 0] += 1.75
++                seen.add(source)
++        return result
++
++
++def batch(n=29):
++    ids = (torch.arange(n) % 100 + 1)[:, None].expand(-1, 12).clone()
++    mask = torch.ones_like(ids)
++    for i in range(n):
++        mask[i, :i % 5] = 0
++        mask[i, 12 - i % 3:] = 0
++    positions = (mask.cumsum(-1) - 1).clamp(min=0) * mask
++    return DataProto.from_dict(tensors=dict(input_ids=ids, attention_mask=mask,
++                              position_ids=positions, responses=ids[:, -4:].clone()))
++
++
++def padded_batch(n=29):
++    data = batch(n)
++    mark_source_rows(data)
++    order = np.random.default_rng(52).permutation(np.r_[np.arange(n), np.arange(n // 2), 0, 0])
++    return data.select_idxs(order)
++
++
++def expected_features(data):
++    return TinyModel().table[data.batch['input_ids'][:, -5]] + data.batch['position_ids'][:, -5, None].float() / 100
++
++
++class CaptureTests(unittest.TestCase):
++    def setUp(self):
++        self.env = patch.dict(os.environ, ACG_ADV_ESTIMATOR='ccpo', ACG_CCPO_PHI='hidden+ctx')
++        self.env.start()
++        self.addCleanup(self.env.stop)
++
++    def test_real_worker_split_forward_sort_collect_and_restore(self):
++        for size in [1, 4, 8]:
++            for packed in [False, True]:
++                for dynamic in [False, True]:
++                    with self.subTest(size=size, packed=packed, dynamic=dynamic):
++                        data = padded_batch()
++                        worker = Group(size, packed, dynamic)
++                        output, metrics = compute_verified_ref(data, worker)
++                        torch.testing.assert_close(output.batch['ccpo_phi_feats'], expected_features(data), rtol=0, atol=0)
++                        self.assertEqual(len(worker.request), 29 + (-29 % size))
++                        self.assertEqual(metrics['ccpo/phi_training_padding_rows'], len(data) - 29)
++                        self.assertEqual(metrics['ccpo/phi_transport_duplicate_max_diff'], 0.)
++                        self.assertFalse(output.batch['ccpo_phi_feats'].requires_grad)
++                        raw = TinyModel()(data.batch['input_ids'], data.batch['position_ids']).logits
++                        expected_logp = logprobs_from_logits(raw[:, -5:-1], data.batch['responses'])
++                        # Packed log probs at masked response positions are not used.
++                        mask = data.batch['attention_mask'][:, -4:].bool()
++                        torch.testing.assert_close(output.batch['ref_log_prob'][mask], expected_logp[mask])
++
++    def test_transport_drift_logged_but_source_features_are_retained(self):
++        data = padded_batch()
++        output, metrics = compute_verified_ref(data, Group(8, corruption='drift'))
++        torch.testing.assert_close(output.batch['ccpo_phi_feats'], expected_features(data), rtol=0, atol=0)
++        self.assertEqual(metrics['ccpo/phi_transport_duplicate_differing_rows'], 3.)
++        self.assertAlmostEqual(metrics['ccpo/phi_transport_duplicate_max_diff'], 1.75, places=5)
++
++    def test_wrong_inputs_bad_collection_missing_features_and_nonfinite_fail(self):
++        for corrupt, message in [('inputs', 'identity mismatch'), ('swap', 'identity mismatch'),
++                                  ('drop', 'incomplete'), ('missing', 'incomplete'), ('nan', 'Non-finite')]:
++            with self.subTest(corrupt=corrupt), self.assertRaisesRegex(ValueError, message):
++                compute_verified_ref(padded_batch(), Group(8, corruption=corrupt))
++
++    def test_false_padding_and_lost_source_rows_fail_before_forward(self):
++        for field in ['input_ids', 'attention_mask', 'position_ids', 'responses']:
++            data = padded_batch()
++            rows = (data.batch[SOURCE_ID] == 0).nonzero().flatten()
++            data.batch[field][rows[-1], 0] += 1
++            group = Group()
++            with self.subTest(field=field), self.assertRaisesRegex(ValueError, 'padding changed'):
++                compute_verified_ref(data, group)
++            self.assertIsNone(group.request)
++        data = padded_batch()
++        data = data.select_idxs((data.batch[SOURCE_ID] != 3).nonzero().flatten())
++        with self.assertRaisesRegex(ValueError, 'Lost or invalid'):
++            compute_verified_ref(data, Group())
++
++    def test_small_batch_and_1598_padding_counts(self):
++        for n in [1, 2, 1598]:
++            for size in [4, 8]:
++                with self.subTest(n=n, size=size):
++                    data = batch(n)
++                    mark_source_rows(data)
++                    output, metrics = compute_verified_ref(data, Group(size))
++                    self.assertEqual(len(output), n)
++                    self.assertEqual(metrics['ccpo/phi_transport_padding_rows'], -n % size)
++                    torch.testing.assert_close(output.batch['ccpo_phi_feats'], expected_features(data), rtol=0, atol=0)
++
++    def test_packing_rejects_wrong_indices_and_missing_prompt(self):
++        data = batch(4).batch
++        indices = torch.nonzero(data['attention_mask'].reshape(-1), as_tuple=True)[0]
++        hidden = torch.zeros(1, len(indices), 8)
++        with self.assertRaisesRegex(ValueError, 'indices'):
++            pool_last_prompt(hidden, data, indices.flip(0))
++        with self.assertRaisesRegex(ValueError, 'do not match'):
++            pool_last_prompt(hidden[:, :-1], data, indices)
++        data['attention_mask'][0, -5] = 0
++        with self.assertRaisesRegex(ValueError, 'masked'):
++            pool_last_prompt(hidden, data, indices)
++
++    def test_capture_failure_removes_hook_and_next_call_is_clean(self):
++        data = batch(4)
++        mark_source_rows(data)
++        data.meta_info.update({VERIFIED: True, 'micro_batch_size': 2, 'temperature': 1., 'use_dynamic_bsz': False})
++        worker = actor(True)
++        worker._acg_capture_hidden = True
++        old = worker.actor_module.table[1, 0].clone()
++        worker.actor_module.table[1, 0] = float('inf')
++        with self.assertRaisesRegex(ValueError, 'Non-finite frozen'):
++            worker.compute_log_prob(data)
++        self.assertEqual(len(worker.actor_module.norm._forward_hooks), 0)
++        self.assertEqual(worker._acg_hidden_buf, [])
++        self.assertEqual(worker.actor_module.calls, 2)  # both FSDP forwards finished before the error
++        worker.actor_module.table[1, 0] = old
++        worker.compute_log_prob(data)
++        self.assertEqual(worker._acg_hidden.shape, (4, 8 + HASH_BYTES))
++
++    def test_legacy_capture_still_returns_unpacketized_hidden_features(self):
++        for packed in [False, True]:
++            data = batch(9)
++            data.meta_info.update(micro_batch_size=2, temperature=1., use_dynamic_bsz=True, max_token_len=16)
++            worker = actor(packed)
++            worker._acg_capture_hidden = True
++            worker.compute_log_prob(data)
++            torch.testing.assert_close(worker._acg_hidden, expected_features(data), rtol=0, atol=0)
++            self.assertEqual(len(worker.actor_module.norm._forward_hooks), 0)
++
++    def test_verified_capture_rejects_unsupported_capture_instead_of_fallback(self):
++        for fault in ['sp', 'disabled', 'missing_norm']:
++            data = batch(4)
++            mark_source_rows(data)
++            data.meta_info.update({VERIFIED: True, 'micro_batch_size': 2, 'temperature': 1., 'use_dynamic_bsz': False})
++            worker = actor(True)
++            worker._acg_capture_hidden = fault != 'disabled'
++            worker.use_ulysses_sp = fault == 'sp'
++            if fault == 'missing_norm':
++                worker._acg_final_norm = lambda: None
++            with self.subTest(fault=fault), self.assertRaisesRegex(ValueError, 'Verified future-progress'):
++                worker.compute_log_prob(data)
++
++    def test_recovered_features_preserve_actual_advantage_and_ppo_gradient(self):
++        from test_future_progress import rows
++        from test_outlook import fixture
++        from test_episode_adv_isolation import load_compute_advantage, make_data, policy_gradient
++        compute = load_compute_advantage()
++        source = fixture()
++        data = padded_batch(len(source['index']))
++        order = data.batch[SOURCE_ID].numpy()
++        source['phi_feats'] = expected_features(batch(len(source['index'])))
++        for size in [4, 8]:
++            captured, _ = compute_verified_ref(data, Group(size, corruption='drift'))
++            for mode in ['mean_norm', 'mean_std_norm']:
++                for horizon in [1, 2]:
++                    env = dict(ACG_CCPO_PROGRESS_HORIZON=str(horizon), ACG_CCPO_EP_W='0',
++                               ACG_CCPO_PROGRESS_WEIGHT='1', ACG_CCPO_FIXED_ANCHOR='0',
++                               ACG_CCPO_OUTLOOK_HORIZON='0', ACG_CCPO_OUTLOOK_BETA='0', ACG_CCPO_STEP_NORM='mode')
++                    results = []
++                    for features in [source['phi_feats'][order], captured.batch['ccpo_phi_feats']]:
++                        kw = rows(source, order)
++                        kw['phi_feats'] = features
++                        training = make_data(kw)
++                        with patch.dict(os.environ, env), redirect_stdout(io.StringIO()):
++                            compute(training, 'CCPO', gamma=.95, gigpo_mode=mode)
++                        results.append((training.batch['advantages'], *policy_gradient(training)))
++                        self.assertEqual(training.meta_info['ccpo_diag']['ccpo/progress_phi_duplicate_max_diff'], 0.)
++                    for left, right in zip(*results):
++                        torch.testing.assert_close(left, right, atol=0, rtol=0)
++
++
++if __name__ == '__main__':
++    unittest.main()
+-- 
+2.34.1
+

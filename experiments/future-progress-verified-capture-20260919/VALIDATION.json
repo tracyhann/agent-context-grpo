@@ -1,0 +1,31 @@
+{
+  "status": "cpu_regressions_passed",
+  "time": "2026-09-19T10:35:52.795769+00:00",
+  "base_commit": "c8ce25b674c7895c2405e2093c73b0c7284b3d69",
+  "actual_runtime_overlay_equal": true,
+  "alfworld_python_tests": 58,
+  "webshop_python_tests": 10,
+  "simulated_dp_world_sizes": [
+    1,
+    4,
+    8
+  ],
+  "real_gpu_training_launched": false,
+  "aip_8_h200_reproduction_performed": false,
+  "preserved_estimator_and_ppo_gradient_on_identical_retained_features": true,
+  "transport_finite_drift_test": 1.75,
+  "identity_mismatch_injection_rejected": true,
+  "nonfinite_including_transport_rejected": true,
+  "deferred_capture_failure_finishes_all_reference_microbatches": true,
+  "source_sha256": {
+    "ccpo/phi_capture.py": "47252330898225703558380e9eb96c0c475368bd7e2bece79be9a4f84c4c59fc",
+    "tests/test_phi_capture.py": "c7faa9ca38418753f1d5d3a7a446005aa759d9c6d43a7c91d3f95f474afef1d1",
+    "patches/verl-agent/verl/trainer/ppo/ray_trainer.py": "cf805e9c99bff5ff594fe4faf6481884aa05009422718f0aabc203344296a7cd",
+    "patches/verl-agent/verl/workers/actor/dp_actor.py": "02df759d3ae1571bfd99702c18dc3fcdee94fd302b799587b8d21f3f862cfb20",
+    "patches/verl-agent/verl/workers/fsdp_workers.py": "3c4d32094ac22a451c8b5103221e8536ddf6441305199e3451556f13c102ea11",
+    "experiments/future-progress-verified-capture.patch": "34b0987fb4bd96c4a7566dd321dd9087a1bc19f4d8ef964a262c8f2c07077bb5",
+    "verl-agent/verl/trainer/ppo/ray_trainer.py": "cf805e9c99bff5ff594fe4faf6481884aa05009422718f0aabc203344296a7cd",
+    "verl-agent/verl/workers/actor/dp_actor.py": "02df759d3ae1571bfd99702c18dc3fcdee94fd302b799587b8d21f3f862cfb20",
+    "verl-agent/verl/workers/fsdp_workers.py": "3c4d32094ac22a451c8b5103221e8536ddf6441305199e3451556f13c102ea11"
+  }
+}

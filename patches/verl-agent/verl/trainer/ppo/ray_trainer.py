@@ -1408,6 +1408,12 @@ class RayPPOTrainer:
                         )
                         batch.batch['step_rewards'] = step_rewards_tensor
                     
+                    # Source IDs must predate copy padding and length balancing.
+                    _verified_phi = (self.config.algorithm.adv_estimator == AdvantageEstimator.CCPO
+                                     and int(os.environ.get('ACG_CCPO_PROGRESS_HORIZON', '0')) > 0)
+                    if _verified_phi:
+                        from ccpo.phi_capture import mark_source_rows
+                        mark_source_rows(batch)
                     batch = adjust_batch(self.config, batch)
 
                     batch.batch["response_mask"] = compute_response_mask(batch)
@@ -1470,10 +1476,13 @@ class RayPPOTrainer:
                     if self.use_reference_policy:
                         # compute reference log_prob
                         with _timer("ref", timing_raw):
-                            if not self.ref_in_actor:
-                                ref_log_prob = self.ref_policy_wg.compute_ref_log_prob(batch)
+                            _ref = self.actor_rollout_wg if self.ref_in_actor else self.ref_policy_wg
+                            if _verified_phi:
+                                from ccpo.phi_capture import compute_verified_ref
+                                ref_log_prob, phi_metrics = compute_verified_ref(batch, _ref)
+                                metrics.update(phi_metrics)
                             else:
-                                ref_log_prob = self.actor_rollout_wg.compute_ref_log_prob(batch)
+                                ref_log_prob = _ref.compute_ref_log_prob(batch)
                             batch = batch.union(ref_log_prob)
                         if os.environ.get('ACG_CCPO_FIXED_ANCHOR', '0') == '1':
                             with _timer("ref_future", timing_raw):

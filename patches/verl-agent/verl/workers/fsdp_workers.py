@@ -713,6 +713,8 @@ class ActorRolloutRefWorker(Worker):
 
     @register(dispatch_mode=Dispatch.DP_COMPUTE_PROTO)
     def compute_ref_log_prob(self, data: DataProto):
+        if self._is_lora and data.meta_info.get("ccpo_verified_phi", False):
+            raise ValueError("Verified future-progress capture requires the standalone frozen reference")
         if self._is_lora:
             # if _is_lora, actor without lora applied is the ref
             data.meta_info['is_lora'] = True
@@ -747,7 +749,12 @@ class ActorRolloutRefWorker(Worker):
             _feats = getattr(self.ref_policy, "_acg_hidden", None)
             _t = {"ref_log_prob": output}
             if _feats is not None and _feats.size(0) == output.size(0):
-                _t["ccpo_phi_feats"] = _feats.to(output.device)
+                # Keep identity bytes and hidden coordinates in ONE tensor until
+                # the driver verifies the post-gather row mapping.
+                _key = "ccpo_phi_packet" if data.meta_info.get("ccpo_verified_phi", False) else "ccpo_phi_feats"
+                _t[_key] = _feats.to(output.device)
+            elif data.meta_info.get("ccpo_verified_phi", False):
+                raise ValueError("Reference worker did not capture every frozen feature row")
             self.ref_policy._acg_hidden = None
             output = DataProto.from_dict(tensors=_t)
             output = self.ulysses_sharding_manager.postprocess_data(output)
