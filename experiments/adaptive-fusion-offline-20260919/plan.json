@@ -1,0 +1,1680 @@
+{
+  "created_at": "2026-09-19T01:35:34.050392+00:00",
+  "bootstrap_replicates_per_split": 256,
+  "seed": 190919,
+  "method": "paired conditional trajectory bootstrap; fixed feature geometry and bandwidth; resampled support counts",
+  "runs": [
+    {
+      "tag": "M10",
+      "name": "m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918",
+      "config_path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/config.json",
+      "config_sha256": "cf57f869448dd185bb98031203c4dd52c15686f9d7d890262b343252cf05a8fa",
+      "snapshots": [
+        {
+          "step": 1,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0001.npz",
+          "size": 179659782,
+          "mtime_ns": 1789705415967940495
+        },
+        {
+          "step": 2,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0002.npz",
+          "size": 183192856,
+          "mtime_ns": 1789705959324840942
+        },
+        {
+          "step": 3,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0003.npz",
+          "size": 184539642,
+          "mtime_ns": 1789706527595894971
+        },
+        {
+          "step": 4,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0004.npz",
+          "size": 186265538,
+          "mtime_ns": 1789707073176933912
+        },
+        {
+          "step": 5,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0005.npz",
+          "size": 185180724,
+          "mtime_ns": 1789707594839201008
+        },
+        {
+          "step": 6,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0006.npz",
+          "size": 185064349,
+          "mtime_ns": 1789708928003979024
+        },
+        {
+          "step": 7,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0007.npz",
+          "size": 174214945,
+          "mtime_ns": 1789709446485185327
+        },
+        {
+          "step": 8,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0008.npz",
+          "size": 183638666,
+          "mtime_ns": 1789709974407057281
+        },
+        {
+          "step": 9,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0009.npz",
+          "size": 179993521,
+          "mtime_ns": 1789710516006638174
+        },
+        {
+          "step": 10,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0010.npz",
+          "size": 176116350,
+          "mtime_ns": 1789711049798454515
+        },
+        {
+          "step": 11,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0011.npz",
+          "size": 176829041,
+          "mtime_ns": 1789712441970566931
+        },
+        {
+          "step": 12,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0012.npz",
+          "size": 175416344,
+          "mtime_ns": 1789712982614477886
+        },
+        {
+          "step": 13,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0013.npz",
+          "size": 166353034,
+          "mtime_ns": 1789713495567658455
+        },
+        {
+          "step": 14,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0014.npz",
+          "size": 183679247,
+          "mtime_ns": 1789714036453727618
+        },
+        {
+          "step": 15,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0015.npz",
+          "size": 173447451,
+          "mtime_ns": 1789714611250780860
+        },
+        {
+          "step": 16,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0016.npz",
+          "size": 157755252,
+          "mtime_ns": 1789715886940076114
+        },
+        {
+          "step": 17,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0017.npz",
+          "size": 177094605,
+          "mtime_ns": 1789716365350055780
+        },
+        {
+          "step": 18,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0018.npz",
+          "size": 169962438,
+          "mtime_ns": 1789716889245673800
+        },
+        {
+          "step": 19,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0019.npz",
+          "size": 158067779,
+          "mtime_ns": 1789717414511215640
+        },
+        {
+          "step": 20,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0020.npz",
+          "size": 168010270,
+          "mtime_ns": 1789717888184238385
+        },
+        {
+          "step": 21,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0021.npz",
+          "size": 177237916,
+          "mtime_ns": 1789719221605127872
+        },
+        {
+          "step": 22,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0022.npz",
+          "size": 167956165,
+          "mtime_ns": 1789719723808280444
+        },
+        {
+          "step": 23,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0023.npz",
+          "size": 134387081,
+          "mtime_ns": 1789720196901423422
+        },
+        {
+          "step": 24,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0024.npz",
+          "size": 165769221,
+          "mtime_ns": 1789720649933912920
+        },
+        {
+          "step": 25,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0025.npz",
+          "size": 149879618,
+          "mtime_ns": 1789721148025402569
+        },
+        {
+          "step": 26,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0026.npz",
+          "size": 155223831,
+          "mtime_ns": 1789722414029357474
+        },
+        {
+          "step": 27,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0027.npz",
+          "size": 149615515,
+          "mtime_ns": 1789722909814599916
+        },
+        {
+          "step": 28,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0028.npz",
+          "size": 140759018,
+          "mtime_ns": 1789723388904771526
+        },
+        {
+          "step": 29,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0029.npz",
+          "size": 156082874,
+          "mtime_ns": 1789723865088701432
+        },
+        {
+          "step": 30,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0030.npz",
+          "size": 150822847,
+          "mtime_ns": 1789724364803215040
+        },
+        {
+          "step": 31,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0031.npz",
+          "size": 164908676,
+          "mtime_ns": 1789725645374224465
+        },
+        {
+          "step": 32,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0032.npz",
+          "size": 126528747,
+          "mtime_ns": 1789726127391176930
+        },
+        {
+          "step": 33,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0033.npz",
+          "size": 134121505,
+          "mtime_ns": 1789726582106127272
+        },
+        {
+          "step": 34,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0034.npz",
+          "size": 129312639,
+          "mtime_ns": 1789727054971087777
+        },
+        {
+          "step": 35,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0035.npz",
+          "size": 124356394,
+          "mtime_ns": 1789727489887587453
+        },
+        {
+          "step": 36,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0036.npz",
+          "size": 125312214,
+          "mtime_ns": 1789728666313240046
+        },
+        {
+          "step": 37,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0037.npz",
+          "size": 127738790,
+          "mtime_ns": 1789729099173716414
+        },
+        {
+          "step": 38,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0038.npz",
+          "size": 141133416,
+          "mtime_ns": 1789729566308626059
+        },
+        {
+          "step": 39,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0039.npz",
+          "size": 117757392,
+          "mtime_ns": 1789730021588293507
+        },
+        {
+          "step": 40,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0040.npz",
+          "size": 126221615,
+          "mtime_ns": 1789730459724904840
+        },
+        {
+          "step": 41,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0041.npz",
+          "size": 104125113,
+          "mtime_ns": 1789731626866487389
+        },
+        {
+          "step": 42,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0042.npz",
+          "size": 132161473,
+          "mtime_ns": 1789732036712543882
+        },
+        {
+          "step": 43,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0043.npz",
+          "size": 127131000,
+          "mtime_ns": 1789732490130320281
+        },
+        {
+          "step": 44,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0044.npz",
+          "size": 128504115,
+          "mtime_ns": 1789732953667920287
+        },
+        {
+          "step": 45,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0045.npz",
+          "size": 136057822,
+          "mtime_ns": 1789733402833747445
+        },
+        {
+          "step": 46,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0046.npz",
+          "size": 101499150,
+          "mtime_ns": 1789734563454322567
+        },
+        {
+          "step": 47,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0047.npz",
+          "size": 124616858,
+          "mtime_ns": 1789734982909414929
+        },
+        {
+          "step": 48,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0048.npz",
+          "size": 119170651,
+          "mtime_ns": 1789735399051759762
+        },
+        {
+          "step": 49,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0049.npz",
+          "size": 113412964,
+          "mtime_ns": 1789735820289983262
+        },
+        {
+          "step": 50,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0050.npz",
+          "size": 139737370,
+          "mtime_ns": 1789736256121457242
+        },
+        {
+          "step": 51,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0051.npz",
+          "size": 123325899,
+          "mtime_ns": 1789737420234051514
+        },
+        {
+          "step": 52,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0052.npz",
+          "size": 121985843,
+          "mtime_ns": 1789737865600599996
+        },
+        {
+          "step": 53,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0053.npz",
+          "size": 98680906,
+          "mtime_ns": 1789738268548655335
+        },
+        {
+          "step": 54,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0054.npz",
+          "size": 106256080,
+          "mtime_ns": 1789738672489776548
+        },
+        {
+          "step": 55,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0055.npz",
+          "size": 90464844,
+          "mtime_ns": 1789739057727448509
+        },
+        {
+          "step": 56,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0056.npz",
+          "size": 99286662,
+          "mtime_ns": 1789740139116029530
+        },
+        {
+          "step": 57,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0057.npz",
+          "size": 102998317,
+          "mtime_ns": 1789740548102321461
+        },
+        {
+          "step": 58,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0058.npz",
+          "size": 104984735,
+          "mtime_ns": 1789740973729521769
+        },
+        {
+          "step": 59,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0059.npz",
+          "size": 98526937,
+          "mtime_ns": 1789741389963941285
+        },
+        {
+          "step": 60,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0060.npz",
+          "size": 113364872,
+          "mtime_ns": 1789741825576585485
+        },
+        {
+          "step": 61,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0061.npz",
+          "size": 111296863,
+          "mtime_ns": 1789742983241168013
+        },
+        {
+          "step": 62,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0062.npz",
+          "size": 121123191,
+          "mtime_ns": 1789743393889394842
+        },
+        {
+          "step": 63,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0063.npz",
+          "size": 119451388,
+          "mtime_ns": 1789743830750988447
+        },
+        {
+          "step": 64,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0064.npz",
+          "size": 124134212,
+          "mtime_ns": 1789744259753217249
+        },
+        {
+          "step": 65,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0065.npz",
+          "size": 93469348,
+          "mtime_ns": 1789744698605110887
+        },
+        {
+          "step": 66,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0066.npz",
+          "size": 106907189,
+          "mtime_ns": 1789745810787404103
+        },
+        {
+          "step": 67,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0067.npz",
+          "size": 98680172,
+          "mtime_ns": 1789746212354301808
+        },
+        {
+          "step": 68,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0068.npz",
+          "size": 96216517,
+          "mtime_ns": 1789746611051847833
+        },
+        {
+          "step": 69,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0069.npz",
+          "size": 135679927,
+          "mtime_ns": 1789747038499395098
+        },
+        {
+          "step": 70,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0070.npz",
+          "size": 81159312,
+          "mtime_ns": 1789747470106964723
+        },
+        {
+          "step": 71,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0071.npz",
+          "size": 100248168,
+          "mtime_ns": 1789748571055326315
+        },
+        {
+          "step": 72,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0072.npz",
+          "size": 80744391,
+          "mtime_ns": 1789748954096407985
+        },
+        {
+          "step": 73,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0073.npz",
+          "size": 77124407,
+          "mtime_ns": 1789749319900915513
+        },
+        {
+          "step": 74,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0074.npz",
+          "size": 86756883,
+          "mtime_ns": 1789749711091259222
+        },
+        {
+          "step": 75,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0075.npz",
+          "size": 85693262,
+          "mtime_ns": 1789750118385442872
+        },
+        {
+          "step": 76,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0076.npz",
+          "size": 85505282,
+          "mtime_ns": 1789751247305019405
+        },
+        {
+          "step": 77,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0077.npz",
+          "size": 93237180,
+          "mtime_ns": 1789751640566243560
+        },
+        {
+          "step": 78,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0078.npz",
+          "size": 90686531,
+          "mtime_ns": 1789752036542480340
+        },
+        {
+          "step": 79,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0079.npz",
+          "size": 82273719,
+          "mtime_ns": 1789752436551419377
+        },
+        {
+          "step": 80,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0080.npz",
+          "size": 66146162,
+          "mtime_ns": 1789752810277624835
+        },
+        {
+          "step": 81,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0081.npz",
+          "size": 55811622,
+          "mtime_ns": 1789753865870515755
+        },
+        {
+          "step": 82,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0082.npz",
+          "size": 106204665,
+          "mtime_ns": 1789754241348146463
+        },
+        {
+          "step": 83,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0083.npz",
+          "size": 73146491,
+          "mtime_ns": 1789754623130130297
+        },
+        {
+          "step": 84,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0084.npz",
+          "size": 85645797,
+          "mtime_ns": 1789754985584999004
+        },
+        {
+          "step": 85,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0085.npz",
+          "size": 60990077,
+          "mtime_ns": 1789755315023145394
+        },
+        {
+          "step": 86,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0086.npz",
+          "size": 90155292,
+          "mtime_ns": 1789756352476701559
+        },
+        {
+          "step": 87,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0087.npz",
+          "size": 50401302,
+          "mtime_ns": 1789756706766363576
+        },
+        {
+          "step": 88,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0088.npz",
+          "size": 89759779,
+          "mtime_ns": 1789757060091097330
+        },
+        {
+          "step": 89,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0089.npz",
+          "size": 82635203,
+          "mtime_ns": 1789757447756937311
+        },
+        {
+          "step": 90,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0090.npz",
+          "size": 45833443,
+          "mtime_ns": 1789757781371394732
+        },
+        {
+          "step": 91,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0091.npz",
+          "size": 65512123,
+          "mtime_ns": 1789758787025531849
+        },
+        {
+          "step": 92,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0092.npz",
+          "size": 50971116,
+          "mtime_ns": 1789759119164997717
+        },
+        {
+          "step": 93,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0093.npz",
+          "size": 66303092,
+          "mtime_ns": 1789759454836193261
+        },
+        {
+          "step": 94,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0094.npz",
+          "size": 54133550,
+          "mtime_ns": 1789759793642715222
+        },
+        {
+          "step": 95,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0095.npz",
+          "size": 53247133,
+          "mtime_ns": 1789760122757159785
+        },
+        {
+          "step": 96,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0096.npz",
+          "size": 65750842,
+          "mtime_ns": 1789761141400512743
+        },
+        {
+          "step": 97,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0097.npz",
+          "size": 86682967,
+          "mtime_ns": 1789761497079977845
+        },
+        {
+          "step": 98,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0098.npz",
+          "size": 46655390,
+          "mtime_ns": 1789761839784503610
+        },
+        {
+          "step": 99,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0099.npz",
+          "size": 101640714,
+          "mtime_ns": 1789762191677177127
+        },
+        {
+          "step": 100,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0100.npz",
+          "size": 71186138,
+          "mtime_ns": 1789762576561982459
+        },
+        {
+          "step": 101,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0101.npz",
+          "size": 79724181,
+          "mtime_ns": 1789763624152651484
+        },
+        {
+          "step": 102,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0102.npz",
+          "size": 67489032,
+          "mtime_ns": 1789763981646402544
+        },
+        {
+          "step": 103,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0103.npz",
+          "size": 94411406,
+          "mtime_ns": 1789764340345123239
+        },
+        {
+          "step": 104,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0104.npz",
+          "size": 65975299,
+          "mtime_ns": 1789764724403871367
+        },
+        {
+          "step": 105,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0105.npz",
+          "size": 53098791,
+          "mtime_ns": 1789765043093339004
+        },
+        {
+          "step": 106,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0106.npz",
+          "size": 72809951,
+          "mtime_ns": 1789771847635224141
+        },
+        {
+          "step": 107,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0107.npz",
+          "size": 59794529,
+          "mtime_ns": 1789772202611031626
+        },
+        {
+          "step": 108,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0108.npz",
+          "size": 60164815,
+          "mtime_ns": 1789772525777244526
+        },
+        {
+          "step": 109,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0109.npz",
+          "size": 59538204,
+          "mtime_ns": 1789772871230521326
+        },
+        {
+          "step": 110,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0110.npz",
+          "size": 50149304,
+          "mtime_ns": 1789773209820877073
+        },
+        {
+          "step": 111,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0111.npz",
+          "size": 66544552,
+          "mtime_ns": 1789774225719768148
+        },
+        {
+          "step": 112,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0112.npz",
+          "size": 81176017,
+          "mtime_ns": 1789774584169397087
+        },
+        {
+          "step": 113,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0113.npz",
+          "size": 89857975,
+          "mtime_ns": 1789774957659034358
+        },
+        {
+          "step": 114,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0114.npz",
+          "size": 63638247,
+          "mtime_ns": 1789775314508735512
+        },
+        {
+          "step": 115,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0115.npz",
+          "size": 56453287,
+          "mtime_ns": 1789775652914065698
+        },
+        {
+          "step": 116,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0116.npz",
+          "size": 78797074,
+          "mtime_ns": 1789776696758408050
+        },
+        {
+          "step": 117,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0117.npz",
+          "size": 91954012,
+          "mtime_ns": 1789777093034412101
+        },
+        {
+          "step": 118,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0118.npz",
+          "size": 61247927,
+          "mtime_ns": 1789777475955428264
+        },
+        {
+          "step": 119,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0119.npz",
+          "size": 59191323,
+          "mtime_ns": 1789777820085760887
+        },
+        {
+          "step": 120,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0120.npz",
+          "size": 57657733,
+          "mtime_ns": 1789778166261205737
+        },
+        {
+          "step": 121,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0121.npz",
+          "size": 65163676,
+          "mtime_ns": 1789779197663363487
+        },
+        {
+          "step": 122,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0122.npz",
+          "size": 49911331,
+          "mtime_ns": 1789779517851562314
+        },
+        {
+          "step": 123,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0123.npz",
+          "size": 66252516,
+          "mtime_ns": 1789779864806756235
+        },
+        {
+          "step": 124,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0124.npz",
+          "size": 57217629,
+          "mtime_ns": 1789780230748535806
+        },
+        {
+          "step": 125,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0125.npz",
+          "size": 46215112,
+          "mtime_ns": 1789780567147026496
+        },
+        {
+          "step": 126,
+          "path": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0126.npz",
+          "size": 87246279,
+          "mtime_ns": 1789781604571532593
+        }
+      ]
+    },
+    {
+      "tag": "M11",
+      "name": "m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918",
+      "config_path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/config.json",
+      "config_sha256": "774586811cc590efc69ecd959750e75ee75461db404ca55cd489df7fed129797",
+      "snapshots": [
+        {
+          "step": 1,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0001.npz",
+          "size": 47459044,
+          "mtime_ns": 1789705289659286365
+        },
+        {
+          "step": 2,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0002.npz",
+          "size": 46560970,
+          "mtime_ns": 1789705574771004761
+        },
+        {
+          "step": 3,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0003.npz",
+          "size": 39924659,
+          "mtime_ns": 1789705850573525864
+        },
+        {
+          "step": 4,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0004.npz",
+          "size": 44022117,
+          "mtime_ns": 1789706113964704803
+        },
+        {
+          "step": 5,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0005.npz",
+          "size": 40366691,
+          "mtime_ns": 1789706381791878059
+        },
+        {
+          "step": 6,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0006.npz",
+          "size": 39278213,
+          "mtime_ns": 1789706938443086313
+        },
+        {
+          "step": 7,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0007.npz",
+          "size": 36781373,
+          "mtime_ns": 1789707203817268604
+        },
+        {
+          "step": 8,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0008.npz",
+          "size": 33905459,
+          "mtime_ns": 1789707467531545691
+        },
+        {
+          "step": 9,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0009.npz",
+          "size": 37240371,
+          "mtime_ns": 1789707712358706640
+        },
+        {
+          "step": 10,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0010.npz",
+          "size": 34795971,
+          "mtime_ns": 1789707973084999240
+        },
+        {
+          "step": 11,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0011.npz",
+          "size": 31082791,
+          "mtime_ns": 1789708511276605087
+        },
+        {
+          "step": 12,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0012.npz",
+          "size": 32633891,
+          "mtime_ns": 1789708759480806801
+        },
+        {
+          "step": 13,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0013.npz",
+          "size": 31738624,
+          "mtime_ns": 1789708997188816749
+        },
+        {
+          "step": 14,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0014.npz",
+          "size": 32856159,
+          "mtime_ns": 1789709233330661960
+        },
+        {
+          "step": 15,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0015.npz",
+          "size": 31296007,
+          "mtime_ns": 1789709460533353090
+        },
+        {
+          "step": 16,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0016.npz",
+          "size": 33561295,
+          "mtime_ns": 1789710000655376528
+        },
+        {
+          "step": 17,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0017.npz",
+          "size": 33109377,
+          "mtime_ns": 1789710255198445806
+        },
+        {
+          "step": 18,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0018.npz",
+          "size": 33298256,
+          "mtime_ns": 1789710512364543640
+        },
+        {
+          "step": 19,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0019.npz",
+          "size": 34198939,
+          "mtime_ns": 1789710759808796855
+        },
+        {
+          "step": 20,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0020.npz",
+          "size": 35756612,
+          "mtime_ns": 1789710993493761055
+        },
+        {
+          "step": 21,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0021.npz",
+          "size": 32698169,
+          "mtime_ns": 1789711527250154605
+        },
+        {
+          "step": 22,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0022.npz",
+          "size": 35045252,
+          "mtime_ns": 1789711782593647656
+        },
+        {
+          "step": 23,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0023.npz",
+          "size": 29216783,
+          "mtime_ns": 1789712028645622436
+        },
+        {
+          "step": 24,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0024.npz",
+          "size": 30585568,
+          "mtime_ns": 1789712273169570256
+        },
+        {
+          "step": 25,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0025.npz",
+          "size": 33464675,
+          "mtime_ns": 1789712519870490260
+        },
+        {
+          "step": 26,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0026.npz",
+          "size": 32657541,
+          "mtime_ns": 1789713069395552600
+        },
+        {
+          "step": 27,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0027.npz",
+          "size": 28394712,
+          "mtime_ns": 1789713301675351165
+        },
+        {
+          "step": 28,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0028.npz",
+          "size": 31450671,
+          "mtime_ns": 1789713537998161344
+        },
+        {
+          "step": 29,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0029.npz",
+          "size": 29722389,
+          "mtime_ns": 1789713789535519339
+        },
+        {
+          "step": 30,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0030.npz",
+          "size": 32153701,
+          "mtime_ns": 1789714040549769955
+        },
+        {
+          "step": 31,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0031.npz",
+          "size": 30769507,
+          "mtime_ns": 1789714601137634802
+        },
+        {
+          "step": 32,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0032.npz",
+          "size": 35759738,
+          "mtime_ns": 1789714841192825647
+        },
+        {
+          "step": 33,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0033.npz",
+          "size": 34257026,
+          "mtime_ns": 1789715117285374604
+        },
+        {
+          "step": 34,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0034.npz",
+          "size": 34362346,
+          "mtime_ns": 1789715368284439925
+        },
+        {
+          "step": 35,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0035.npz",
+          "size": 32792316,
+          "mtime_ns": 1789715617580416556
+        },
+        {
+          "step": 36,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0036.npz",
+          "size": 28707397,
+          "mtime_ns": 1789716120605077307
+        },
+        {
+          "step": 37,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0037.npz",
+          "size": 31300340,
+          "mtime_ns": 1789716357336960461
+        },
+        {
+          "step": 38,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0038.npz",
+          "size": 35956054,
+          "mtime_ns": 1789716601450876716
+        },
+        {
+          "step": 39,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0039.npz",
+          "size": 33539777,
+          "mtime_ns": 1789716853490218225
+        },
+        {
+          "step": 40,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0040.npz",
+          "size": 33401085,
+          "mtime_ns": 1789717096617354511
+        },
+        {
+          "step": 41,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0041.npz",
+          "size": 31549877,
+          "mtime_ns": 1789717618368645172
+        },
+        {
+          "step": 42,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0042.npz",
+          "size": 36728585,
+          "mtime_ns": 1789717847419709019
+        },
+        {
+          "step": 43,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0043.npz",
+          "size": 37408255,
+          "mtime_ns": 1789718114885168216
+        },
+        {
+          "step": 44,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0044.npz",
+          "size": 31259473,
+          "mtime_ns": 1789718385111466569
+        },
+        {
+          "step": 45,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0045.npz",
+          "size": 34927858,
+          "mtime_ns": 1789718605867104955
+        },
+        {
+          "step": 46,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0046.npz",
+          "size": 36206910,
+          "mtime_ns": 1789719122731900505
+        },
+        {
+          "step": 47,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0047.npz",
+          "size": 31553577,
+          "mtime_ns": 1789719375747016657
+        },
+        {
+          "step": 48,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0048.npz",
+          "size": 34516170,
+          "mtime_ns": 1789719622926977706
+        },
+        {
+          "step": 49,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0049.npz",
+          "size": 29937246,
+          "mtime_ns": 1789719861343114968
+        },
+        {
+          "step": 50,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0050.npz",
+          "size": 29201297,
+          "mtime_ns": 1789720084428998186
+        },
+        {
+          "step": 51,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0051.npz",
+          "size": 29123021,
+          "mtime_ns": 1789720605042384527
+        },
+        {
+          "step": 52,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0052.npz",
+          "size": 32000970,
+          "mtime_ns": 1789720850052559628
+        },
+        {
+          "step": 53,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0053.npz",
+          "size": 27702544,
+          "mtime_ns": 1789721101672800708
+        },
+        {
+          "step": 54,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0054.npz",
+          "size": 27892429,
+          "mtime_ns": 1789721339671791655
+        },
+        {
+          "step": 55,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0055.npz",
+          "size": 29253068,
+          "mtime_ns": 1789721574459624853
+        },
+        {
+          "step": 56,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0056.npz",
+          "size": 27732530,
+          "mtime_ns": 1789722106300495108
+        },
+        {
+          "step": 57,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0057.npz",
+          "size": 30038345,
+          "mtime_ns": 1789722346701527084
+        },
+        {
+          "step": 58,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0058.npz",
+          "size": 27627626,
+          "mtime_ns": 1789722557781089548
+        },
+        {
+          "step": 59,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0059.npz",
+          "size": 29017610,
+          "mtime_ns": 1789722788940858451
+        },
+        {
+          "step": 60,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0060.npz",
+          "size": 26076726,
+          "mtime_ns": 1789723016127993485
+        },
+        {
+          "step": 61,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0061.npz",
+          "size": 28945288,
+          "mtime_ns": 1789723548173701146
+        },
+        {
+          "step": 62,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0062.npz",
+          "size": 27373601,
+          "mtime_ns": 1789723767181327763
+        },
+        {
+          "step": 63,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0063.npz",
+          "size": 25850465,
+          "mtime_ns": 1789723988019367880
+        },
+        {
+          "step": 64,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0064.npz",
+          "size": 25869229,
+          "mtime_ns": 1789724187397964084
+        },
+        {
+          "step": 65,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0065.npz",
+          "size": 26557766,
+          "mtime_ns": 1789724393905576539
+        },
+        {
+          "step": 66,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0066.npz",
+          "size": 23879579,
+          "mtime_ns": 1789724911504015800
+        },
+        {
+          "step": 67,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0067.npz",
+          "size": 25063060,
+          "mtime_ns": 1789725122214733904
+        },
+        {
+          "step": 68,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0068.npz",
+          "size": 23237478,
+          "mtime_ns": 1789725346764603887
+        },
+        {
+          "step": 69,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0069.npz",
+          "size": 25607269,
+          "mtime_ns": 1789725557434173111
+        },
+        {
+          "step": 70,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0070.npz",
+          "size": 23529353,
+          "mtime_ns": 1789725740142362725
+        },
+        {
+          "step": 71,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0071.npz",
+          "size": 24357231,
+          "mtime_ns": 1789726243520914605
+        },
+        {
+          "step": 72,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0072.npz",
+          "size": 23173818,
+          "mtime_ns": 1789726454699564387
+        },
+        {
+          "step": 73,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0073.npz",
+          "size": 26886908,
+          "mtime_ns": 1789726650700958366
+        },
+        {
+          "step": 74,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0074.npz",
+          "size": 28934550,
+          "mtime_ns": 1789726866362540549
+        },
+        {
+          "step": 75,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0075.npz",
+          "size": 26186678,
+          "mtime_ns": 1789727121958954844
+        },
+        {
+          "step": 76,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0076.npz",
+          "size": 22108723,
+          "mtime_ns": 1789727622224189380
+        },
+        {
+          "step": 77,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0077.npz",
+          "size": 23712193,
+          "mtime_ns": 1789727825059620106
+        },
+        {
+          "step": 78,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0078.npz",
+          "size": 25053599,
+          "mtime_ns": 1789728025802258528
+        },
+        {
+          "step": 79,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0079.npz",
+          "size": 21412811,
+          "mtime_ns": 1789728227897817794
+        },
+        {
+          "step": 80,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0080.npz",
+          "size": 20494419,
+          "mtime_ns": 1789728430729392647
+        },
+        {
+          "step": 81,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0081.npz",
+          "size": 24144131,
+          "mtime_ns": 1789728932208500680
+        },
+        {
+          "step": 82,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0082.npz",
+          "size": 20057046,
+          "mtime_ns": 1789729136535191549
+        },
+        {
+          "step": 83,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0083.npz",
+          "size": 24815214,
+          "mtime_ns": 1789729347861913766
+        },
+        {
+          "step": 84,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0084.npz",
+          "size": 21875297,
+          "mtime_ns": 1789729562548580491
+        },
+        {
+          "step": 85,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0085.npz",
+          "size": 24623922,
+          "mtime_ns": 1789729765227028449
+        },
+        {
+          "step": 86,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0086.npz",
+          "size": 21065050,
+          "mtime_ns": 1789730274530554312
+        },
+        {
+          "step": 87,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0087.npz",
+          "size": 18196229,
+          "mtime_ns": 1789730416886370540
+        },
+        {
+          "step": 88,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0088.npz",
+          "size": 17921783,
+          "mtime_ns": 1789730557142110112
+        },
+        {
+          "step": 89,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0089.npz",
+          "size": 18599561,
+          "mtime_ns": 1789730715760029050
+        },
+        {
+          "step": 90,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0090.npz",
+          "size": 20366068,
+          "mtime_ns": 1789730901291261660
+        },
+        {
+          "step": 91,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0091.npz",
+          "size": 18338659,
+          "mtime_ns": 1789731378976424092
+        },
+        {
+          "step": 92,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0092.npz",
+          "size": 22629621,
+          "mtime_ns": 1789731573231838131
+        },
+        {
+          "step": 93,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0093.npz",
+          "size": 22562759,
+          "mtime_ns": 1789731760214103057
+        },
+        {
+          "step": 94,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0094.npz",
+          "size": 17816834,
+          "mtime_ns": 1789731950129372674
+        },
+        {
+          "step": 95,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0095.npz",
+          "size": 18811413,
+          "mtime_ns": 1789732107827472324
+        },
+        {
+          "step": 96,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0096.npz",
+          "size": 17885467,
+          "mtime_ns": 1789732558701161854
+        },
+        {
+          "step": 97,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0097.npz",
+          "size": 20374488,
+          "mtime_ns": 1789732736501318923
+        },
+        {
+          "step": 98,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0098.npz",
+          "size": 22344565,
+          "mtime_ns": 1789732918494501371
+        },
+        {
+          "step": 99,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0099.npz",
+          "size": 22220948,
+          "mtime_ns": 1789733112254034136
+        },
+        {
+          "step": 100,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0100.npz",
+          "size": 17099504,
+          "mtime_ns": 1789733249497785689
+        },
+        {
+          "step": 101,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0101.npz",
+          "size": 17487873,
+          "mtime_ns": 1789733671572081329
+        },
+        {
+          "step": 102,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0102.npz",
+          "size": 19231920,
+          "mtime_ns": 1789733853589280467
+        },
+        {
+          "step": 103,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0103.npz",
+          "size": 22325933,
+          "mtime_ns": 1789734055509768401
+        },
+        {
+          "step": 104,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0104.npz",
+          "size": 19792723,
+          "mtime_ns": 1789734246635278886
+        },
+        {
+          "step": 105,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0105.npz",
+          "size": 18572032,
+          "mtime_ns": 1789734427938617404
+        },
+        {
+          "step": 106,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0106.npz",
+          "size": 17766618,
+          "mtime_ns": 1789734841040710471
+        },
+        {
+          "step": 107,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0107.npz",
+          "size": 20797847,
+          "mtime_ns": 1789735025569927789
+        },
+        {
+          "step": 108,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0108.npz",
+          "size": 18071392,
+          "mtime_ns": 1789735185764047743
+        },
+        {
+          "step": 109,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0109.npz",
+          "size": 17395389,
+          "mtime_ns": 1789735320333752382
+        },
+        {
+          "step": 110,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0110.npz",
+          "size": 19849220,
+          "mtime_ns": 1789735491660945776
+        },
+        {
+          "step": 111,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0111.npz",
+          "size": 18943439,
+          "mtime_ns": 1789735823171018202
+        },
+        {
+          "step": 112,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0112.npz",
+          "size": 17006271,
+          "mtime_ns": 1789735936269375629
+        },
+        {
+          "step": 113,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0113.npz",
+          "size": 17856108,
+          "mtime_ns": 1789736085074160298
+        },
+        {
+          "step": 114,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0114.npz",
+          "size": 21128982,
+          "mtime_ns": 1789736260214509329
+        },
+        {
+          "step": 115,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0115.npz",
+          "size": 17467856,
+          "mtime_ns": 1789736422593571113
+        },
+        {
+          "step": 116,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0116.npz",
+          "size": 19763408,
+          "mtime_ns": 1789736856991943990
+        },
+        {
+          "step": 117,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0117.npz",
+          "size": 19089791,
+          "mtime_ns": 1789737039756140999
+        },
+        {
+          "step": 118,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0118.npz",
+          "size": 23003640,
+          "mtime_ns": 1789737223239520509
+        },
+        {
+          "step": 119,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0119.npz",
+          "size": 24273183,
+          "mtime_ns": 1789737416064998572
+        },
+        {
+          "step": 120,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0120.npz",
+          "size": 17982256,
+          "mtime_ns": 1789737592732255589
+        },
+        {
+          "step": 121,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0121.npz",
+          "size": 18262244,
+          "mtime_ns": 1789738009000331097
+        },
+        {
+          "step": 122,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0122.npz",
+          "size": 18288316,
+          "mtime_ns": 1789738146794993369
+        },
+        {
+          "step": 123,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0123.npz",
+          "size": 18947690,
+          "mtime_ns": 1789738321116317640
+        },
+        {
+          "step": 124,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0124.npz",
+          "size": 19771780,
+          "mtime_ns": 1789738500564616183
+        },
+        {
+          "step": 125,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0125.npz",
+          "size": 19884197,
+          "mtime_ns": 1789738662447864146
+        },
+        {
+          "step": 126,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0126.npz",
+          "size": 17014272,
+          "mtime_ns": 1789738978775503047
+        },
+        {
+          "step": 127,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0127.npz",
+          "size": 17063160,
+          "mtime_ns": 1789739094187885027
+        },
+        {
+          "step": 128,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0128.npz",
+          "size": 19049294,
+          "mtime_ns": 1789739237216783745
+        },
+        {
+          "step": 129,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0129.npz",
+          "size": 18322474,
+          "mtime_ns": 1789739442547431839
+        },
+        {
+          "step": 130,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0130.npz",
+          "size": 17124296,
+          "mtime_ns": 1789739561445959750
+        },
+        {
+          "step": 131,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0131.npz",
+          "size": 17035385,
+          "mtime_ns": 1789739847621516574
+        },
+        {
+          "step": 132,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0132.npz",
+          "size": 17295714,
+          "mtime_ns": 1789740018780581145
+        },
+        {
+          "step": 133,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0133.npz",
+          "size": 18303778,
+          "mtime_ns": 1789740146245115594
+        },
+        {
+          "step": 134,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0134.npz",
+          "size": 17402913,
+          "mtime_ns": 1789740299805137535
+        },
+        {
+          "step": 135,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0135.npz",
+          "size": 17983125,
+          "mtime_ns": 1789740419575680652
+        },
+        {
+          "step": 136,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0136.npz",
+          "size": 18321455,
+          "mtime_ns": 1789740822584681911
+        },
+        {
+          "step": 137,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0137.npz",
+          "size": 22371849,
+          "mtime_ns": 1789740999206829838
+        },
+        {
+          "step": 138,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0138.npz",
+          "size": 18520283,
+          "mtime_ns": 1789741178110966075
+        },
+        {
+          "step": 139,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0139.npz",
+          "size": 16804945,
+          "mtime_ns": 1789741297862699156
+        },
+        {
+          "step": 140,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0140.npz",
+          "size": 17042554,
+          "mtime_ns": 1789741472573029809
+        },
+        {
+          "step": 141,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0141.npz",
+          "size": 17694212,
+          "mtime_ns": 1789741770192891586
+        },
+        {
+          "step": 142,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0142.npz",
+          "size": 18073869,
+          "mtime_ns": 1789741898122473060
+        },
+        {
+          "step": 143,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0143.npz",
+          "size": 17450763,
+          "mtime_ns": 1789742049945323644
+        },
+        {
+          "step": 144,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0144.npz",
+          "size": 18220978,
+          "mtime_ns": 1789742177272871300
+        },
+        {
+          "step": 145,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0145.npz",
+          "size": 17478894,
+          "mtime_ns": 1789742292903422552
+        },
+        {
+          "step": 146,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0146.npz",
+          "size": 17188320,
+          "mtime_ns": 1789742656826140694
+        },
+        {
+          "step": 147,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0147.npz",
+          "size": 17911342,
+          "mtime_ns": 1789742780515681110
+        },
+        {
+          "step": 148,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0148.npz",
+          "size": 17871489,
+          "mtime_ns": 1789742946179719830
+        },
+        {
+          "step": 149,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0149.npz",
+          "size": 17739226,
+          "mtime_ns": 1789743068249201225
+        },
+        {
+          "step": 150,
+          "path": "/workspace/agent-context-grpo/experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/outputs/future_progress/step-0150.npz",
+          "size": 18455714,
+          "mtime_ns": 1789743241358320444
+        }
+      ]
+    }
+  ]
+}

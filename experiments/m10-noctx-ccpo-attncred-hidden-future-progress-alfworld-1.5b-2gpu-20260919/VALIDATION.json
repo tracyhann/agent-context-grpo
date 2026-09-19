@@ -1,0 +1,36 @@
+{
+  "status": "passed",
+  "source": "/workspace/agent-context-grpo/experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/outputs/future_progress/step-0100.npz",
+  "source_sha256": "e28e0363de5664e65f4eecf7921a7a595262f65dd69cd73acedc46ae5f6240a7",
+  "rows": 2450,
+  "control_replay_errors": {
+    "history_adv": 0.0,
+    "current_value": 0.0,
+    "raw_progress": 0.0,
+    "current_phi": 0.0
+  },
+  "hidden_dimensions": 1536,
+  "control_similarity_dimensions": 1573,
+  "variant_similarity_dimensions": 1536,
+  "both_endpoints_use_hidden_only": true,
+  "context_perturbation_changes_credit": false,
+  "detached_advantage": true,
+  "final_normalization": "mean_std_norm_on_canonical_replay_rows",
+  "applied_identity_error": 4.5836303552704294e-07,
+  "config_delta": {
+    "ccpo_ctx_w": {
+      "control": 1.0,
+      "variant": 0.0
+    },
+    "exp_id": {
+      "control": "m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918",
+      "variant": "m10-noctx-ccpo-attncred-hidden-future-progress-alfworld-1.5b-2gpu-20260919"
+    }
+  },
+  "gpu_used": false,
+  "environment_rollouts_started": false,
+  "code_sha256": {
+    "ccpo/core_ccpo.py": "c73fb7a96a1363c39b745bbfd79721d47db8d6ba3ce783ae263d4db8215ca6ff",
+    "ccpo/future_progress.py": "577c132f606d77f7f3deb1b9790085f78db7c4cabddc3ba7da32ca521929f7a5"
+  }
+}

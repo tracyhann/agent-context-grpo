@@ -1,0 +1,180 @@
+From 452e0c1b4c2c788ebf9418bc42e2674c2baf5395 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Fri, 18 Sep 2026 22:43:53 -0700
+Subject: [PATCH] Tolerate recomputed frozen features on padded duplicate rows
+
+LULIN-FPH2-WS died at step 0 with 'Inconsistent padded future-progress field:
+phi_feats'. The round-trip check required every padded duplicate row to match its
+canonical row bit for bit, but phi_feats is the one field recomputed per
+micro-batch: with use_dynamic_bsz a duplicated turn can land in a different
+micro-batch, so bf16 rounding perturbs the low mantissa bits, and a padded copy
+can carry no features at all. Those copies are never read -- canonical rows are
+the first occurrence -- so compare them within a bf16 tolerance instead, and
+report how many duplicates there were and how far they drifted.
+
+Ids, rewards and masks stay exact. A non-finite canonical row and a duplicate
+that differs beyond tolerance both still fail loudly.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+---
+ ccpo/future_progress.py       | 59 +++++++++++++++++++++++++++++++---
+ tests/test_future_progress.py | 60 +++++++++++++++++++++++++++++++++++
+ 2 files changed, 114 insertions(+), 5 deletions(-)
+
+diff --git a/ccpo/future_progress.py b/ccpo/future_progress.py
+index bab3959..de89707 100644
+--- a/ccpo/future_progress.py
++++ b/ccpo/future_progress.py
+@@ -80,6 +80,58 @@ def _corr(x, y, mask):
+     return float(np.corrcoef(x, y)[0, 1]) if len(x) > 2 and x.std() > 1e-12 and y.std() > 1e-12 else float('nan')
+ 
+ 
++# bf16 mantissa is 8 bits, so a recomputed row can differ by ~2^-7 relatively.
++_PHI_DUP_RTOL = 2. ** -7
++_PHI_DUP_ATOL = 1e-3
++
++
++def _check_round_trip(kwargs, canonical, restore):
++    """Padding duplicates must agree with the canonical row they collapse onto.
++
++    Ids, rewards and masks are carried by the batch and must match bit for bit.
++    `phi_feats` is the one field recomputed per micro-batch: with `use_dynamic_bsz`
++    a duplicated turn can land in a different micro-batch, so bf16 rounding makes
++    the copies differ in the low mantissa bits, and a padded copy may carry no
++    features at all. Those copies are never read -- canonical_trajectory_rows keeps
++    the first occurrence -- so they are checked within tolerance rather than
++    exactly, while a non-finite CANONICAL row still fails loudly.
++    """
++    for key in ('step_rewards', 'response_mask', 'anchor_obs', 'index', 'traj_index',
++                'episode_rewards', 'is_action_valid'):
++        if kwargs.get(key) is not None and not np.array_equal(_numpy(kwargs[key]), _numpy(canonical[key])[restore]):
++            raise ValueError('Inconsistent padded future-progress field: ' + key)
++    if kwargs.get('phi_feats') is None:
++        return {}
++    original, folded = _numpy(kwargs['phi_feats']), _numpy(canonical['phi_feats'])[restore]
++    if original.shape != folded.shape:
++        raise ValueError('Inconsistent padded future-progress shape: phi_feats '
++                         f'{original.shape} vs {folded.shape}')
++    if not np.isfinite(folded).all():
++        raise ValueError('Non-finite frozen features on a canonical future-progress row')
++    feature_axes = tuple(range(1, original.ndim))
++    finite = np.isfinite(original)
++    tolerance = _PHI_DUP_ATOL + _PHI_DUP_RTOL * abs(folded)
++    deviation = np.zeros_like(folded, dtype=float)
++    deviation[finite] = abs(original[finite] - folded[finite])
++    beyond = finite & (deviation > tolerance)
++    if beyond.any():
++        rows = np.flatnonzero(beyond.any(axis=feature_axes)) if feature_axes else np.flatnonzero(beyond)
++        worst = np.unravel_index(np.argmax(np.where(beyond, deviation - tolerance, -np.inf)), deviation.shape)
++        raise ValueError('Inconsistent padded future-progress field: phi_feats -- '
++                         f'{len(rows)} row(s) differ beyond bf16 tolerance '
++                         f'(first {rows[:5].tolist()}; worst element {tuple(int(i) for i in worst)} '
++                         f'|diff| {deviation[worst]:.3g} > allowed {tolerance[worst]:.3g})')
++    duplicate = np.ones(len(restore), dtype=bool)
++    duplicate[np.unique(restore, return_index=True)[1]] = False
++    if not duplicate.any():
++        return dict(progress_phi_duplicate_rows=0., progress_phi_duplicate_max_diff=0.,
++                    progress_phi_duplicate_nonfinite=0.)
++    unusable = (~finite).any(axis=feature_axes) if feature_axes else ~finite
++    return dict(progress_phi_duplicate_rows=float(duplicate.sum()),
++                progress_phi_duplicate_max_diff=float(deviation[duplicate].max()),
++                progress_phi_duplicate_nonfinite=float(unusable[duplicate].sum()))
++
++
+ def ccpo_future_progress_advantage(*, turn_index, episode_lengths, horizon=1,
+                                    progress_weight=1., readout='context', **kwargs):
+     """A future-state value increase added to the unchanged historical residual.
+@@ -107,10 +159,7 @@ def ccpo_future_progress_advantage(*, turn_index, episode_lengths, horizon=1,
+                 'phi_feats', 'episode_rewards', 'is_action_valid', 'aff_labels', 'ctx_override'):
+         if key in canonical:
+             canonical[key] = _take(canonical[key], take)
+-    for key in ('step_rewards', 'response_mask', 'anchor_obs', 'index', 'traj_index',
+-                'phi_feats', 'episode_rewards', 'is_action_valid'):
+-        if kwargs.get(key) is not None and not np.array_equal(_numpy(kwargs[key]), _numpy(canonical[key])[restore]):
+-            raise ValueError('Inconsistent padded future-progress field: ' + key)
++    phi_diag = _check_round_trip(kwargs, canonical, restore)
+     n = len(take); tasks = np.asarray(canonical['index']).astype(str)
+     episodes = np.asarray(canonical['episode_rewards'], dtype=float)
+     if episodes.shape != (n,) or not np.isfinite(episodes).all():
+@@ -169,7 +218,7 @@ def ccpo_future_progress_advantage(*, turn_index, episode_lengths, horizon=1,
+                 progress_history_weight=1., progress_episode_weight=0., progress_original_edge_weight=0.,
+                 progress_eligible_frac=float(eligible.mean()), progress_terminal_frac=float(terminal.mean()),
+                 progress_unique_rows=float(n), progress_padding_frac=float(1 - n / len(restore)),
+-                progress_m5_reference_mode=float(readout == 'm5'))
++                progress_m5_reference_mode=float(readout == 'm5'), **phi_diag)
+     for key in ('target', 'value_target', 'history_baseline', 'history_adv', 'current_value',
+                 'future_value', 'raw_progress', 'progress_normalized', 'weighted_progress', 'combined_pre',
+                 'progress_norm_mean', 'progress_norm_std', 'm5_edge_normalized'):
+diff --git a/tests/test_future_progress.py b/tests/test_future_progress.py
+index 9abade6..8981b7d 100644
+--- a/tests/test_future_progress.py
++++ b/tests/test_future_progress.py
+@@ -154,5 +154,65 @@ class FutureProgressTests(unittest.TestCase):
+                 compute(make_data(fixture()),'CCPO',gamma=.95,ccpo_step_tag=1)
+ 
+ 
++class PaddedDuplicateFeatureTests(unittest.TestCase):
++    """LULIN-FPH2-WS died at step 0 on `Inconsistent padded future-progress field:
++    phi_feats`. The frozen features are recomputed per micro-batch, so a duplicated
++    turn that lands in another `use_dynamic_bsz` micro-batch differs in the low bf16
++    mantissa bits, and a padded copy can carry none at all. Those copies are never
++    read -- canonical_trajectory_rows keeps the first occurrence.
++    """
++
++    def padded(self, index=0):
++        kw = arguments()
++        order = list(range(len(kw['index']))) + [index]
++        out = {}
++        for key, value in kw.items():
++            first = getattr(value, 'shape', None)
++            if first and value.shape[0] == len(kw['index']):
++                out[key] = value[order]
++            else:
++                out[key] = value
++        return out
++
++    def test_exact_duplicate_is_accepted_and_counted(self):
++        _, diag = ccpo_future_progress_advantage(**self.padded(), horizon=2)
++        self.assertEqual(diag['progress_phi_duplicate_rows'], 1.)
++        self.assertEqual(diag['progress_phi_duplicate_max_diff'], 0.)
++        self.assertAlmostEqual(diag['progress_padding_frac'], 1/15)
++
++    def test_bf16_rounding_on_a_duplicate_is_tolerated(self):
++        kw = self.padded(); feats = kw['phi_feats'].clone()
++        feats[-1] = (feats[-1] * 8).to(torch.bfloat16).to(feats.dtype) / 8
++        kw['phi_feats'] = feats
++        _, diag = ccpo_future_progress_advantage(**kw, horizon=2)
++        self.assertEqual(diag['progress_phi_duplicate_rows'], 1.)
++        self.assertGreater(diag['progress_phi_duplicate_max_diff'], 0.)
++
++    def test_featureless_duplicate_is_tolerated_and_reported(self):
++        kw = self.padded(); feats = kw['phi_feats'].clone(); feats[-1] = float('nan')
++        kw['phi_feats'] = feats
++        _, diag = ccpo_future_progress_advantage(**kw, horizon=2)
++        self.assertEqual(diag['progress_phi_duplicate_nonfinite'], 1.)
++
++    def test_a_genuinely_different_duplicate_still_fails(self):
++        kw = self.padded(); feats = kw['phi_feats'].clone(); feats[-1] = feats[-1] + 1.
++        kw['phi_feats'] = feats
++        with self.assertRaises(ValueError) as caught:
++            ccpo_future_progress_advantage(**kw, horizon=2)
++        self.assertIn('beyond bf16 tolerance', str(caught.exception))
++
++    def test_nonfinite_canonical_row_still_fails(self):
++        kw = self.padded(); feats = kw['phi_feats'].clone(); feats[0] = float('nan')
++        kw['phi_feats'] = feats
++        with self.assertRaises(ValueError) as caught:
++            ccpo_future_progress_advantage(**kw, horizon=2)
++        self.assertIn('canonical', str(caught.exception))
++
++    def test_metadata_mismatch_is_still_exact(self):
++        kw = self.padded(); obs = kw['anchor_obs'].astype(object); obs[-1] = 'not-the-same-node'
++        kw['anchor_obs'] = obs
++        with self.assertRaises(ValueError):
++            ccpo_future_progress_advantage(**kw, horizon=2)
++
+ if __name__=='__main__':
+     unittest.main(verbosity=2)
+-- 
+2.34.1
+

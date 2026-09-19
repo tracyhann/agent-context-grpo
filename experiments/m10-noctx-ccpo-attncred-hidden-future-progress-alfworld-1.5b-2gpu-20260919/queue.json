@@ -1,0 +1,23 @@
+{
+  "name": "M10 ALFWorld hidden-only (no context-stat vector)",
+  "controller_pid": 511294,
+  "process_start_ticks": "26178959",
+  "state": "/workspace/agent-context-grpo/.local/m10-noctx-chain-20260919/state.json",
+  "manifest": "/workspace/agent-context-grpo/.local/m10-noctx-chain-20260919/manifest.json",
+  "log": "/workspace/agent-context-grpo/.local/m10-noctx-chain-20260919/chain.log",
+  "gpus": [
+    0,
+    1
+  ],
+  "status": "queued_after_m11_noctx",
+  "holder_pid": 483571,
+  "experiment": "/workspace/agent-context-grpo/experiments/m10-noctx-ccpo-attncred-hidden-future-progress-alfworld-1.5b-2gpu-20260919",
+  "created": "2026-09-19T03:43:35.398546+00:00",
+  "queue_order": [
+    "M10",
+    "M11-NOCTX",
+    "M10-NOCTX"
+  ],
+  "initial_status": "waiting_for_predecessor",
+  "training_started": false
+}

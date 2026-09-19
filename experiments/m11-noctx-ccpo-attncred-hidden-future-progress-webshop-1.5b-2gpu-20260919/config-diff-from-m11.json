@@ -1,0 +1,14 @@
+{
+  "gpus": {
+    "control": "2,3",
+    "variant": "0,1"
+  },
+  "exp_id": {
+    "control": "m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918",
+    "variant": "m11-noctx-ccpo-attncred-hidden-future-progress-webshop-1.5b-2gpu-20260919"
+  },
+  "ccpo_ctx_w": {
+    "control": 1.0,
+    "variant": 0.0
+  }
+}

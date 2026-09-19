@@ -1,0 +1,62 @@
+{
+  "status": "passed",
+  "snapshots": 276,
+  "rows": 607959,
+  "source_metadata_unchanged": true,
+  "config_sha256_matches_manifest": true,
+  "all_rows_eligible_and_live": true,
+  "max_point_estimator_error": 7.105427357601002e-15,
+  "scalar_max_errors": {
+    "future_value": 0.0,
+    "raw_progress": 0.0,
+    "task_progress_mean": 0.0,
+    "task_progress_std": 0.0,
+    "task_progress_normalization": 0.0,
+    "combined_pre": 0.0,
+    "matched_future_mass": 2.220446049250313e-16,
+    "fixed_1_task_mean": 1.3712557119453803e-16,
+    "fixed_025_task_mean": 3.428139279863451e-17,
+    "row_snr_centered_task_mean": 2.6347542308993545e-17,
+    "matched_task_scale_task_mean": 1.253217177081072e-16,
+    "task_nonterminal_snr_task_mean": 1.3535708686588326e-16,
+    "webshop_actor_scalar": 9.507828124810658e-07
+  },
+  "lone_success_diagnostic": {
+    "M10": {
+      "nonterminal_rows": 3237,
+      "raw_zero_rows": 3237,
+      "variance_zero_rows": 3237,
+      "original_negative_future_rows": 3237,
+      "original_negative_combined_rows": 0
+    },
+    "M11": {
+      "nonterminal_rows": 1932,
+      "raw_zero_rows": 1932,
+      "variance_zero_rows": 1932,
+      "original_negative_future_rows": 1932,
+      "original_negative_combined_rows": 0
+    }
+  },
+  "sensitivity": {
+    "comparison": "256 versus 1024 bootstrap draws per independent split; same empirical data, same seed prefix; not independent datasets.",
+    "batches": 11,
+    "rows": 24726,
+    "pooled_row_gate_mean_abs_difference": 0.007581048538282874,
+    "pooled_row_gate_p95_abs_difference": 0.04414048771986105,
+    "max_batch_weight_mean_difference": 0.0016219201008444428,
+    "max_batch_future_mass_retention_difference": 0.0027577566031510292,
+    "max_batch_terminal_share_difference": 0.0014243341301370949
+  },
+  "unit_tests": "test_gate_zero_signal_bounds_and_sign_symmetry (__main__.AdaptiveProgressAnalysisTests) ... ok\ntest_joint_resampling_cancels_perfectly_correlated_endpoint_noise (__main__.AdaptiveProgressAnalysisTests) ... ok\ntest_missing_observation_peers_uses_whole_task_kernel (__main__.AdaptiveProgressAnalysisTests) ... ok\ntest_point_readout_matches_hand_calculated_kernel_and_prior (__main__.AdaptiveProgressAnalysisTests) ... ok\ntest_whole_query_trajectory_excluded_from_both_endpoints (__main__.AdaptiveProgressAnalysisTests) ... ok\n\n----------------------------------------------------------------------\nRan 5 tests in 0.034s\n\nOK\n",
+  "sha256": {
+    "experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/config.json": "cf57f869448dd185bb98031203c4dd52c15686f9d7d890262b343252cf05a8fa",
+    "experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/config.json": "774586811cc590efc69ecd959750e75ee75461db404ca55cd489df7fed129797",
+    "scripts/analyse_adaptive_progress.py": "28e5997d5f70c48270d60dcba617ffa0172a1b8409bc27642eccc4e8a036ffa7",
+    "tests/test_adaptive_progress_analysis.py": "f45b7774b67bf4410ae4d1b084faf1d5ced3d69b0b43ab32e2857de0dfcf3d3e",
+    "ccpo/core_ccpo.py": "c73fb7a96a1363c39b745bbfd79721d47db8d6ba3ce783ae263d4db8215ca6ff",
+    "ccpo/future_progress.py": "577c132f606d77f7f3deb1b9790085f78db7c4cabddc3ba7da32ca521929f7a5",
+    "experiments/adaptive-fusion-offline-20260919/plan.json": "81c8368abc185402272e6aeea0a6bfd756f8473266481f644946f2eb20b14a68",
+    "experiments/adaptive-fusion-offline-20260919/validate.py": "d8e1b07ac85dea68e46f85553cbe89180846c604c9d200a473cac72ac85e7ad1",
+    "experiments/adaptive-fusion-offline-20260919/render.py": "073a07733f1493ce8f1fca5a171172b0ff0159429263a90bc305be83029b4d1b"
+  }
+}

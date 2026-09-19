@@ -1,0 +1,14 @@
+{
+  "controller": "/workspace/agent-context-grpo/.local/m11-noctx-chain-20260919/runner.py",
+  "controller_pid": 506539,
+  "state": "/workspace/agent-context-grpo/.local/m11-noctx-chain-20260919/state.json",
+  "manifest": "/workspace/agent-context-grpo/.local/m11-noctx-chain-20260919/manifest.json",
+  "log": "/workspace/agent-context-grpo/.local/m11-noctx-chain-20260919/chain.log",
+  "status": "queued_after_m10",
+  "predecessor": "M10",
+  "gpus": [
+    0,
+    1
+  ],
+  "queued_at": "2026-09-19T02:23:03.635021+00:00"
+}
