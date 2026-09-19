@@ -992,3 +992,46 @@ compare against the H2 κ=2 control to isolate shrinkage, on the same current co
 The [WebShop regression](../tests/test_future_progress_webshop_ablation.py)
 checks full-strength baseline identities and runtime wiring alongside the
 existing H2 fallback/terminal tests. No GPU preflight or training was performed.
+
+
+### M10 H2 ALFWorld: no shrinkage + no context-stat vector (2026-09-19)
+
+**Prepared only; not launched or queued.** Fresh Qwen2.5-1.5B-Instruct,
+**150 steps**, two GPUs, seed 0, 8 rollouts/task. Prompt history and future horizon
+both remain 2. GPU IDs are copied protocol placeholders, not reservations.
+
+Registry key `future-progress-h2-no-credit-shrinkage-no-context-vector`;
+variant `CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-NOCTX`;
+canonical ID `ccpo-attncred-abl-fph2-noshrink-noctx-alfworld-1.5b`.
+
+Exactly two method deltas from M10 H2: **`ccpo_ctx_w=0` and `ccpo_lk_fix=1`**.
+The three history/current/future readouts use processed hidden-only similarity
+(1536 dimensions on 1.5B), and usable baselines take their kernel estimate at
+full strength. The compatible mode flag remains `ccpo_phi=hidden+ctx`, with the
+statistics block skipped by weight zero. Textual history and hidden whitening
+remain; no-context-vector does not replace the kernel with uniform weighting.
+
+| M10 H2 comparison | Context-stat weight | Exact-group λ_k |
+|---|---:|---:|
+| Parent | 1 | J/(J+2) |
+| NOCTX only | 0 | J/(J+2) |
+| NOSHRINK only | 1 | 1 |
+| **Joint NOSHRINK-NOCTX** | **0** | **1** |
+
+This completes the four configurations needed to study their interaction. The
+joint arm differs from NOCTX-only solely in shrinkage, and from NOSHRINK-only
+solely in context statistics. Comparison against the parent changes both; the
+existing H1 M10-NOCTX run is not an H2 control. Use a common source revision.
+
+`B_s[q]=C_s[q;φ_hidden]`, `H_t=Y_t−B_t[Y]`,
+`F_t=z_task(V_min(t+2,T)−V_t)`, and
+`A_t=mean_std_norm_task(H_t+F_t)`. History/future weights stay 1/1,
+episode/original-edge weights stay 0/0, κ=2 is inert under the λ_k pin, and
+hidden-only task fallback plus terminal 10/0 potentials retain their conventions.
+No-shrinkage does not remove future or combined-advantage standardization.
+
+[Method, config and validation](m10-h2-noshrink-noctx-alfworld-1.5b-2gpu-20260919/NOTES.md).
+The [H2 regression](../tests/test_future_progress_ablation.py) verifies the joint
+feature/readout behavior, context-statistics invariance, full strength with J=1,
+inert κ, endpoint/fallback/terminal behavior and exact two-key config delta.
+No GPU task was launched or added to a chain.

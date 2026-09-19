@@ -1,0 +1,28 @@
+{
+  "created_at": "2026-09-19T23:17:53.849153+00:00",
+  "files": {
+    "ablations/ablations.py": "57da36dc00ce14913e0c3d74154f32045900283b5aff0900767552428464c83f",
+    "ablations/run.py": "bcdc4da7e06b1124560cf780d89729374a8dab6109c17423b39d9d49701eb5b2",
+    "ablations/test_ablations.py": "90ff5fe88ab9611d312cba77b2cdcea5b1145c0e766a1ca2a18bbd7b501ee060",
+    "ccpo/arms.py": "4c930ee857e7846cf4709a69b0a012f833e3f7b135757fff9d6138f37ea07585",
+    "ccpo/core_ccpo.py": "c73fb7a96a1363c39b745bbfd79721d47db8d6ba3ce783ae263d4db8215ca6ff",
+    "ccpo/future_progress.py": "0608819cbf55f49de92cc55c1d4924406c966deb6540aceb78b34e58bbda4add",
+    "ccpo/phi_capture.py": "47252330898225703558380e9eb96c0c475368bd7e2bece79be9a4f84c4c59fc",
+    "experiments/experiments.md": "11c3b67a8d815cdb999dbbbdce77540083d59a8cdc65fa43bf6583bece1cad22",
+    "experiments/m10-h2-noshrink-noctx-alfworld-1.5b-2gpu-20260919/NOTES.md": "cf40ff1bb5b0f8fe2cebf2ea293fea08cb5af93199b84e9e457f72bd5dcc0973",
+    "experiments/m10-h2-noshrink-noctx-alfworld-1.5b-2gpu-20260919/PREPARED.json": "42377fbab7e66275bbb962cb72fc5cd31240b186cca6673506372ec483760cd1",
+    "experiments/m10-h2-noshrink-noctx-alfworld-1.5b-2gpu-20260919/VALIDATION.json": "d32ae21b64611a248bf46c0347d2f8470043ea03db1e7863704c6893db624b6b",
+    "experiments/m10-h2-noshrink-noctx-alfworld-1.5b-2gpu-20260919/config-diff-from-m10-h2.json": "a4d219ae4c31e248667015c4eaeaf01f1639b0484e17a7fc37e51b8809d9ee7e",
+    "experiments/m10-h2-noshrink-noctx-alfworld-1.5b-2gpu-20260919/config.json": "d268eea7cfecd1f29343a6cd9cafac6ba99ac2ccd445da594168cc26c5d59b41",
+    "experiments/m10-h2-noshrink-noctx-alfworld-1.5b-2gpu-20260919/run.sh": "337118c82574c344d0639332afde2cc97236588f808d2abb1584c0591fcc7d12",
+    "patches/verl-agent/verl/trainer/ppo/ray_trainer.py": "cf805e9c99bff5ff594fe4faf6481884aa05009422718f0aabc203344296a7cd",
+    "patches/verl-agent/verl/workers/actor/dp_actor.py": "02df759d3ae1571bfd99702c18dc3fcdee94fd302b799587b8d21f3f862cfb20",
+    "patches/verl-agent/verl/workers/fsdp_workers.py": "3c4d32094ac22a451c8b5103221e8536ddf6441305199e3451556f13c102ea11",
+    "scripts/exp_run.py": "047e3694c1df168759b5b595d0288b6bd4804cc66f1df2b87363c836000682d3",
+    "tests/test_future_progress_ablation.py": "870d28fffc8716cef65aeacc6bbbb865f794cfb3fbf18e8fc4c2de67e8dadaa8",
+    "tests/test_future_progress_hidden_compat.py": "929b37ae8d82c3e694ebd4836c71c41ddd3ffd28a2876be4c7403114b2cbf785",
+    "tests/test_future_progress_webshop_ablation.py": "ff983f96103917d4fb317841656085d24665e3b329356023965244f24f26d715"
+  },
+  "source_commit": "1b2f480dde52ea3276aad95580bc8700301c35d3",
+  "source_dirty": true
+}

@@ -36,6 +36,22 @@ ABLATIONS = {
               "context-stat perturbations cannot change credit. Kappa=2, support "
               "shrinkage and H2 endpoint grouping are unchanged.",
     ),
+    "future-progress-h2-no-credit-shrinkage-no-context-vector": dict(
+        name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-NOCTX",
+        tag="fph2-noshrink-noctx",
+        title="M10 H2 with full-strength hidden-only baselines",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("alfworld",),
+        delta={"ccpo_lk_fix": 1.0, "ccpo_ctx_w": 0.0},
+        removes="both support-based task-prior shrinkage and the context-statistics block",
+        # Compose the two existing H2 interventions; frozen hidden features and
+        # prompt history remain. CTX_W=0 skips statistics for all three readouts.
+        asks="how do credit shrinkage and accumulated context statistics interact in M10 H2?",
+        watch="history/current/future usable baselines equal their hidden-only kernel "
+              "estimates at lambda_k=1; 1.5B phi has 1536 dimensions. Context-stat "
+              "perturbations and kappa cannot change credit; fallback and terminal "
+              "conventions remain unchanged.",
+    ),
     "future-progress-h2-kappa4": dict(
         name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-KAPPAFOUR",
         tag="fph2-kappa4",

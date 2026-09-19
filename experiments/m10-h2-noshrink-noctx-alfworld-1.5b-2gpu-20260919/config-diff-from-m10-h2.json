@@ -1,0 +1,19 @@
+{
+  "changes": {
+    "ccpo_ctx_w": {
+      "control": 1.0,
+      "prepared": 0.0
+    },
+    "ccpo_lk_fix": {
+      "control": "",
+      "prepared": 1.0
+    },
+    "exp_id": {
+      "control": "m10-h2-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918",
+      "prepared": "m10-h2-noshrink-noctx-alfworld-1.5b-2gpu-20260919"
+    }
+  },
+  "control": "experiments/m10-h2-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918",
+  "control_config_sha256": "0b927bf22f7babbc725acd6e55e84a61e8f6aab91556baa4f0c0c4a33b8ab782",
+  "removed_keys": []
+}

@@ -13,6 +13,7 @@ registry = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(registry)
 CONTROL = ROOT / 'experiments/m10-h2-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918'
 CASES = {
+    'future-progress-h2-no-credit-shrinkage-no-context-vector': ('m10-h2-noshrink-noctx-alfworld-1.5b-2gpu-20260919', {'ccpo_lk_fix': 1.0, 'ccpo_ctx_w': 0.0}),
     'future-progress-h2-no-context-vector': ('m10-h2-noctx-alfworld-1.5b-2gpu-20260919', {'ccpo_ctx_w': 0.0}),
     'future-progress-h2-kappa4': ('m10-h2-kappa4-alfworld-1.5b-2gpu-20260919', {'ccpo_prior_kappa': 4.0}),
     'future-progress-h2-no-credit-shrinkage': ('m10-h2-no-credit-shrinkage-alfworld-1.5b-2gpu-20260919', {'ccpo_lk_fix': 1.0}),
@@ -34,7 +35,7 @@ def estimate(kw, kappa=2., fixed=''):
 
 
 class FutureProgressAblationTests(unittest.TestCase):
-    def test_registered_and_prepared_configs_change_only_the_declared_setting(self):
+    def test_registered_and_prepared_configs_change_only_the_declared_settings(self):
         control = json.loads((CONTROL / 'config.json').read_text())['config']
         _, base = registry.arms.build('attncred-context-future-progress-h2', 'alfworld', '1.5b')
         for name, (folder, delta) in CASES.items():
@@ -94,6 +95,48 @@ class FutureProgressAblationTests(unittest.TestCase):
             np.testing.assert_allclose(a[prefix + '_lambda_k'][exact], J / (J + 2), rtol=0, atol=0)
         self.assertEqual(diag['progress_horizon'], 2.)
         self.assertFalse(advantage.requires_grad)
+
+    def test_joint_no_shrink_noctx_combines_both_interventions_without_changing_endpoints(self):
+        kw = fixture()
+        kw['phi_feats'] = torch.tensor(np.random.default_rng(81).normal(
+            size=(len(kw['index']), 1536)), dtype=torch.float32)
+        with patch.object(core, '_CTX_W', 0.):
+            _, noctx = estimate(kw)
+            advantage, diag = estimate(kw, fixed='1.0')
+            perturbed = dict(kw, ctx_override=[dict(t=30, n_unique=25, progress=1., revisit=1.)
+                                              for _ in kw['index']])
+            same, changed = estimate(perturbed, kappa=400., fixed='1.0')
+        a = diag['progress_payload']['arrays']
+        b = changed['progress_payload']['arrays']
+        self.assertEqual(a['current_phi'].shape[1], 1536)
+        np.testing.assert_allclose(a['current_phi'], core.whiten_feats(kw['phi_feats'].numpy()), rtol=0, atol=0)
+        nonterminal = ~a['terminal']
+        np.testing.assert_array_equal(a['future_phi'][nonterminal], a['current_phi'][a['endpoint_index'][nonterminal]])
+        self.assertTrue(((a['history_J'] == 1) & (a['history_level'] == 0)).any())
+        for prefix, baseline in [('history', 'history_baseline'), ('current', 'current_value'), ('future', 'future_value')]:
+            usable = np.isfinite(a[prefix + '_kernel'])
+            np.testing.assert_array_equal(a[prefix + '_lambda_k'][usable], 1.)
+            np.testing.assert_array_equal(a[baseline][usable], a[prefix + '_kernel'][usable])
+            np.testing.assert_array_equal(a[baseline], b[baseline])
+        torch.testing.assert_close(advantage, same, rtol=0, atol=0)
+        np.testing.assert_array_equal(a['current_phi'], b['current_phi'])
+        np.testing.assert_array_equal(a['raw_progress'], b['raw_progress'])
+        old = noctx['progress_payload']['arrays']
+        np.testing.assert_array_equal(a['endpoint_index'], old['endpoint_index'])
+        fallback = a['history_level'] == 1
+        self.assertTrue(fallback.any())
+        np.testing.assert_array_equal(a['history_baseline'][fallback], old['history_baseline'][fallback])
+        np.testing.assert_array_equal(a['future_value'][a['terminal']], a['episode_rewards'][a['terminal']])
+        self.assertTrue(np.isnan(a['future_lambda_k'][a['terminal']]).all())
+        np.testing.assert_allclose(a['combined_pre'], a['history_adv'] + a['progress_normalized'])
+        self.assertEqual(diag['progress_horizon'], 2.)
+        self.assertTrue(torch.isfinite(advantage).all())
+        self.assertFalse(advantage.requires_grad)
+        isolated = rows(kw, np.flatnonzero(kw['traj_index'] == 'traj0'))
+        with patch.object(core, '_CTX_W', 0.), np.errstate(all='ignore'):
+            zero, unsupported = estimate(isolated, fixed='1.0')
+        self.assertFalse(unsupported['progress_payload']['arrays']['eligible'].any())
+        np.testing.assert_array_equal(zero.numpy(), 0.)
 
     def test_kappa_four_changes_history_and_both_potential_readouts(self):
         kw = fixture()

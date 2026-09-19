@@ -1,0 +1,25 @@
+{
+  "ablation": "future-progress-h2-no-credit-shrinkage-no-context-vector",
+  "benchmark": "alfworld",
+  "context_statistics_weight": 0.0,
+  "control": "experiments/m10-h2-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918",
+  "control_config_sha256": "0b927bf22f7babbc725acd6e55e84a61e8f6aab91556baa4f0c0c4a33b8ab782",
+  "future_horizon": 2,
+  "gpu_preflight_performed": false,
+  "gpus": "0,1",
+  "history_length": 2,
+  "lambda_k_fixed": 1.0,
+  "launched": false,
+  "method_delta_from_control": {
+    "ccpo_ctx_w": 0.0,
+    "ccpo_lk_fix": 1.0
+  },
+  "model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "prepared_at": "2026-09-19T23:14:51.758365+00:00",
+  "queued": false,
+  "seed": 0,
+  "source_commit": "1b2f480dde52ea3276aad95580bc8700301c35d3",
+  "source_dirty": true,
+  "status": "prepared_not_launched",
+  "steps": 150
+}

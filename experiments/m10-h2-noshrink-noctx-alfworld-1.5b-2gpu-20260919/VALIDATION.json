@@ -1,0 +1,36 @@
+{
+  "ablation": "future-progress-h2-no-credit-shrinkage-no-context-vector",
+  "benchmark": "alfworld",
+  "control_command_reproduced_by_current_launcher": true,
+  "coverage": [
+    "exact two-key delta from recorded M10 H2 control: ccpo_ctx_w=0 and ccpo_lk_fix=1",
+    "1536-dimensional processed hidden-only features; t+2 endpoint alignment",
+    "all usable history/current/future baselines equal their kernel estimates at lambda_k=1",
+    "full-strength readouts include J=1; kappa and context-stat perturbations are inert",
+    "same endpoints, hidden-only task fallback, terminal 10/0 and unsupported-row behavior",
+    "finite detached advantages; existing trainer normalization, padding guards and episode-gradient isolation"
+  ],
+  "evidence_sha256": {
+    "ablation-guards.log": "9347fce6fd1f0687bd513400a1c4d21bae5e8aaa3b67c668633bc92aef6f3ee1",
+    "cpu-tests.log": "26af7e39784eafd7223643a83f8d530639bdf39c41ace9b0c03fcf17677680d7",
+    "doc-guard.log": "77ee1162a2f9dc134436698d3e718fac453ebdcb14b0165cb73a39dd07e6bfb3"
+  },
+  "gpu_preflight_performed": false,
+  "gpu_used": false,
+  "launched": false,
+  "limitations": [
+    "CPU validation only; no GPU smoke test",
+    "prepared environment inherited from recorded control; package versions not re-probed",
+    "joint arm changes two components relative to H2 parent; isolated arms are separate controls"
+  ],
+  "queued": false,
+  "status": "passed_cpu_prepared_only",
+  "tests": {
+    "ablation_registry_guard": "passed",
+    "arm_document_registry_guard": "passed",
+    "future_progress_alfworld_cpu_regressions": 35,
+    "generated_run_sh_bash_syntax": "passed",
+    "git_diff_check": "passed"
+  },
+  "validated_at": "2026-09-19T23:17:53.848426+00:00"
+}
