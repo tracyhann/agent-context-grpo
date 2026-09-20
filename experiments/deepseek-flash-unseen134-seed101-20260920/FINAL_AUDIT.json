@@ -1,0 +1,13 @@
+{
+  "status": "incomplete",
+  "checked": "2026-09-20T14:43:08.826765+00:00",
+  "suite_counts": {
+    "alfworld-unseen": 132
+  },
+  "checks": [
+    "Complete unique planned task census",
+    "Actual environment task identity",
+    "Received request/trajectory reconciliation",
+    "Usage and cost accounting"
+  ]
+}

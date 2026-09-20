@@ -62,3 +62,9 @@ experiments/*/failure-analysis-*/trace_analysis.json
 experiments/qwen38-*/episodes.jsonl
 experiments/qwen38-*/turns.jsonl
 experiments/qwen38-*/episodes/
+
+# API pilot transcripts and request-level accounting; summaries stay versioned.
+experiments/deepseek-*/outputs/
+
+# Full-census local-model raw traces and token ledgers.
+experiments/qwen38-*/outputs/

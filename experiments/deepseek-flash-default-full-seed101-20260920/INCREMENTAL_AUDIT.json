@@ -1,0 +1,16 @@
+{
+  "completed_tasks_checked": {
+    "alfworld": 39,
+    "webshop": 61
+  },
+  "webshop_purchase_states_verified": 24,
+  "partial_purchase_episode_ids": [
+    2,
+    5,
+    53,
+    60,
+    68,
+    70
+  ],
+  "status": "passed"
+}

@@ -1,4 +1,15 @@
-# `ccpo/` — the main method
+# `ccpo/` — estimator and method arms
+
+The selected main method (2026-09-20) is **H2, no credit shrinkage, no episode
+advantage**, for both M10/ALFWorld and M11/WebShop. It uses the existing registry
+key `future-progress-h2-no-credit-shrinkage` in `ablations/ablations.py`, with
+full-strength context baselines and soft exponential weights. See the
+[current definition and configurations](../experiments/MAIN_METHOD.md).
+
+The definitions below describe the historical arms and their equations. Their
+credit-shrinkage and episode-on settings are retained for reproducibility.
+
+## Historical arm definitions
 
 Two methods, each on two benchmarks and two backbones (`experiments/experiments.md`):
 

@@ -1,0 +1,25 @@
+{
+  "changes": {
+    "exp_id": {
+      "control": "m10-h2-no-credit-shrinkage-alfworld-1.5b-2gpu-20260919",
+      "prepared": "m10-h2-noshrink-alfworld-7b-8gpu-20260920"
+    },
+    "gpus": {
+      "control": "0,1",
+      "prepared": "0,1,2,3,4,5,6,7"
+    },
+    "model": {
+      "control": "Qwen/Qwen2.5-1.5B-Instruct",
+      "prepared": "Qwen/Qwen2.5-7B-Instruct"
+    },
+    "model_path": {
+      "control": "/workspace/agent-context-grpo/hf/hub/models--Qwen--Qwen2.5-1.5B-Instruct/snapshots/989aa7980e4cf806f80c7fef2b1adb7bc71aa306",
+      "prepared": "Qwen/Qwen2.5-7B-Instruct"
+    },
+    "tp_size": {
+      "control": 1,
+      "prepared": 2
+    }
+  },
+  "control": "experiments/m10-h2-no-credit-shrinkage-alfworld-1.5b-2gpu-20260919"
+}

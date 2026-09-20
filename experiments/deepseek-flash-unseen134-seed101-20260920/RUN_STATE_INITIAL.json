@@ -1,0 +1,26 @@
+{
+  "status": "in_progress",
+  "pid": 644888,
+  "started": "2026-09-20T14:20:13.436391+00:00",
+  "command": [
+    "/workspace/agent-context-grpo/.venv/bin/python",
+    "-u",
+    "/workspace/agent-context-grpo/scripts/deepseek_split_eval.py",
+    "--split",
+    "unseen",
+    "--seed",
+    "101",
+    "--workers",
+    "32",
+    "--output",
+    "/workspace/agent-context-grpo/experiments/deepseek-flash-unseen134-seed101-20260920/outputs/alfworld-unseen"
+  ],
+  "log": "/workspace/agent-context-grpo/experiments/deepseek-flash-unseen134-seed101-20260920/run.log",
+  "requested_tasks": 134,
+  "updated": "2026-09-20T14:43:08.826713+00:00",
+  "progress": {
+    "alfworld-unseen": "132/134"
+  },
+  "cost_usd": 3.307043798999999,
+  "ended": "2026-09-20T14:43:08.826765+00:00"
+}

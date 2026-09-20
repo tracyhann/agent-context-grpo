@@ -1,8 +1,16 @@
 # `ablations/` — the CCPO-ATTNCRED ablations
 
-Each removes one component of the main arm, on both benchmarks, 1.5B, 150 steps
-(`experiments/experiments.md`). The control is the main arm of the **same** benchmark —
-so a WebShop ablation inherits `ccpo_target=score` and stays paired with what it ablates.
+**Current main method (2026-09-20):** `future-progress-h2-no-credit-shrinkage`
+on ALFWorld and WebShop. This existing registry entry is promoted to the main
+method for reporting and paired comparisons; its key and configurations are
+retained. See [the main-method definition](../experiments/MAIN_METHOD.md).
+
+Each entry declares its implementation parent and exact delta on the same
+benchmark. The H2 main method uses `ccpo_target=return` on both benchmarks;
+legacy WebShop `attncred` entries inherit the dense-score target. The table and
+baseline equations immediately below describe the original ablation matrix.
+Later sections record the newer variants; compare their final configurations
+against the selected main method as documented in the experiment plan.
 
 ```bash
 python3 official-repo/ablations/run.py --list
@@ -146,3 +154,31 @@ in episode weight. Standard turn ceilings stay 50 for ALFWorld and 15 for WebSho
 The [experiment plan](../experiments/experiments.md#m10m11-h2-no-shrinkage-with-cosine-context-similarity-2026-09-20)
 links all four prepared two-GPU configurations and documents the math and checks.
 Prepared only; no runs launched or queued.
+
+
+## M10/M11: history 1 / future 1, no shrinkage, no episode advantage
+
+`future-progress-history1-future1-no-credit-shrinkage` is available for both
+ALFWorld and WebShop, using 1.5B for 150 training steps. Its H1 parent is
+`attncred-context-future-progress`, with exactly `history_length=1` and
+`ccpo_lk_fix=1` added. Episode weight stays 0. Context statistics and standard
+soft exponential weights remain enabled; accumulated context is not truncated.
+
+Relative to H2 no-shrink, only prompt history and future horizon change from
+2/2 to 1/1. Two-GPU configs retain turn ceilings of 50 (ALFWorld) and 15
+(WebShop). The [experiment plan](../experiments/experiments.md#m10m11-history-1-future-1-no-shrinkage-no-episode-advantage-2026-09-20)
+links both folders and records the math and validation. Prepared only; not
+launched or queued.
+
+## 7B main method and active-episode pair
+
+The registry and CLI support `--backbone 7b` (Qwen2.5-7B-Instruct); omitted
+backbone still means 1.5B. Programmatic callers can use
+`build(key, benchmark, backbone="7b")`; the third positional `extra` argument
+remains compatible. Control names and experiment IDs use the selected backbone.
+
+The two H2 no-shrink keys, with and without active episode credit, have
+[eight-GPU/150-step preparations for both benchmarks](../experiments/MAIN_METHOD_7B.md).
+Run `python ablations/run.py --list --backbone 7b` to inspect IDs. The prepared
+full configs retain the matched 1.5B benchmark settings and use rollout TP2.
+No training is launched or queued by preparation.

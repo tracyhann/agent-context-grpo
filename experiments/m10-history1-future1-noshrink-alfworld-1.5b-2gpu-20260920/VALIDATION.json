@@ -1,0 +1,48 @@
+{
+  "status": "passed_targeted_cpu_checks",
+  "checked_at": "2026-09-20T12:11:56.969822+00:00",
+  "future_progress_suite": {
+    "status": "passed",
+    "tests": 39,
+    "command": "CUDA_VISIBLE_DEVICES='' .venv-webshop/bin/python -m unittest discover -s tests -p 'test_future_progress*.py' -v",
+    "log": ".local/m10-m11-history1-future1-noshrink-20260920/future-progress-tests.log"
+  },
+  "ablation_registry": {
+    "status": "passed",
+    "command": "CUDA_VISIBLE_DEVICES='' .venv-webshop/bin/python ablations/test_ablations.py",
+    "log": ".local/m10-m11-history1-future1-noshrink-20260920/registry-guards.log"
+  },
+  "integration": {
+    "status": "passed",
+    "checks": [
+      "H1 endpoints advance one step on the same trajectory and respect termination",
+      "usable history/current/future lambda_k=1 and baseline equals kernel estimate",
+      "real trainer component/logging/episode-gradient isolation test rerun with fixed lambda_k=1 in both benchmark normalization modes",
+      "actual ALFWorld prompt keeps previous pair and current observation without truncating stored memory",
+      "actual WebShop prompt covered by the 39-test suite"
+    ],
+    "log": ".local/m10-m11-history1-future1-noshrink-20260920/one-one-integration.log"
+  },
+  "config_runtime": {
+    "status": "passed",
+    "variants": 2,
+    "h2_noshrink_delta": "history_length, ccpo_progress_horizon, exp_id only",
+    "webshop_existing_history1_future1_delta": "ccpo_lk_fix and exp_id only",
+    "hydra_and_environment": "passed",
+    "bash_n": "passed",
+    "python_compile": "passed",
+    "git_diff_check": "passed"
+  },
+  "arm_guards": {
+    "test_keys_are_real": true,
+    "test_matches_control": true,
+    "test_overlays": true,
+    "test_flash_attn": true,
+    "test_trainer_wiring": true,
+    "test_doc_matches_code": true
+  },
+  "validation_scope": "CPU only. Full repository portability scan was not rerun; it previously flagged absolute paths in provisioned caches and generated launchers.",
+  "launched": false,
+  "queued": false,
+  "gpu_execution": "not_run"
+}

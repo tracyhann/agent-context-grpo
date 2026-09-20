@@ -1,0 +1,16 @@
+{
+  "status": "completed",
+  "actual_episodes": 12,
+  "benchmark_requests": 234,
+  "additional_budget_diagnostic_requests": 1,
+  "api_request_retries": 0,
+  "credential_validation": "official models/balance requests succeeded; key excluded from outputs",
+  "source_snapshots": "each evaluator source hash matches its launch manifest",
+  "accounting": "reconciled all successful response usage with raw ledger; reasoning not double-counted",
+  "local_model_or_gpu_used": false,
+  "full_evaluations_launched": false,
+  "source_syntax": "passed",
+  "git_diff_check": "passed",
+  "important_limit": "4096-token native-thinking budget truncates 43/173 ALFWorld and 4/61 WebShop requests; estimates are conditional on this budget",
+  "pilot_plus_diagnostic_off_peak_usd": 0.30684451199999996
+}

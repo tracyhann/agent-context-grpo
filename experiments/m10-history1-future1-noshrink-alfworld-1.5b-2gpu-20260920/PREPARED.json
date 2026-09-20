@@ -1,0 +1,29 @@
+{
+  "status": "prepared_not_launched",
+  "ablation": "future-progress-history1-future1-no-credit-shrinkage",
+  "canonical_id": "ccpo-attncred-abl-hist1-fut1-noshrink-alfworld-1.5b",
+  "benchmark": "alfworld",
+  "model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "steps": 150,
+  "gpus": "0,1",
+  "seed": 0,
+  "history_length": 1,
+  "future_horizon": 1,
+  "max_steps": 50,
+  "lambda_k_fixed": 1.0,
+  "episode_weight": 0.0,
+  "context_stat_weight": 1.0,
+  "weight_mode": "soft",
+  "original_edge_weight": 0.0,
+  "control": "experiments/m10-h2-no-credit-shrinkage-alfworld-1.5b-2gpu-20260919",
+  "method_delta_from_h2_noshrink": {
+    "history_length": 1,
+    "ccpo_progress_horizon": 1
+  },
+  "launched": false,
+  "queued": false,
+  "gpu_preflight_performed": false,
+  "prepared_at": "2026-09-20T12:07:54.317829+00:00",
+  "source_commit": "f05157f613d571fe63e2b3edaa5c8b29d606f1f0",
+  "source_dirty": true
+}

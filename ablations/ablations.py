@@ -2,7 +2,8 @@
 """The CCPO-ATTNCRED ablations, per experiments/experiments.md.
 
 Each uses its declared base method (normally `attncred`) on the SAME benchmark,
-1.5B backbone, 150 steps. The default control for an ALFWorld ablation is
+selected backbone (1.5B by default), 150 steps. The default control for an
+ALFWorld ablation is
 `ccpo-attncred-alfworld-1.5b`; for a WebShop one it is `ccpo-attncred-ws-1.5b`,
 which carries the dense-score target -- so an ablation inherits it and stays paired
 with the arm it ablates.
@@ -78,6 +79,20 @@ ABLATIONS = {
         watch="env.history_length=1 reaches WebShop memory.fetch; future horizon=1, "
               "kappa=2, context statistics, whole-trajectory exclusion and fusion "
               "weights remain the M11 defaults. This is not a strict local-only estimator.",
+    ),
+    "future-progress-history1-future1-no-credit-shrinkage": dict(
+        name="CCPO-ATTNCRED-FUTURE-PROGRESS-HISTORYONE-FUTUREONE-NOSHRINK",
+        tag="hist1-fut1-noshrink",
+        title="M10/M11 with one history turn, one-step future progress and full-strength baselines",
+        base_method="attncred-context-future-progress",
+        benchmarks=("alfworld", "webshop"),
+        delta={"history_length": 1, "ccpo_lk_fix": 1.0},
+        removes="the second prompt-history turn and support-based task-prior shrinkage",
+        asks="does a one-history/one-future window improve no-shrink context credit on ALFWorld and WebShop?",
+        watch="actor and frozen reference receive the previous observation-action pair "
+              "plus the current observation; future horizon=1. Accumulated context statistics "
+              "and soft exponential weights remain enabled. Usable lambda_k=1, "
+              "episode/original-edge weights=0; episode advantage is diagnostic only.",
     ),
     "future-progress-h2-no-credit-shrinkage": dict(
         name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK",
@@ -310,8 +325,8 @@ def benchmarks_for(ablation):
     return tuple(ABLATIONS[ablation].get("benchmarks", ("alfworld", "webshop")))
 
 
-def build(ablation, benchmark, extra=None):
-    """(exp_name, cfg) for one ablation on one benchmark, 1.5B."""
+def build(ablation, benchmark, extra=None, backbone="1.5b"):
+    """Build a benchmark/backbone pair; preserve the legacy third-argument overrides."""
     if ablation not in ABLATIONS:
         raise KeyError(f"unknown ablation {ablation!r}; known: {', '.join(ABLATIONS)}")
     spec = ABLATIONS[ablation]
@@ -319,14 +334,14 @@ def build(ablation, benchmark, extra=None):
     if benchmark not in allowed:
         raise KeyError(f"{ablation!r} is defined for {', '.join(allowed)} only, "
                        f"not {benchmark!r}")
-    _, cfg = arms.build(spec.get("base_method", "attncred"), benchmark, "1.5b")
+    _, cfg = arms.build(spec.get("base_method", "attncred"), benchmark, backbone)
     cfg.update(spec["delta"])
     cfg.update(extra or {})
     bench_tag = "alfworld" if benchmark == "alfworld" else "ws"
-    return f"ccpo-attncred-abl-{spec['tag']}-{bench_tag}-1.5b", cfg
+    return f"ccpo-attncred-abl-{spec['tag']}-{bench_tag}-{backbone}", cfg
 
 
-def control_name(benchmark, ablation=None):
+def control_name(benchmark, ablation=None, backbone="1.5b"):
     method = ABLATIONS[ablation].get("base_method", "attncred") if ablation else "attncred"
-    name, _ = arms.build(method, benchmark, "1.5b")
+    name, _ = arms.build(method, benchmark, backbone)
     return name

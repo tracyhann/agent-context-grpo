@@ -1,5 +1,23 @@
 # CCPO experiments
 
+## Current main method — selected 2026-09-20
+
+**M10/M11 H2, no credit shrinkage, no episode advantage** is the main method for
+ALFWorld and WebShop: registry key `future-progress-h2-no-credit-shrinkage`.
+History/future windows are 2/2; usable lambda_k=1; episode/original-edge weights
+are 0/0; context statistics and standard soft exponential weights stay enabled.
+Actor credit is N_CC(H+F_H2), with the existing benchmark-specific normalization.
+
+The [main-method definition](MAIN_METHOD.md) records the full math, configuration
+links and ablation comparisons. Current prepared runs use 1.5B for 150 steps,
+two GPUs each; turn ceilings remain ALFWorld 50 / WebShop 15. Episode-on,
+cosine, history-1/future-1, no-context and 30-turn variants are ablations. The
+older matrix and base-estimator equations below retain their historical meaning;
+their shrinkage/episode settings do not define the selected main method.
+
+## Historical matrix and later experiment records
+
+
 The original matrix contains **10 main runs** (4 variants × 2 backbones, plus one
 WebShop-only variant × 2 backbones) and **13 ablations** (6 variants × 2 benchmarks,
 plus one WebShop-only variant, 1.5B throughout). Later future-context studies are
@@ -1209,3 +1227,128 @@ The existing cosine branch in `ccpo/core_ccpo.py` is selected by
 potential readout. No estimator or trainer runtime change is needed. Per-folder
 NOTES, full configs, launch scripts, paired config diffs and validation records
 capture the prepared variants. GPU execution has not been tested.
+
+
+### M10/M11: history 1, future 1, no shrinkage, no episode advantage (2026-09-20)
+
+**Prepared only; not launched or queued.** Both configurations use fresh
+Qwen2.5-1.5B-Instruct, 150 training steps, two GPUs, seed 0 and 8 rollouts/task.
+Registry key: `future-progress-history1-future1-no-credit-shrinkage`.
+Variant name: `CCPO-ATTNCRED-FUTURE-PROGRESS-HISTORYONE-FUTUREONE-NOSHRINK`.
+The H1 parent is `attncred-context-future-progress`; its declared delta is
+`history_length=1`, `ccpo_lk_fix=1`. Episode weight is inherited as 0.
+
+| Benchmark | Prepared experiment | Canonical ID | Train/eval turn ceiling |
+|---|---|---|---:|
+| M10 ALFWorld | [History 1 / future 1 / no shrinkage](m10-history1-future1-noshrink-alfworld-1.5b-2gpu-20260920/NOTES.md) | `ccpo-attncred-abl-hist1-fut1-noshrink-alfworld-1.5b` | 50 |
+| M11 WebShop | [History 1 / future 1 / no shrinkage](m11-history1-future1-noshrink-webshop-1.5b-2gpu-20260920/NOTES.md) | `ccpo-attncred-abl-hist1-fut1-noshrink-ws-1.5b` | 15 |
+
+Relative to each benchmark's H2 no-shrink control, only `history_length: 2 -> 1`
+and `ccpo_progress_horizon: 2 -> 1` change (plus experiment ID). This is the joint
+window comparison, retaining standard soft exponential neighbour weights,
+context-statistics weight 1, whitening k=3 and the original turn budget.
+
+History 1 means that both the actor and frozen reference receive at most the
+previous observation/action pair, along with the current observation and normal
+task/action instructions. Earlier prompt turns are omitted. The accumulated
+context-statistics vector, stored memory and return targets are not truncated
+to a one-step window. Future 1 means the next endpoint at min(t+1,T), with early
+termination respected. No rollout is extended to supply an extra future state.
+
+For the unchanged kernel-weighted contextual readout C, usable baselines are
+full strength: B=C, lambda_k=1, including one-peer groups. Exact observation
+grouping, whole-query-trajectory exclusion, task fallback and unsupported-row
+handling retain the main method's conventions. Kappa=2 remains recorded but
+cannot shrink a fixed-weight readout. The method is
+\[
+H_{i,t}=Y_{i,t}-C_{i,t}[Y],\qquad
+Z_{i,s}=\gamma^{T_i-s}R_i,\quad V_{i,s}=C_{i,s}[Z],\quad\gamma=0.95,
+\]
+\[
+F_{i,t}=z_{\mathrm{task}}(V_{i,\min(t+1,T_i)}-V_{i,t}),\qquad
+A_{i,t,\ell}=M_{i,t,\ell}\,N_{\mathrm{CC}}(H+F)_{i,t}.
+\]
+Y retains the penalized discounted-return target; Z retains the unpenalized
+potential target. Terminal potentials remain fixed at 10/0. N_CC is task
+standardization on ALFWorld and identity on WebShop. History/future weights are
+1/1. Both episode and original-edge weights are 0. Episode advantage and the
+original edge remain diagnostic references; neither contributes to the actor
+advantage. KL remains a separate loss.
+
+The existing runtime already supports these settings. Configs, local launch
+scripts, per-folder NOTES, paired config diffs and validation records are
+prepared. GPU execution has not been tested. Compare with the existing WebShop
+history-1/future-1 arm to isolate removal of shrinkage, and with each H2 no-shrink
+arm to compare the joint prompt/future window.
+
+
+### DeepSeek Flash API cost pilot (2026-09-20)
+
+[Measured report](deepseek-flash-api-cost-pilot-20260920/COST_ESTIMATE.md),
+[protocol and validation](deepseek-flash-api-cost-pilot-20260920/NOTES.md).
+Six actual tasks per benchmark completed via the official API on CPU environments.
+Model `deepseek-flash`, native thinking/high, output cap 4,096, history 2,
+ALFWorld 50 / WebShop 15 turns. Pilot outcomes: ALFWorld 4/6, WebShop 3/6.
+API token charges including one separate 8k diagnostic replay: $0.30684.
+
+Full one-seed targets are all 140 valid_seen ALFWorld games and all 500 WebShop
+test goals on the current 1,000-product catalogue. Task-stratified ALFWorld and
+sample-mean WebShop extrapolation gives $4.19 + $5.42 = **$9.62 off-peak**,
+or **$19.23 peak**. A 2x no-cache budget allowance rounds to $20/$40; this is
+not a statistical upper bound. No full evaluation was launched. Output caps
+truncated 43/173 ALFWorld and 4/61 WebShop requests, so costs and pilot success
+are conditional on the 4k generation budget. One 8k replay produced a valid
+action at 4,638 completion tokens; it does not calibrate full-eval 8k cost.
+
+
+## DeepSeek Flash full official-default evaluation (2026-09-20, seed 101)
+
+Completed the authorized full ALFWorld `valid_seen` 140-task census and all 500
+WebShop test goal positions on the existing 1K-product catalog. Native thinking
+high with the official 65,536-token default pinned explicitly; history 2;
+ALFWorld 50 / WebShop 15 actions; CPU-only environments.
+
+Requested table: **ALFWorld Pick / Look / Clean / Heat / Cool / Pick2 / All;
+WebShop Score / Succ**, plus usage-derived API cost. Live/final results and
+reproduction documentation are in
+[RESULTS.md](deepseek-flash-default-full-seed101-20260920/RESULTS.md) and
+[NOTES.md](deepseek-flash-default-full-seed101-20260920/NOTES.md).
+
+This is a separate seed/budget condition from the six-task-per-benchmark cost
+pilot. Goal/price manifests, exact task IDs, source/data hashes, and full API
+usage ledgers are saved. Native reasoning is excluded from action execution;
+WebShop seeded goal/price generation is stabilized before requests.
+
+Final: ALFWorld **105/140 = 75.00%**; WebShop **Score 27.87, Succ 22.00%
+(110/500)**. Received usage charge **$9.940843**, plus a separate allowance of
+up to **$0.157689** for four interrupted responses with no returned usage.
+All 640 tasks and 9,310 received responses pass the final audit; one ALFWorld
+response hit the 64K cap. See the linked results for the requested task-type table.
+
+## Full held-out Qwen3.8 and DeepSeek unseen extension (2026-09-20)
+
+Qwen3.8-27B BF16 is chained after the active M10-NOCTX ALFWorld step150 completion on GPUs0,1. Seed101; one full census of ALFWorld seen140 + unseen134 and WebShop500. Native thinking xhigh, explicit65,536 output cap, history2, ALF50 / WS15 actions. [Protocol and reproduction](qwen38-27b-full-heldout-seed101-20260920/NOTES.md), [live/final results](qwen38-27b-full-heldout-seed101-20260920/RESULTS.md).
+
+DeepSeek Flash is concurrently evaluating the remaining ALFWorld unseen134 on CPU, using the same high-thinking/65,536-cap protocol as the completed seen/WebShop run. [Protocol](deepseek-flash-unseen134-seed101-20260920/NOTES.md), [results and incremental/combined cost](deepseek-flash-unseen134-seed101-20260920/RESULTS.md). Exact task IDs, source/data/package snapshots, raw traces, and automatic final reports are retained.
+
+DeepSeek unseen extension paused at **132/134**, 104 successful completed tasks, after HTTP402 insufficient balance. New received-usage cost **$3.307044**; the last2 tasks retain71 saved actions and have a replay-based recovery command in NOTES.md. Qwen remains queued and is unaffected by API balance.
+
+## Main method: 7B / eight GPUs, with and without episode advantage (2026-09-20)
+
+**Prepared only; not launched or queued.** Four fresh Qwen2.5-7B-Instruct runs,
+150 steps, seed 0, eight GPUs each. H2 main method, no credit shrinkage, context
+statistics and soft exponential similarity retained. Each within-benchmark pair
+differs only in episode weight 0 versus 1. ALFWorld remains M10 and WebShop M11.
+
+| Benchmark | Episode weight | Canonical registry ID | Prepared notes |
+|---|---:|---|---|
+| ALFWorld | 0 | `ccpo-attncred-abl-fph2-noshrink-alfworld-7b` | [M10 main](m10-h2-noshrink-alfworld-7b-8gpu-20260920/NOTES.md) |
+| ALFWorld | 1 | `ccpo-attncred-abl-fph2-noshrink-ep-alfworld-7b` | [M10 + episode](m10-h2-noshrink-active-episode-alfworld-7b-8gpu-20260920/NOTES.md) |
+| WebShop | 0 | `ccpo-attncred-abl-fph2-noshrink-ws-7b` | [M11 main](m11-h2-noshrink-webshop-7b-8gpu-20260920/NOTES.md) |
+| WebShop | 1 | `ccpo-attncred-abl-fph2-noshrink-ep-ws-7b` | [M11 + episode](m11-h2-noshrink-active-episode-webshop-7b-8gpu-20260920/NOTES.md) |
+
+Eight FSDP ranks; rollout TP2/four replicas; batch remains 16 tasks × 8 rollouts.
+Method math, scaling-only config diffs, retained 50/15-turn ceilings, model-cache
+status, generation command and CPU validation are in [MAIN_METHOD_7B.md](MAIN_METHOD_7B.md).
+The preparation helper and backbone-aware launcher generate 7B model paths; no
+1.5B checkpoint is reused. GPU memory fit awaits an actual smoke test.

@@ -1,0 +1,44 @@
+{
+  "checks": [
+    "Resolved model and checkpoint are 7B, never the paired 1.5B snapshot",
+    "Exactly eight visible GPUs and trainer ranks; rollout TP2",
+    "Only model/path/GPU allocation/TP/identity differ from matched 1.5B config",
+    "Only episode coefficient and identity differ within each 7B pair",
+    "H2, no shrinkage, context statistics, original edge off, 150 steps, seed0 preserved",
+    "All method env exports and Hydra overrides match the resolved config",
+    "Existing episode-on changes actual PPO gradient; episode-off remains gradient-isolated",
+    "Preparation invokes dry-run only and refuses existing experiment directories"
+  ],
+  "commands": [
+    "CUDA_VISIBLE_DEVICES='' OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 PYTHONPATH=tests:. .venv/bin/python -m unittest test_main_7b test_future_progress_active_episode -v",
+    "CUDA_VISIBLE_DEVICES='' OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 .venv/bin/python ablations/test_ablations.py",
+    "ccpo/test_arms.py: test_doc_matches_code()",
+    "bash -n experiments/m10-h2-noshrink-active-episode-alfworld-7b-8gpu-20260920/run.sh"
+  ],
+  "evidence_sha256": {
+    "ablation-guards.log": "b296755b2b2451e06ea61b84b16b700261bad04d558fa23dcf3ebe9aa14179c9",
+    "config-tests.log": "c3bb1a4ecdb0fcdbde0eff8a507d4b578f4e0847b3afdccd725d17e31a035501"
+  },
+  "gpu_memory_calibrated": false,
+  "gpu_preflight_performed": false,
+  "gpu_used": false,
+  "launched": false,
+  "pending": [
+    "Download or make Qwen2.5-7B-Instruct weights available before training",
+    "Run an eight-GPU smoke test to validate memory/runtime when launch is requested"
+  ],
+  "queued": false,
+  "source_hashes_verified": true,
+  "status": "passed_cpu_prepared_only",
+  "tests": {
+    "ablation_registry_and_estimator_guards": "passed",
+    "diff_whitespace": "passed",
+    "distinct_unittest_cases": 9,
+    "existing_active_episode_gradient_tests": 4,
+    "generated_shell_syntax": "passed",
+    "new_backbone_cli_config_tests": 5,
+    "python_compilation": "passed",
+    "registry_document_guard": "passed: 31 variant names, 47 arm IDs, 2 historical runs"
+  },
+  "validated_at": "2026-09-20T20:26:24.336636+00:00"
+}

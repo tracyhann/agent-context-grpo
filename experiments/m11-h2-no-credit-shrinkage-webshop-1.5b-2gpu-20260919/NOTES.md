@@ -1,5 +1,10 @@
 # M11 WebShop H2 without credit shrinkage
 
+**Main-method designation — 2026-09-20:** This H2 / no-credit-shrinkage /
+episode-weight-zero arm is now the selected main method for this benchmark.
+See [the shared definition and ablation comparisons](../MAIN_METHOD.md).
+This documentation update does not change the recorded training configuration.
+
 **Prepared only; not launched or queued.** Fresh Qwen2.5-1.5B-Instruct, two GPUs,
 150 steps, seed 0, 8 rollouts per task. Recorded GPU IDs `2,3` are inherited
 configuration placeholders, not a reservation. Prompt history remains two turns,

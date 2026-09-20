@@ -1,5 +1,10 @@
 # M10 H2 without credit shrinkage
 
+**Main-method designation — 2026-09-20:** This H2 / no-credit-shrinkage /
+episode-weight-zero arm is now the selected main method for this benchmark.
+See [the shared definition and ablation comparisons](../MAIN_METHOD.md).
+This documentation update does not change the recorded training configuration.
+
 **Prepared only. Not launched or queued.** ALFWorld, fresh Qwen2.5-1.5B-Instruct,
 seed 0, 150 steps, two GPUs (0,1), future horizon 2, context-statistics vector enabled.
 GPU IDs are the copied protocol setting, not a new reservation or launch.

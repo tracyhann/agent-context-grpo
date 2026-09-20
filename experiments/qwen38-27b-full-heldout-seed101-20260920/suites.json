@@ -1,0 +1,25 @@
+{
+  "provider": "local-qwen",
+  "title": "Qwen3.8-27B \u2014 full ALFWorld and WebShop, seed101",
+  "seed": 101,
+  "suites": [
+    {
+      "name": "alfworld-seen",
+      "benchmark": "alfworld",
+      "split": "seen",
+      "count": 140
+    },
+    {
+      "name": "alfworld-unseen",
+      "benchmark": "alfworld",
+      "split": "unseen",
+      "count": 134
+    },
+    {
+      "name": "webshop",
+      "benchmark": "webshop",
+      "split": "test",
+      "count": 500
+    }
+  ]
+}

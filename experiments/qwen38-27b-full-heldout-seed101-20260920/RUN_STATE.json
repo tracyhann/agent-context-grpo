@@ -1,0 +1,53 @@
+{
+  "status": "evaluating",
+  "controller_pid": 647585,
+  "started": "2026-09-20T14:48:08.172861+00:00",
+  "gpus": [
+    0,
+    1
+  ],
+  "suites": {
+    "alfworld-seen": {
+      "status": "running",
+      "pid": 649191,
+      "started": "2026-09-20T15:21:11.794236+00:00"
+    }
+  },
+  "updated": "2026-09-20T20:41:17.140965+00:00",
+  "training_status": "complete",
+  "training_step": 150,
+  "training_eval_step": 150,
+  "training_eval_success": 0.9453125,
+  "training_verified": {
+    "step": 150,
+    "final_success_rate": 0.9453125,
+    "best": {
+      "step": 150,
+      "val_success_rate": 0.9453125
+    }
+  },
+  "gpu_capacity": [
+    {
+      "index": 0,
+      "uuid": "GPU-d5ac0598-888f-98b0-c954-a765e992a5fa",
+      "memory_mib": 939,
+      "utilization": 0
+    },
+    {
+      "index": 1,
+      "uuid": "GPU-d8979cde-4b78-c5ff-4cf3-2c7d529066fa",
+      "memory_mib": 941,
+      "utilization": 0
+    }
+  ],
+  "idle_samples": 2,
+  "server_pid": 648982,
+  "server_started": "2026-09-20T15:20:11.689156+00:00",
+  "server_ready": "2026-09-20T15:21:11.793059+00:00",
+  "current_suite": "alfworld-seen",
+  "progress": {
+    "alfworld-seen": "52/140",
+    "alfworld-unseen": "0/134",
+    "webshop": "0/500"
+  }
+}

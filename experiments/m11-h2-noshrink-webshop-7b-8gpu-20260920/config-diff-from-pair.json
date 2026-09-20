@@ -1,0 +1,13 @@
+{
+  "changes": {
+    "ccpo_ep_w": {
+      "control": 1.0,
+      "prepared": 0.0
+    },
+    "exp_id": {
+      "control": "m11-h2-noshrink-active-episode-webshop-7b-8gpu-20260920",
+      "prepared": "m11-h2-noshrink-webshop-7b-8gpu-20260920"
+    }
+  },
+  "control": "m11-h2-noshrink-active-episode-webshop-7b-8gpu-20260920"
+}

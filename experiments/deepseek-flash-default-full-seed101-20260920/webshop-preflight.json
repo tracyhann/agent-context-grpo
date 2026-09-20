@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "seed": 101,
+  "count": 500,
+  "test_goals_sha256": "f0ed083c11ea706a77832aab16294025ed535f6c95c008f2bceee842b46b9364",
+  "product_prices_sha256": "e5c1adcc28f1eb53b3971c6f2d58e950bbd41a413b6b0204059517c161f661f4",
+  "two_independent_environments_same_goals_and_prices": true,
+  "no_api_calls": true,
+  "initial_preflight_found_rng_initialization_drift": true,
+  "fixed_by": "explicit reseed before price/goal construction in evaluator adapter"
+}

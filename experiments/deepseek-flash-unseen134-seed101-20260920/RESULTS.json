@@ -1,0 +1,83 @@
+{
+  "title": "DeepSeek Flash — unseen ALFWorld134, seed101",
+  "provider": "deepseek",
+  "updated": "2026-09-20T14:48:08.177086+00:00",
+  "suites": {
+    "alfworld-unseen": {
+      "benchmark": "alfworld",
+      "split": "unseen",
+      "expected": 134,
+      "completed": 132,
+      "running": 0,
+      "errors": 2,
+      "final": false,
+      "successes": 104,
+      "success_pct": 78.78787878787878,
+      "score_pct": 78.78787878787878,
+      "api_requests": 2667,
+      "usage": {
+        "prompt_tokens": 1349398,
+        "completion_tokens": 5183059,
+        "cache_hit_tokens": 35383,
+        "cache_miss_tokens": 1314015,
+        "reasoning_tokens": 4955478
+      },
+      "cost_usd": 3.307043798999999,
+      "unpriced_attempts": 0,
+      "rejected_api_attempts": 2,
+      "unpriced_ceiling_estimate_usd": 0.0,
+      "finish_reasons": {
+        "stop": 2667
+      },
+      "models": {
+        "deepseek-flash": 2667
+      },
+      "mean_episode_length": 19.666666666666668,
+      "task_types": {
+        "Pick": {
+          "count": 24,
+          "successes": 23,
+          "expected": 24,
+          "success_pct": 95.83333333333333
+        },
+        "Look": {
+          "count": 18,
+          "successes": 15,
+          "expected": 18,
+          "success_pct": 83.33333333333333
+        },
+        "Clean": {
+          "count": 30,
+          "successes": 25,
+          "expected": 31,
+          "success_pct": 83.33333333333333
+        },
+        "Heat": {
+          "count": 22,
+          "successes": 12,
+          "expected": 23,
+          "success_pct": 54.54545454545455
+        },
+        "Cool": {
+          "count": 21,
+          "successes": 20,
+          "expected": 21,
+          "success_pct": 95.23809523809524
+        },
+        "Pick2": {
+          "count": 17,
+          "successes": 9,
+          "expected": 17,
+          "success_pct": 52.94117647058823
+        }
+      }
+    }
+  },
+  "status": "incomplete",
+  "cost_usd": 3.307043798999999,
+  "unpriced_attempts": 0,
+  "rejected_api_attempts": 2,
+  "unpriced_ceiling_estimate_usd": 0.0,
+  "previous_completed_api_cost_usd": 9.940843355999993,
+  "combined_api_cost_usd": 13.247887154999992
+}

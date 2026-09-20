@@ -1,18 +1,19 @@
 # CCPO — Context-Conditioned Policy Optimization
 
-Credit assignment for multi-turn agent RL. CCPO replaces the *step* term of the GRPO
-family (GiGPO, G²PO) with a context-conditioned, credibility-shrunk leave-one-out
-baseline. The standard arms retain the episode advantage; the context-advantage-only
-arms (including M5) disable it. Each variant and its intended comparison are defined
-in the experiment spec below.
+Credit assignment for multi-turn agent RL. The current main method is **M10/M11
+H2 with no credit shrinkage and no episode advantage**: full-strength contextual
+history baselines plus two-step contextual future progress. It retains frozen
+hidden-state + context-statistics representations and soft exponential weights.
+The [main-method definition](experiments/MAIN_METHOD.md) records its math, exact
+configurations and ablations. Earlier shrinkage and episode-on arms remain
+historical comparators.
 
 * Benchmarks: **ALFWorld**, **WebShop** · Backbones: **Qwen2.5-1.5B / 7B-Instruct**
 * Target hardware: **A100 (sm_80)** and **H100 (sm_90)**
 * Checkpoint backups: **https://huggingface.co/tracyhan816/ccpo-variants**
 
-**The spec is [`experiments/experiments.md`](experiments/experiments.md)** — 23 runs,
-each with its variant name, its equations, its GPU floor and the command that launches
-it, plus the hyperparameter tables and the results-table format.
+**The spec is [`experiments/experiments.md`](experiments/experiments.md)** — the selected
+main method, historical matrix, later ablations, hyperparameters and reporting format.
 
 ---
 
@@ -32,9 +33,9 @@ GPU runtime (see §2–3 for prerequisites):
 scripts/setup_webshop.sh                 # venv, Java, catalogue/index, data, model
 scripts/setup_webshop.sh --check         # CPU validation of the prepared runtime
 
-# M5: binary return target, episode advantage off; replace GPU IDs with your allocation
-python3 ccpo/run.py --method attncred-context-adv-only-return \
-  --benchmark webshop --backbone 1.5b --gpus 0,1,2,3
+# Main method: H2, no shrinkage, episode advantage off (1.5B); use allocated GPU IDs
+python3 ablations/run.py --ablation future-progress-h2-no-credit-shrinkage \
+  --benchmark webshop --gpus 0,1,2,3
 
 python3 scripts/exp_status.py
 python3 scripts/report_results.py --exp experiments/<exp-id> --paper-table
@@ -44,8 +45,8 @@ For **ALFWorld**, use its separate setup and launcher selection:
 
 ```bash
 scripts/setup_env.sh
-python3 ccpo/run.py --method attncred --benchmark alfworld \
-  --backbone 1.5b --gpus 0,1,2,3
+python3 ablations/run.py --ablation future-progress-h2-no-credit-shrinkage \
+  --benchmark alfworld --gpus 0,1,2,3
 ```
 
 | Benchmark | Setup command | Python environment | Training inputs |

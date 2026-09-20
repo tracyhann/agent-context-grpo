@@ -1,0 +1,15 @@
+{
+  "benchmark": "webshop",
+  "native_reasoning_finished": true,
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 234,
+    "total_tokens": 437,
+    "completion_tokens": 203,
+    "prompt_tokens_details": null
+  },
+  "action": "search[men's long sleeve t-shirt mossy oak bottomland large machine wash under 50]",
+  "format_valid": true,
+  "generation_seed": 101,
+  "content": "<action>search[men's long sleeve t-shirt mossy oak bottomland large machine wash under 50]</action>"
+}

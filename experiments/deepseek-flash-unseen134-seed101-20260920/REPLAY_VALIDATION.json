@@ -1,0 +1,25 @@
+{
+  "status": "passed",
+  "api_calls": 0,
+  "replays": [
+    {
+      "status": "passed",
+      "benchmark": "alfworld",
+      "episode_id": 0,
+      "turns_replayed": 16,
+      "success": true,
+      "score": 1.0,
+      "api_calls": 0
+    },
+    {
+      "status": "passed",
+      "benchmark": "alfworld",
+      "episode_id": 5,
+      "turns_replayed": 50,
+      "success": false,
+      "score": 0.0,
+      "api_calls": 0
+    }
+  ],
+  "validator_sha256": "6cb739fb8115f4f0412b3a12a43d45fc716278c8a8449ad08d1fc134fd346e70"
+}

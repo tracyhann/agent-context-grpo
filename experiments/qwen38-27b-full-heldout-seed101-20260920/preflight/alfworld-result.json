@@ -1,0 +1,15 @@
+{
+  "benchmark": "alfworld",
+  "native_reasoning_finished": true,
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 391,
+    "total_tokens": 516,
+    "completion_tokens": 125,
+    "prompt_tokens_details": null
+  },
+  "action": "go to desk 1",
+  "format_valid": true,
+  "generation_seed": 101,
+  "content": "<action>go to desk 1</action>"
+}

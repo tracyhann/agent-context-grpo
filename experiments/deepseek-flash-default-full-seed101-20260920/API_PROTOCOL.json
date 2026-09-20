@@ -1,0 +1,36 @@
+{
+  "verified_date_utc": "2026-09-20",
+  "model": "deepseek-flash",
+  "documented_model_version": "DeepSeek-V4.1-Flash",
+  "request_parameters": {
+    "thinking": {
+      "type": "enabled"
+    },
+    "reasoning_effort": "high",
+    "max_tokens": 65536,
+    "stream": false
+  },
+  "omitted_parameters": [
+    "temperature",
+    "top_p",
+    "seed"
+  ],
+  "seed_scope": "environment construction and task ordering; API generation seed unavailable",
+  "pricing_usd_per_million": {
+    "off_peak": {
+      "cache_hit_input": 0.003,
+      "cache_miss_input": 0.15,
+      "completion": 0.6
+    },
+    "peak": {
+      "cache_hit_input": 0.006,
+      "cache_miss_input": 0.3,
+      "completion": 1.2
+    }
+  },
+  "sources": [
+    "https://api-docs.deepseek.com/api/create-chat-completion/",
+    "https://api-docs.deepseek.com/quick_start/pricing/",
+    "https://api-docs.deepseek.com/guides/thinking_mode/"
+  ]
+}
