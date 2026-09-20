@@ -1,0 +1,48 @@
+{
+  "status": "passed_targeted_cpu_checks",
+  "checked_at": "2026-09-20T09:57:05.359506+00:00",
+  "ablation_registry": {
+    "status": "passed",
+    "command": "CUDA_VISIBLE_DEVICES='' .venv-webshop/bin/python ablations/test_ablations.py",
+    "coverage": "all registry deltas, clipped-cosine arithmetic and all-clipped fallback, fixed credibility",
+    "log": ".local/m10-m11-h2-cosine-20260920/registry-guards.log"
+  },
+  "cosine_integration": {
+    "status": "passed",
+    "command": "CUDA_VISIBLE_DEVICES='' .venv-webshop/bin/python .local/m10-m11-h2-cosine-20260920/validate_cosine.py",
+    "coverage": [
+      "independent cosine weighted means for history and both potentials",
+      "same processed hidden+context representation as exponential kernel",
+      "cosine changes baseline and is invariant to tau",
+      "usable lambda_k=1; baseline equals cosine readout",
+      "4 existing active-episode tests rerun with cosine, including both benchmark normalizations, episode-on gradient sensitivity and episode-off isolation"
+    ],
+    "log": ".local/m10-m11-h2-cosine-20260920/cosine-integration.log"
+  },
+  "config_runtime_checks": {
+    "status": "passed",
+    "variants": 4,
+    "source_registry_matches": true,
+    "soft_control_delta": "ccpo_wmode and exp_id only",
+    "episode_peer_delta": "ccpo_ep_w and exp_id only",
+    "generated_hydra_environment": "passed",
+    "bash_n": "passed",
+    "arm_guards": {
+      "test_keys_are_real": true,
+      "test_matches_control": true,
+      "test_overlays": true,
+      "test_flash_attn": true,
+      "test_trainer_wiring": true,
+      "test_doc_matches_code": true
+    }
+  },
+  "syntax_and_whitespace": {
+    "python_compile": "passed",
+    "bash_n": "passed",
+    "git_diff_check": "passed"
+  },
+  "validation_scope": "Targeted CPU checks only. Full repository portability scan was not rerun; it previously flagged absolute paths in provisioned caches and generated local launchers.",
+  "gpu_execution": "not_run",
+  "training_launched": false,
+  "queued": false
+}

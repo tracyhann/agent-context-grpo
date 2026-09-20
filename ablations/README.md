@@ -127,3 +127,22 @@ paired config diffs and the two-GPU launch preparation are in the
 [no-episode notes](../experiments/m11-h2-noshrink-30turn-webshop-1.5b-2gpu-20260920/NOTES.md)
 and [active-episode notes](../experiments/m11-h2-noshrink-active-episode-30turn-webshop-1.5b-2gpu-20260920/NOTES.md).
 Prepared only; neither arm has been launched or queued.
+
+
+## M10/M11 H2: full-strength cosine context baselines
+
+Both benchmarks now have 1.5B, 150-step variants with the same context
+representations and `ccpo_wmode=cos` (clipped cosine instead of the exponential kernel):
+
+| Registry key | Delta from H2 parent |
+|---|---|
+| `future-progress-h2-no-credit-shrinkage-cosine` | `ccpo_lk_fix=1`, `ccpo_wmode=cos` |
+| `future-progress-h2-no-credit-shrinkage-active-episode-cosine` | `ccpo_lk_fix=1`, `ccpo_wmode=cos`, `ccpo_ep_w=1` |
+
+History and both potential readouts use cosine on processed frozen hidden states
+plus context statistics. Prompt history/future horizon stay 2/2. The paired
+no-shrink controls differ only in similarity mode; the episode pair differs only
+in episode weight. Standard turn ceilings stay 50 for ALFWorld and 15 for WebShop.
+The [experiment plan](../experiments/experiments.md#m10m11-h2-no-shrinkage-with-cosine-context-similarity-2026-09-20)
+links all four prepared two-GPU configurations and documents the math and checks.
+Prepared only; no runs launched or queued.

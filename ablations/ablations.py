@@ -108,6 +108,34 @@ ABLATIONS = {
               "Episode weight is 1; applied history + future + episode must equal the actual "
               "masked actor advantage. Context statistics remain enabled; original edge weight stays 0.",
     ),
+    "future-progress-h2-no-credit-shrinkage-cosine": dict(
+        name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-COS",
+        tag="fph2-noshrink-cos",
+        title="M10/M11 H2 with full-strength cosine context baselines",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("alfworld", "webshop"),
+        delta={"ccpo_lk_fix": 1.0, "ccpo_wmode": "cos"},
+        removes="support-based task-prior shrinkage and the exponential similarity kernel",
+        asks="does clipped cosine weighting of the same context representations improve full-strength H2 credit?",
+        watch="history and both potential readouts use max(cos(phi_i,phi_j),0), "
+              "with the existing nearest-peer fallback when all weights vanish. "
+              "Whitening, context statistics, exact observation groups and whole-trajectory "
+              "exclusion stay unchanged; usable lambda_k=1 and episode/original-edge weights=0.",
+    ),
+    "future-progress-h2-no-credit-shrinkage-active-episode-cosine": dict(
+        name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-ACTIVE-EPISODE-COS",
+        tag="fph2-noshrink-ep-cos",
+        title="M10/M11 H2 with full-strength cosine baselines and active episode advantage",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("alfworld", "webshop"),
+        delta={"ccpo_lk_fix": 1.0, "ccpo_ep_w": 1.0, "ccpo_wmode": "cos"},
+        removes="support-based task-prior shrinkage, the exponential kernel and episode-credit exclusion",
+        asks="does active episode supervision improve H2 credit with full-strength cosine context baselines?",
+        watch="only episode weight changes from the cosine no-shrink arm. "
+              "A=E+N_CC(H+F); N_CC is task standardization on ALFWorld and identity "
+              "on WebShop. Context statistics stay enabled, original-edge weight stays 0, "
+              "and there is no normalization after episode fusion.",
+    ),
     "future-progress-h2-no-credit-shrinkage-30turn": dict(
         name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-THIRTYTURN-WS",
         tag="fph2-noshrink-30turn",

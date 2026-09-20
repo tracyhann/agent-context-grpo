@@ -1123,3 +1123,89 @@ the same turn budget, on one source revision. Generated config metadata records
 Per-folder NOTES.md, PREPARED.json, config.json, config diffs, VALIDATION.json and
 source hashes record the implementation and CPU checks. GPU execution remains
 untested; these prepared variants do not change running experiments or queues.
+
+
+### M10/M11 H2: no shrinkage with cosine context similarity (2026-09-20)
+
+**Prepared only; not launched or queued.** Four fresh Qwen2.5-1.5B-Instruct
+configurations, each for 150 training steps on two GPUs, seed 0, 8 rollouts/task.
+Prompt history and future horizon remain 2. Turn ceilings remain 50 for ALFWorld
+and 15 for WebShop, for both training and validation; the separate WebShop
+30-turn arms are not folded into this similarity ablation.
+
+Registry entries, both defined on ALFWorld and WebShop:
+
+- `CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-COS`:
+  `future-progress-h2-no-credit-shrinkage-cosine`, with delta
+  `ccpo_lk_fix=1`, `ccpo_wmode=cos` from the H2 method.
+- `CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-ACTIVE-EPISODE-COS`:
+  `future-progress-h2-no-credit-shrinkage-active-episode-cosine`, additionally
+  `ccpo_ep_w=1`.
+
+| Prepared arm | Canonical experiment ID | Episode coefficient |
+|---|---|---:|
+| [M10 ALFWorld COS](m10-h2-noshrink-cosine-alfworld-1.5b-2gpu-20260920/NOTES.md) | `ccpo-attncred-abl-fph2-noshrink-cos-alfworld-1.5b` | 0 |
+| [M10 ALFWorld COS + EP](m10-h2-noshrink-active-episode-cosine-alfworld-1.5b-2gpu-20260920/NOTES.md) | `ccpo-attncred-abl-fph2-noshrink-ep-cos-alfworld-1.5b` | 1 |
+| [M11 WebShop COS](m11-h2-noshrink-cosine-webshop-1.5b-2gpu-20260920/NOTES.md) | `ccpo-attncred-abl-fph2-noshrink-cos-ws-1.5b` | 0 |
+| [M11 WebShop COS + EP](m11-h2-noshrink-active-episode-cosine-webshop-1.5b-2gpu-20260920/NOTES.md) | `ccpo-attncred-abl-fph2-noshrink-ep-cos-ws-1.5b` | 1 |
+
+Each arm changes **only `ccpo_wmode: soft -> cos`** (plus experiment ID)
+relative to its matching H2 no-shrink/episode control. Within each benchmark,
+the new pair differs only in `ccpo_ep_w: 0 -> 1` (plus experiment ID).
+
+**Representation and weighting.** The existing representation is retained:
+\[
+\phi_i=\operatorname{unit}\left[
+\operatorname{unit}(P_{\perp,3}(h_i-\bar h));\,
+\operatorname{unit}(c_i)\right],
+\qquad
+w_{ij}=\max\left(0,\frac{\phi_i^\top\phi_j}
+{\|\phi_i\|\|\phi_j\|}\right).
+\]
+Here h is the frozen reference's last-prompt-token hidden state, P removes the
+batch's top three principal directions, and c is the existing 37-dimensional
+thermometer/binary context-statistics encoding. Context weight stays 1. The 1.5B
+representation has 1,536 hidden plus 37 context dimensions. Normalization uses
+existing numerical floors. This is cosine over the processed concatenated
+representation, not raw hidden states or statistics alone. Only the neighbour
+weight function changes from exp(-L2 distance / tau); tau no longer affects it.
+
+Use the same exact (task, observation) groups and exclude the entire query
+trajectory. If all cosine weights vanish, retain the nearest eligible peer by
+the existing L2-distance fallback. If no exact-group peer exists, retain the
+existing task-bucket fallback; if there are no cross-trajectory peers there,
+the estimate remains unsupported. The contextual readout is
+\[
+C_i[q]=\frac{\sum_{j\in\mathcal P_i}w_{ij}q_j}
+{\sum_{j\in\mathcal P_i}w_{ij}},\qquad B_i[q]=C_i[q].
+\]
+The full-strength setting fixes usable lambda_k=1 (including one-peer groups);
+kappa=2 is recorded but does not shrink these baselines. The separate
+kernel-versus-uniform mixture also remains fixed at 1.
+
+**History, future and episode fusion.** The same cosine weights apply to the
+penalized history target Y and the unpenalized potential target Z. Current and
+future potentials retain their respective endpoint observation groups:
+\[
+H_{i,t}=Y_{i,t}-C_{i,t}[Y],\qquad
+Z_{i,s}=\gamma^{T_i-s}R_i,\quad V_{i,s}=C_{i,s}[Z],\quad\gamma=0.95,
+\]
+\[
+F_{i,t}=z_{\mathrm{task}}(V_{i,\min(t+2,T_i)}-V_{i,t}),\qquad
+A_{i,t,\ell}=M_{i,t,\ell}
+\left[N_{\mathrm{CC}}(H+F)_{i,t}+eE_{i,t}\right],\quad e\in\{0,1\}.
+\]
+Terminal potentials keep the fixed 10/0 convention. N_CC is the existing task
+standardization for ALFWorld and identity for WebShop. E is the existing episode
+helper: task-turn-row mean centering, plus standard-deviation scaling on
+ALFWorld, of binary response outcome with the per-turn invalid-action penalty.
+There is no further normalization after adding E. History/future weights stay
+1/1, original-edge weight stays 0, and KL remains a separate loss. At e=0,
+episode advantage remains diagnostic only. At e=1 it contributes to the actor
+update. Feature preparation and advantage estimation remain detached.
+
+The existing cosine branch in `ccpo/core_ccpo.py` is selected by
+`ACG_CCPO_WMODE=cos`; future progress reuses the processed features for its
+potential readout. No estimator or trainer runtime change is needed. Per-folder
+NOTES, full configs, launch scripts, paired config diffs and validation records
+capture the prepared variants. GPU execution has not been tested.

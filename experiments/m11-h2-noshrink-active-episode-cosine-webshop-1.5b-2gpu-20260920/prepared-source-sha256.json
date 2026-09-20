@@ -1,0 +1,24 @@
+{
+  "captured_at": "2026-09-20T09:57:05.359506+00:00",
+  "source_commit": "5fdf50c6c5c3fcbe78ae3d52ea69a00bdee4f0f8",
+  "source_dirty": true,
+  "sha256": {
+    "ablations/ablations.py": "ea13f91cea005150c25af8bec845a97a09580721a3c86bf0f9747253541b0db8",
+    "ablations/README.md": "f0f05c24b82cac65a8c509e5a76c80072d465ae8fa054716ab38073a248c7167",
+    "scripts/exp_run.py": "517f820d232c1009143349797145a69bf34f774f68b33f9a94172a5a2a91cdab",
+    "ccpo/arms.py": "4c930ee857e7846cf4709a69b0a012f833e3f7b135757fff9d6138f37ea07585",
+    "ccpo/core_ccpo.py": "c73fb7a96a1363c39b745bbfd79721d47db8d6ba3ce783ae263d4db8215ca6ff",
+    "ccpo/future_progress.py": "da790fb600aeaf554b8af24d6df3801107a9a79ed274ff2ed51568aaa1dcc764",
+    "patches/verl-agent/verl/trainer/ppo/ray_trainer.py": "50378b739b10b25747c3bddb7b2f47ab681347e60e66e67f891eb0215739d3e9",
+    "experiments/experiments.md": "a309d8d05e49e9db3de80a4008441427121c54f6ae502b664d3092f57851d70d",
+    "tests/test_future_progress_active_episode.py": "7b2a7a6da019353a8a18cf056ade0c9cccdd2244cd11a441b780089ff134c56c",
+    "ablations/test_ablations.py": "90ff5fe88ab9611d312cba77b2cdcea5b1145c0e766a1ca2a18bbd7b501ee060",
+    "experiments/m11-h2-noshrink-active-episode-cosine-webshop-1.5b-2gpu-20260920/config.json": "5f827bd316177298e494c278eb45e3cb0bcc757ffd8a9340b2ac07d48528746a",
+    "experiments/m11-h2-noshrink-active-episode-cosine-webshop-1.5b-2gpu-20260920/run.sh": "674b1a99052a921bea19baa9f6581bd4992ee5f343ec889d7840dfb2a87e0729",
+    "experiments/m11-h2-noshrink-active-episode-cosine-webshop-1.5b-2gpu-20260920/NOTES.md": "47c3afa2bd3ad2c8dedd5ae7e6c46ce317a1452492cedd7fb129243327f6c925",
+    "experiments/m11-h2-noshrink-active-episode-cosine-webshop-1.5b-2gpu-20260920/PREPARED.json": "cf02abaae39b4de61b0f022d8671e3b86deb62b675ce5f54682b381123f5e7bd",
+    "experiments/m11-h2-noshrink-active-episode-cosine-webshop-1.5b-2gpu-20260920/config-diff-from-soft.json": "975ec6f719b5834514fb6a0e63587cd9d2c61bf677eac5ff50c540f9c6f2dcc6",
+    "experiments/m11-h2-noshrink-active-episode-cosine-webshop-1.5b-2gpu-20260920/config-diff-from-episode-peer.json": "a6df5232fd1b3aea2fce04941da31972ece750d44e5d2915f217fc029e6f0e87",
+    "experiments/m11-h2-noshrink-active-episode-cosine-webshop-1.5b-2gpu-20260920/VALIDATION.json": "e17d153d0c63a2f82054f178dfbdf3104344f27eb75b2787702e70d1523400e5"
+  }
+}

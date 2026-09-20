@@ -1,0 +1,13 @@
+{
+  "control": "experiments/m10-h2-noshrink-active-episode-cosine-alfworld-1.5b-2gpu-20260920",
+  "changes": {
+    "ccpo_ep_w": {
+      "before": 1.0,
+      "after": 0.0
+    },
+    "exp_id": {
+      "before": "m10-h2-noshrink-active-episode-cosine-alfworld-1.5b-2gpu-20260920",
+      "after": "m10-h2-noshrink-cosine-alfworld-1.5b-2gpu-20260920"
+    }
+  }
+}

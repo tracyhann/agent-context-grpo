@@ -1,0 +1,13 @@
+{
+  "control": "experiments/m10-h2-no-credit-shrinkage-alfworld-1.5b-2gpu-20260919",
+  "changes": {
+    "ccpo_wmode": {
+      "before": "soft",
+      "after": "cos"
+    },
+    "exp_id": {
+      "before": "m10-h2-no-credit-shrinkage-alfworld-1.5b-2gpu-20260919",
+      "after": "m10-h2-noshrink-cosine-alfworld-1.5b-2gpu-20260920"
+    }
+  }
+}
