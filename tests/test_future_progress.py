@@ -147,9 +147,9 @@ class FutureProgressTests(unittest.TestCase):
                         data=list(csv.DictReader(fh));self.assertEqual(len(data),len(kw['index']))
                     for key in metrics:self.assertIn('ccpo/'+key,results[0][0].meta_info['ccpo_diag'])
 
-    def test_trainer_rejects_duplicate_future_and_nonzero_episode(self):
+    def test_trainer_rejects_duplicate_future_and_invalid_episode_weight(self):
         compute=load_compute_advantage()
-        for extra in [{'ACG_CCPO_FIXED_ANCHOR':'1'},{'ACG_CCPO_OUTLOOK_HORIZON':'2','ACG_CCPO_OUTLOOK_BETA':'.25'},{'ACG_CCPO_EP_W':'1'}]:
+        for extra in [{'ACG_CCPO_FIXED_ANCHOR':'1'},{'ACG_CCPO_OUTLOOK_HORIZON':'2','ACG_CCPO_OUTLOOK_BETA':'.25'},{'ACG_CCPO_EP_W':'-1'},{'ACG_CCPO_EP_W':'nan'}]:
             with self.subTest(extra=extra),patch.dict(os.environ,dict({'ACG_CCPO_PROGRESS_HORIZON':'1','ACG_CCPO_EP_W':'0'},**extra)),self.assertRaises(ValueError),redirect_stdout(io.StringIO()):
                 compute(make_data(fixture()),'CCPO',gamma=.95,ccpo_step_tag=1)
 

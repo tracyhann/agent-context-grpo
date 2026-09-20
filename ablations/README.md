@@ -92,3 +92,18 @@ both benchmarks, that the WebShop ones keep the dense-score target, and — nume
 against the real estimator — that `wmode=cos` weights by clipped cosine (verified
 against a hand-computed mean, with the all-clipped fallback exercised) and that
 `lk_fix` pins λ_k, including at κ=0, while the derived path still gives `J/(J+κ)`.
+
+
+## H2 full-strength baselines with active episode credit
+
+Registry key `future-progress-h2-no-credit-shrinkage-active-episode` runs on both ALFWorld and WebShop, using
+`attncred-context-future-progress-h2` as parent and exactly two method changes:
+`ccpo_lk_fix=1` and `ccpo_ep_w=1`. The existing H2 no-shrink arm differs only in
+its episode coefficient (0). Context-stat weight stays 1 and original-edge weight
+stays 0. The total actor advantage is E+N_CC(H+F), with episode credit added after
+the benchmark's existing step-channel normalization.
+
+The [experiment plan](../experiments/experiments.md) links both prepared 1.5B,
+150-step, two-GPU configurations and their full math/validation. No run is queued
+or launched. The existing generic registry CLI retains its separate GPU minimum;
+the prepared configs reproduce the recorded two-GPU local protocol.

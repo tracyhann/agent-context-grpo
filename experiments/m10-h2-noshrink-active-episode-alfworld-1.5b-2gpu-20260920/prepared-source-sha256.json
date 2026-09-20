@@ -1,0 +1,22 @@
+{
+  "ablations/ablations.py": "2e861ca2fc8506fa7a11921726b330c6f8a9fcfe1a37d4fc1d8d433fcaf0c8b6",
+  "ccpo/arms.py": "4c930ee857e7846cf4709a69b0a012f833e3f7b135757fff9d6138f37ea07585",
+  "ccpo/core_ccpo.py": "c73fb7a96a1363c39b745bbfd79721d47db8d6ba3ce783ae263d4db8215ca6ff",
+  "ccpo/future_progress.py": "da790fb600aeaf554b8af24d6df3801107a9a79ed274ff2ed51568aaa1dcc764",
+  "ccpo/FUTURE_PROGRESS.md": "c6809aba2bed65048515054c3b64490ce8b337e6f9c52c6bba32f5100dd209e1",
+  "patches/verl-agent/verl/trainer/ppo/ray_trainer.py": "50378b739b10b25747c3bddb7b2f47ab681347e60e66e67f891eb0215739d3e9",
+  "verl-agent/verl/trainer/ppo/ray_trainer.py": "50378b739b10b25747c3bddb7b2f47ab681347e60e66e67f891eb0215739d3e9",
+  "verl-agent/gigpo/core_gigpo.py": "fa709b91baf2331c4857fee32a249c4ca8d8d69e864d1e71f08730cc8c5cc456",
+  "scripts/exp_run.py": "e9721072664dba8e543c583582cc3219e3c317bcb2e5129d76f06ca81a91df8f",
+  "scripts/plot_metrics.py": "777716a5fdff652b2618842c573217207be4ccea1fab2a85ce3b4fbe67b41a86",
+  "tests/test_future_progress.py": "7703d06f9a0d8c6db08b22e0881cb39f11c690833e7d8783378c4bc3a415cf50",
+  "tests/test_future_progress_active_episode.py": "7b2a7a6da019353a8a18cf056ade0c9cccdd2244cd11a441b780089ff134c56c",
+  "experiments/m10-h2-noshrink-active-episode-alfworld-1.5b-2gpu-20260920/config.json": "af4736ed6e711d8d454aadee435b0acb84a01c1d1f96c3e3aa789f0e6d4d18a6",
+  "experiments/m10-h2-noshrink-active-episode-alfworld-1.5b-2gpu-20260920/run.sh": "2b7fbf4346194344ce5790acf31b88a14e00a5574b9574ea5734704d1dda457d",
+  "experiments/m10-h2-noshrink-active-episode-alfworld-1.5b-2gpu-20260920/NOTES.md": "9ed8093ea0775a45ff6253c717bba8de09332e62c56118e11b9c4f5cc6516d65",
+  "experiments/m10-h2-noshrink-active-episode-alfworld-1.5b-2gpu-20260920/PREPARED.json": "5f315199b2d83ff880158a86b5274cee78d38518a525f2f4c2191b714647eef9",
+  "experiments/m10-h2-noshrink-active-episode-alfworld-1.5b-2gpu-20260920/VALIDATION.json": "7b5e6318740e2c96d8d0e54084c479aaac1618867b33947ed02602610d56e5db",
+  "experiments/m10-h2-noshrink-active-episode-alfworld-1.5b-2gpu-20260920/HISTORY_AUDIT.json": "ac974c1b44d51b151f753c9e287c23af4a31e0cc23c01db13303676f8587d145",
+  "experiments/m10-h2-noshrink-active-episode-alfworld-1.5b-2gpu-20260920/config-diff-from-h2.json": "67beace2df37efea13475f9a4421b7fd1b2b3e542f0a7626faa5465ef73d432f",
+  "experiments/m10-h2-noshrink-active-episode-alfworld-1.5b-2gpu-20260920/config-diff-from-noshrink.json": "b5d915ca7904f305cf5db4ad410f2f2637094c844888953ec8a14a82e0fdf302"
+}

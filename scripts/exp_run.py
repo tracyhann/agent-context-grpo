@@ -425,6 +425,13 @@ def validate_future_progress_config(cfg):
     horizon = cfg.get("ccpo_progress_horizon", 0)
     if horizon not in (0, 1, 2):
         raise ValueError("ccpo_progress_horizon must be 0, 1 or 2")
+    if horizon:
+        import math
+        episode_weight = float(cfg.get("ccpo_ep_w", 1.0))
+        if not math.isfinite(episode_weight) or episode_weight < 0:
+            raise ValueError("Future progress requires finite nonnegative ccpo_ep_w")
+        if float(cfg.get("step_advantage_w", 1.0)) != 1.0:
+            raise ValueError("Prepared future-progress arms require step_advantage_w=1")
     if horizon and str(cfg.get("ccpo_phi", "hidden")).lower() not in ("hidden", "hidden+ctx"):
         raise ValueError("Future progress requires ccpo_phi=hidden or hidden+ctx; "
                          "hidden-only also supports hidden+ctx with ccpo_ctx_w=0")

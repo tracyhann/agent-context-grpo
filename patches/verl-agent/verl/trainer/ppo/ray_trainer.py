@@ -481,11 +481,6 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
                     _v = _sa[_ix]
                     _sa[_ix] = (_v - _v.mean()) / (_v.std() + 1e-6)
             step_adv = _sa
-        if _progress_horizon:
-            from ccpo.future_progress import finalize_progress_logging
-            finalize_progress_logging(diag, step_adv, data.non_tensor_batch['uid'], _do_std,
-                kwargs.get('ccpo_step_tag', ''), float(os.environ.get('ACG_CCPO_EP_W', '1')),
-                step_advantage_w)
         if _fixed_anchor:
             from ccpo.fixed_anchor import finalize_fixed_logging
             finalize_fixed_logging(diag, step_adv, data.non_tensor_batch['uid'], _do_std,
@@ -507,6 +502,11 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
         scores = _ep_w * episode_adv + step_advantage_w * step_adv.unsqueeze(-1) * data.batch['response_mask']
         data.batch['advantages'] = scores
         data.batch['returns'] = scores
+        if _progress_horizon:
+            from ccpo.future_progress import finalize_progress_logging
+            finalize_progress_logging(diag, step_adv, data.non_tensor_batch['uid'], _do_std,
+                kwargs.get('ccpo_step_tag', ''), _ep_w, step_advantage_w,
+                episode_adv=episode_adv, response_mask=data.batch['response_mask'], actor_adv=scores)
         # Surface every estimator term for downstream analysis. Printing them to
         # the console only, as this used to, means the one quantity that says
         # whether the method is doing anything (effect_rel, r_vs_*) is not in any

@@ -1035,3 +1035,48 @@ The [H2 regression](../tests/test_future_progress_ablation.py) verifies the join
 feature/readout behavior, context-statistics invariance, full strength with J=1,
 inert κ, endpoint/fallback/terminal behavior and exact two-key config delta.
 No GPU task was launched or added to a chain.
+
+
+### M10/M11 H2: no shrinkage + active episode advantage (2026-09-20)
+
+**Prepared only; no launch or queue entry.** Both benchmarks use fresh
+Qwen2.5-1.5B-Instruct, 150 steps, seed 0, eight rollouts/task and their recorded
+two-GPU H2 protocol. Context statistics and two-turn prompt history remain enabled.
+
+Registry: `future-progress-h2-no-credit-shrinkage-active-episode`. Variant:
+`CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-ACTIVE-EPISODE`.
+Canonical IDs: `ccpo-attncred-abl-fph2-noshrink-ep-alfworld-1.5b` and
+`ccpo-attncred-abl-fph2-noshrink-ep-ws-1.5b`.
+
+| Arm | H2 method delta | Paired no-shrink control delta | Prepared notes/config |
+|---|---|---|---|
+| M10 H2 NOSHRINK + EP | `ccpo_lk_fix=1`, `ccpo_ep_w=1` | episode weight 0 -> 1 | [ALFWorld](m10-h2-noshrink-active-episode-alfworld-1.5b-2gpu-20260920/NOTES.md) |
+| M11 H2 NOSHRINK + EP | `ccpo_lk_fix=1`, `ccpo_ep_w=1` | episode weight 0 -> 1 | [WebShop](m11-h2-noshrink-active-episode-webshop-1.5b-2gpu-20260920/NOTES.md) |
+
+Usable historical and current/future potential baselines use their full kernel
+readout, B_s[q]=C_s[q], lambda_k=1 even at J=1. Existing task fallback and terminal
+10/0 potentials remain; kappa=2 is inert. History/future/episode coefficients are
+1/1/1 and original-edge coefficient is 0.
+
+`H_t=Y_t-C_t[Y]`, `F_t=z_task(V_min(t+2,T)-V_t)`, and
+**`A_t=E_t+N_CC(H_t+F_t)`**. N_CC is the existing ALFWorld task standardization and
+WebShop identity. E is the existing episode channel, standardized on ALFWorld and
+mean-centered on WebShop. It is added after step-channel normalization; there is
+no further normalization of the fused total. The actual legacy helper averages
+over task turn rows, and its inputs include the existing per-turn invalid-action
+penalty. This preserves the prior episode-channel implementation rather than
+silently changing to one vote per trajectory or an unpenalized episode channel.
+The full formulas and masks are documented in each linked NOTES.md.
+
+This combination was absent from the 34 parseable local/historical configs
+checked before preparation. Existing no-shrink configurations had EP=0 and no
+training artifacts. Offline no-shrink replay is a different kind of evidence.
+
+The prior nonzero-episode runtime rejection is removed. Finalization now receives
+and validates the actual fused actor tensor. Logs/NPZ/CSV and the future-progress
+plot expose raw episode advantage, its applied contribution and total actor
+advantage. `combined_applied` remains the step channel, while `actor_applied` is
+the full E+H+F result. CPU tests verify episode-on gradient sensitivity and
+zero-weight gradient isolation in both benchmark modes, along with full-strength
+readouts, masking, configuration deltas and source/overlay parity. GPU execution
+remains untested. Use one source revision for paired controls.

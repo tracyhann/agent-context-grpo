@@ -274,10 +274,18 @@ def ccpo_future_progress_advantage(*, turn_index, episode_lengths, horizon=1,
     return (result, diag) if kwargs.get('return_diag', False) else result
 
 
-def finalize_progress_logging(diag, step_adv, uid, normalize, step_tag, episode_weight, step_weight=1.):
-    """Record components after the trainer's existing combined normalization."""
-    if episode_weight != 0 or step_weight != 1:
-        raise ValueError('Prepared future-progress arms require episode weight 0 and step weight 1')
+def finalize_progress_logging(diag, step_adv, uid, normalize, step_tag, episode_weight, step_weight=1.,
+                              *, episode_adv=None, response_mask=None, actor_adv=None):
+    """Record step components and the separately fused episode channel.
+
+    combined_applied retains its historical meaning: the H+F step channel.
+    actor_applied includes the weighted episode advantage as used by PPO.
+    Legacy EP=0 offline callers can omit the three token-level tensors.
+    """
+    if not np.isfinite(episode_weight) or episode_weight < 0 or step_weight != 1:
+        raise ValueError('Future progress requires finite nonnegative episode weight and step weight 1')
+    if episode_weight and any(x is None for x in (episode_adv, response_mask, actor_adv)):
+        raise ValueError('Active episode logging requires episode_adv, response_mask and actual actor_adv')
     history = diag['progress_components_history'].copy()
     future = diag['progress_components_future'].copy()
     mixed = diag['progress_components_mixed']; live = np.asarray(diag['live_mask'])
@@ -292,11 +300,49 @@ def finalize_progress_logging(diag, step_adv, uid, normalize, step_tag, episode_
     applied = _numpy(step_adv)
     error = float(np.max(abs(history + future - applied)))
     if error > 3e-5:
-        raise ValueError('Applied history and future-progress credits do not sum to actor advantage')
+        raise ValueError('Applied history and future-progress credits do not sum to step advantage')
     diag['progress_applied_identity_error'] = error
     payload = diag['progress_payload']; arrays = payload['arrays']; take = payload['take']
     for name, x in [('history_applied', history), ('future_applied', future), ('combined_applied', applied)]:
         arrays[name] = x[take]; _stats(diag, name, x, live)
+    # The episode channel is added AFTER H+F task normalization, exactly as in
+    # the existing CCPO/GiGPO fusion. Reduce only for per-turn snapshots; verify
+    # the identity on every response token, including masked padding positions.
+    n = len(applied)
+    ep = np.zeros(n)
+    actor_live = np.ones(n, dtype=bool)
+    actor_error = error
+    if response_mask is not None:
+        mask = _numpy(response_mask).astype(float)
+        if mask.ndim != 2 or mask.shape[0] != n or not np.isin(mask, [0., 1.]).all():
+            raise ValueError('Invalid response mask for future-progress episode logging')
+        counts = mask.sum(-1)
+        actor_live = counts > 0
+        if episode_adv is not None:
+            tokens = _numpy(episode_adv).astype(float)
+            if tokens.shape != mask.shape or not np.isfinite(tokens).all():
+                raise ValueError('Invalid episode advantage for future-progress logging')
+            ep = (tokens * mask).sum(-1) / np.maximum(counts, 1)
+            if np.max(abs(ep[:, None] * mask - tokens * mask)) > 3e-5:
+                raise ValueError('Episode advantage must be constant across a response')
+        if actor_adv is not None:
+            actual = _numpy(actor_adv).astype(float)
+            expected = (history + future + episode_weight * ep)[:, None] * mask
+            if actual.shape != mask.shape or not np.isfinite(actual).all():
+                raise ValueError('Invalid actual actor advantage for future-progress logging')
+            actor_error = float(np.max(abs(expected - actual)))
+            if actor_error > 3e-5:
+                raise ValueError('Applied history + future + episode do not sum to actual actor advantage')
+    elif episode_adv is not None or actor_adv is not None:
+        raise ValueError('Token-level logging requires response_mask')
+    weighted_episode = episode_weight * ep
+    actor = applied + weighted_episode
+    actor[~actor_live] = 0.
+    diag.update(progress_episode_weight=float(episode_weight), progress_step_weight=float(step_weight),
+                progress_episode_active=float(episode_weight != 0), progress_actor_identity_error=actor_error)
+    for name, x in [('episode_adv', ep), ('episode_applied', weighted_episode), ('actor_applied', actor)]:
+        arrays[name] = x[take]
+        _stats(diag, name, x, actor_live)
     directory = os.environ.get('ACG_EXP_DIR')
     if not directory:
         return

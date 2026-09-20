@@ -1,0 +1,30 @@
+{
+  "status": "prepared_not_launched",
+  "ablation": "future-progress-h2-no-credit-shrinkage-active-episode",
+  "benchmark": "webshop",
+  "model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "steps": 150,
+  "seed": 0,
+  "gpus": "2,3",
+  "history_length": 2,
+  "future_horizon": 2,
+  "lambda_k_fixed": 1.0,
+  "episode_weight": 1.0,
+  "context_stat_weight": 1.0,
+  "original_edge_weight": 0.0,
+  "control": "experiments/m11-h2-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918",
+  "paired_episode_control": "experiments/m11-h2-no-credit-shrinkage-webshop-1.5b-2gpu-20260919",
+  "method_delta_from_h2": {
+    "ccpo_lk_fix": 1.0,
+    "ccpo_ep_w": 1.0
+  },
+  "method_delta_from_noshrink": {
+    "ccpo_ep_w": 1.0
+  },
+  "launched": false,
+  "queued": false,
+  "gpu_preflight_performed": false,
+  "prepared_at": "2026-09-20T04:14:30.244088+00:00",
+  "source_commit": "2b04c49434e3ed192f1c50952b7554cae41972bc",
+  "source_dirty": true
+}

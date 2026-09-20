@@ -134,12 +134,12 @@ Combine the terms with coefficients 1:
 A^{\mathrm{pre}}_{i,t}=H_{i,t}+E^{(h)}_{i,t}.
 \]
 
-The original edge coefficient is 0 because this channel replaces it. The episode coefficient is 0. The episode advantage and the original one-step edge remain diagnostics only.
+The original edge coefficient is 0 because this channel replaces it. In the base M10/M11 arms, the episode coefficient is 0, so episode advantage and the original edge are diagnostic-only. The separately named H2 NOSHRINK + ACTIVE-EPISODE ablation below enables the episode channel.
 
 - **ALFWorld / M3 protocol:** apply the existing final per-task mean/sample-std normalization to the combined `A_pre`.
 - **WebShop / M5 protocol:** use `A_pre` directly, with no further combined normalization. The future term was already standardized, just as the original edge was.
 
-Broadcast the resulting scalar over valid response tokens. PPO clipping and the original KL regularizer remain unchanged. Applied history/future diagnostics share the combined divisor on ALFWorld and sum to the actual actor advantage; they are not independently standardized a second time.
+Broadcast the resulting scalar over valid response tokens. PPO clipping and the original KL regularizer remain unchanged. Applied history/future diagnostics share the combined divisor on ALFWorld and sum to the step-channel advantage (the full actor advantage when episode weight is zero); they are not independently standardized a second time.
 
 A positive raw value increase can become negative standardized credit if it is below the task's mean increase. This is also true of M3/M5's edge normalization.
 
@@ -171,3 +171,29 @@ Rows are ordered by task, trajectory and explicit turn index before value estima
 Every step records the history baseline/residual, value labels, current/future potentials, raw/standardized progress, its per-task mean/std, original edge, applied components, endpoint indices and window lengths, both endpoint kernel/uniform/task-prior readouts, distinct/effective support, actual credibility, fallback levels, terminal flags, hidden vectors and processed features/context. Scalar summaries go to `metrics.jsonl`; row-level CSV and NPZ snapshots go to `outputs/future_progress/`. A separate `future_progress.png` plots these terms. Future peer summaries exclude terminal endpoints, which have fixed values.
 
 Implementation: [future_progress.py](future_progress.py). Validation: [test_future_progress.py](../tests/test_future_progress.py). Offline replay and CPU check results: [VALIDATION.md](../experiments/future-progress-offline-20260918/VALIDATION.md).
+
+
+## H2 no-shrinkage + active episode variant (2026-09-20)
+
+`future-progress-h2-no-credit-shrinkage-active-episode` retains context statistics
+and sets `ccpo_lk_fix=1`, `ccpo_ep_w=1` on the H2 parent. Usable history and both
+potential baselines use the full kernel estimate. Existing fallback and terminal
+rules remain. The final advantage is E+N_CC(H+F): episode credit is added after
+step-channel scaling, without normalizing the fused sum again. Episode credit is
+standardized on ALFWorld and mean-centered on WebShop using the existing helper.
+Its inputs include the original per-turn invalid-action penalty, and its task
+moments use turn rows rather than deduplicating trajectories. Endpoint potentials
+continue to use the separate unpenalized episode return. No estimator gradient
+passes through frozen features; the nonzero episode term does affect PPO gradients.
+
+The finalizer accepts nonzero episode weight with explicit episode/mask/actor
+tensors and verifies their complete token-level identity. `combined_applied`
+stays the H+F channel; new `episode_adv`, `episode_applied`, `actor_applied` and
+`progress_actor_identity_error` distinguish diagnostics from actual actor credit.
+The episode coefficient and applied contribution are plotted. EP=0 remains
+supported with unchanged actor advantages and gradients.
+
+Full math, protocol and paired controls:
+[M10 ALFWorld](../experiments/m10-h2-noshrink-active-episode-alfworld-1.5b-2gpu-20260920/NOTES.md),
+[M11 WebShop](../experiments/m11-h2-noshrink-active-episode-webshop-1.5b-2gpu-20260920/NOTES.md).
+Both are prepared and unlaunched; GPU execution has not been validated.

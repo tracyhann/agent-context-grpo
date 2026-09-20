@@ -95,6 +95,19 @@ ABLATIONS = {
               "its kernel estimate. No exact peer still uses the existing task bucket; "
               "no cross-trajectory peer anywhere still provides no usable estimate.",
     ),
+    "future-progress-h2-no-credit-shrinkage-active-episode": dict(
+        name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-ACTIVE-EPISODE",
+        tag="fph2-noshrink-ep",
+        title="M10/M11 H2 with full-strength baselines and active episode advantage",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("alfworld", "webshop"),
+        delta={"ccpo_lk_fix": 1.0, "ccpo_ep_w": 1.0},
+        removes="support-based task-prior shrinkage and the exclusion of episode credit from the actor update",
+        asks="does restoring the episode channel stabilize or improve full-strength H2 context/future credit?",
+        watch="history/current/future usable baselines equal their kernel estimates at lambda_k=1. "
+              "Episode weight is 1; applied history + future + episode must equal the actual "
+              "masked actor advantage. Context statistics remain enabled; original edge weight stays 0.",
+    ),
     # -----------------------------------------------------------------------
     "hard-gate": dict(
         name="CCPO-ATTNCRED-HARDGATE",

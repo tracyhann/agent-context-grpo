@@ -1,0 +1,348 @@
+{
+  "scope": "local and legacy experiment configs available in this workspace before preparing the new arms",
+  "configs_scanned": 34,
+  "matches": [],
+  "records": [
+    {
+      "path": "experiments/ccpo-attncred-150-20260913/config.json",
+      "sha256": "804cfdda3a9984d0824b787b2399bb105f1458f009625f94da0a45235f3fd7f5",
+      "ep_w": 0.0,
+      "lambda_k_fixed": "",
+      "kappa": 2.0,
+      "full_strength": false,
+      "has_metrics": false,
+      "has_checkpoints": false
+    },
+    {
+      "path": "experiments/m5-ccpo-attncred-ctxadv-ret-ws-1.5b-2gpu-20260916/config.json",
+      "sha256": "05515a9562f0f9d57f3038b05392c042b584646a9c03e51a0317919e72e180ea",
+      "ep_w": 0.0,
+      "lambda_k_fixed": "",
+      "kappa": 2.0,
+      "full_strength": false,
+      "has_metrics": true,
+      "has_checkpoints": true
+    },
+    {
+      "path": "experiments/m3-ccpo-attncred-ctxadv-alfworld-1.5b-2gpu-20260916/config.json",
+      "sha256": "b678fe58629c38745cb9179e3809f764f79b97e1101932ecd2c7d12b5f7e7e27",
+      "ep_w": 0.0,
+      "lambda_k_fixed": "",
+      "kappa": 2.0,
+      "full_strength": false,
+      "has_metrics": true,
+      "has_checkpoints": true
+    },
+    {
+      "path": "experiments/m5-noedge-ccpo-attncred-ctxadv-ret-ws-1.5b-2gpu-20260916/config.json",
+      "sha256": "58c08d8d00203d2b2cb94670911897fe621ccff40fded80e62dc74c3620f4571",
+      "ep_w": 0.0,
+      "lambda_k_fixed": "",
+      "kappa": 2.0,
+      "full_strength": false,
+      "has_metrics": true,
+      "has_checkpoints": true
+    },
+    {
+      "path": "experiments/m5-noctx-ccpo-attncred-ctxadv-ret-ws-1.5b-2gpu-20260916/config.json",
+      "sha256": "118a3da5e8e36092fa2b3f8c951e7d8c042f2786937f54aadb702d4ac96680df",
+      "ep_w": 0.0,
+      "lambda_k_fixed": "",
+      "kappa": 2.0,
+      "full_strength": false,
+      "has_metrics": false,
+      "has_checkpoints": false
+    },
+    {
+      "path": "experiments/m3-noedge-ccpo-attncred-ctxadv-alfworld-1.5b-2gpu-20260917/config.json",
+      "sha256": "1ec8823ba201d4bdbdeec350f1339296e3d9c674a3bdf1e48ccd15059666153c",
+      "ep_w": 0.0,
+      "lambda_k_fixed": "",
+      "kappa": 2.0,
+      "full_strength": false,
+      "has_metrics": true,
+      "has_checkpoints": true
+    },
+    {
+      "path": "experiments/m6-ccpo-attncred-ctxadv-outlook-alfworld-1.5b-2gpu-20260917/config.json",
+      "sha256": "b0ff790bacf1e70abcb4f180827e73773c75378f3b2f930a39d1ce4e572c898c",
+      "ep_w": 0.0,
+      "lambda_k_fixed": "",
+      "kappa": 2.0,
+      "full_strength": false,
+      "has_metrics": true,
+      "has_checkpoints": true
+    },
+    {
+      "path": "experiments/m7-ccpo-attncred-ctxadv-outlook-ws-1.5b-2gpu-20260917/config.json",
+      "sha256": "9ce48d5b7447d6716c37d0bcded4de6751fc2a33bf07a2e2175f5abdbfd555f6",
+      "ep_w": 0.0,
+      "lambda_k_fixed": "",
+      "kappa": 2.0,
+      "full_strength": false,
+      "has_metrics": true,
+      "has_checkpoints": true
+    },
+    {
+      "path": "experiments/m8-ccpo-attncred-ctxadv-fixed-anchor-alfworld-1.5b-2gpu-20260918/config.json",
+      "sha256": "8e042a57e2a69b376c212e48d263a2956f14044374b234526d7f685a74a5ff14",
+      "ep_w": 0.0,
+      "lambda_k_fixed": "",
+      "kappa": 2.0,
+      "full_strength": false,
+      "has_metrics": true,
+      "has_checkpoints": true
+    },
+    {
+      "path": "experiments/m9-ccpo-attncred-ctxadv-fixed-anchor-ws-1.5b-2gpu-20260918/config.json",
+      "sha256": "1b1169df4662a5799ed197cc836ccad7172a9c12569afc329cd40773314acf1a",
+      "ep_w": 0.0,
+      "lambda_k_fixed": "",
+      "kappa": 2.0,
+      "full_strength": false,
+      "has_metrics": true,
+      "has_checkpoints": true
+    },
+    {
+      "path": "experiments/m10-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/config.json",
+      "sha256": "cf57f869448dd185bb98031203c4dd52c15686f9d7d890262b343252cf05a8fa",
+      "ep_w": 0.0,
+      "lambda_k_fixed": "",
+      "kappa": 2.0,
+      "full_strength": false,
+      "has_metrics": true,
+      "has_checkpoints": true
+    },
+    {
+      "path": "experiments/m10-h2-ccpo-attncred-ctxadv-future-progress-alfworld-1.5b-2gpu-20260918/config.json",
+      "sha256": "0b927bf22f7babbc725acd6e55e84a61e8f6aab91556baa4f0c0c4a33b8ab782",
+      "ep_w": 0.0,
+      "lambda_k_fixed": "",
+      "kappa": 2.0,
+      "full_strength": false,
+      "has_metrics": false,
+      "has_checkpoints": false
+    },
+    {
+      "path": "experiments/m11-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/config.json",
+      "sha256": "774586811cc590efc69ecd959750e75ee75461db404ca55cd489df7fed129797",
+      "ep_w": 0.0,
+      "lambda_k_fixed": "",
+      "kappa": 2.0,
+      "full_strength": false,
+      "has_metrics": true,
+      "has_checkpoints": true
+    },
+    {
+      "path": "experiments/m11-h2-ccpo-attncred-ctxadv-future-progress-webshop-1.5b-2gpu-20260918/config.json",
+      "sha256": "25f2d172350a65cf55b93569d4f02a659fc6b4a3e376209a26a2ffabfd3fdaa9",
+      "ep_w": 0.0,
+      "lambda_k_fixed": "",
+      "kappa": 2.0,
+      "full_strength": false,
+      "has_metrics": false,
+      "has_checkpoints": false
+    },
+    {
+      "path": "experiments/m11-noctx-ccpo-attncred-hidden-future-progress-webshop-1.5b-2gpu-20260919/config.json",
+      "sha256": "57f13db7a3db391166dd28d0d70fa473c7874575c239b2d8fbf672aaf295229d",
+      "ep_w": 0.0,
+      "lambda_k_fixed": "",
+      "kappa": 2.0,
+      "full_strength": false,
+      "has_metrics": true,
+      "has_checkpoints": true
+    },
+    {
+      "path": "experiments/m10-noctx-ccpo-attncred-hidden-future-progress-alfworld-1.5b-2gpu-20260919/config.json",
+      "sha256": "9cfa8c58af57600f3d0914be83eecffd21decacd065c30e3f6c6f3b00c84d808",
+      "ep_w": 0.0,
+      "lambda_k_fixed": "",
+      "kappa": 2.0,
+      "full_strength": false,
+      "has_metrics": true,
+      "has_checkpoints": true
+    },
+    {
+      "path": "experiments/m10-h2-kappa4-alfworld-1.5b-2gpu-20260919/config.json",
+      "sha256": "4e56467af61f3fd7d2b2e9f5f4f6e994c86105e78e1f51a63293bc98c34fd7e8",
+      "ep_w": 0.0,
+      "lambda_k_fixed": "",
+      "kappa": 4.0,
+      "full_strength": false,
+      "has_metrics": false,
+      "has_checkpoints": false
+    },
+    {
+      "path": "experiments/m10-h2-no-credit-shrinkage-alfworld-1.5b-2gpu-20260919/config.json",
+      "sha256": "d7aae98c76f87c2e0cb48e99158d6f2cb4386887e868c5367ed9d62afa705d3a",
+      "ep_w": 0.0,
+      "lambda_k_fixed": 1.0,
+      "kappa": 2.0,
+      "full_strength": true,
+      "has_metrics": false,
+      "has_checkpoints": false
+    },
+    {
+      "path": "experiments/m10-h2-noctx-alfworld-1.5b-2gpu-20260919/config.json",
+      "sha256": "c2dd23ef3940f2268e2744286be0d455fb25e0a57153b2f591bded1e95c6c062",
+      "ep_w": 0.0,
+      "lambda_k_fixed": "",
+      "kappa": 2.0,
+      "full_strength": false,
+      "has_metrics": false,
+      "has_checkpoints": false
+    },
+    {
+      "path": "experiments/m11-h2-kappa4-webshop-1.5b-2gpu-20260919/config.json",
+      "sha256": "d84fcdc71b2a3d90b874e59955d24f186f3005b7c7be2e7810c2d7636e6adee8",
+      "ep_w": 0.0,
+      "lambda_k_fixed": "",
+      "kappa": 4.0,
+      "full_strength": false,
+      "has_metrics": false,
+      "has_checkpoints": false
+    },
+    {
+      "path": "experiments/m11-history1-future1-webshop-1.5b-2gpu-20260919/config.json",
+      "sha256": "63ab186f0209f42b7c581b3ce2004da25ce0296f487fb2ee067ea547df60c132",
+      "ep_w": 0.0,
+      "lambda_k_fixed": "",
+      "kappa": 2.0,
+      "full_strength": false,
+      "has_metrics": false,
+      "has_checkpoints": false
+    },
+    {
+      "path": "experiments/m11-h2-no-credit-shrinkage-webshop-1.5b-2gpu-20260919/config.json",
+      "sha256": "3ebfdbbeac255a66687cf4a9ebbaeb3a539e3932cfe55b02bfd1db8e805f697e",
+      "ep_w": 0.0,
+      "lambda_k_fixed": 1.0,
+      "kappa": 2.0,
+      "full_strength": true,
+      "has_metrics": false,
+      "has_checkpoints": false
+    },
+    {
+      "path": "experiments/m10-h2-noshrink-noctx-alfworld-1.5b-2gpu-20260919/config.json",
+      "sha256": "d268eea7cfecd1f29343a6cd9cafac6ba99ac2ccd445da594168cc26c5d59b41",
+      "ep_w": 0.0,
+      "lambda_k_fixed": 1.0,
+      "kappa": 2.0,
+      "full_strength": true,
+      "has_metrics": false,
+      "has_checkpoints": false
+    },
+    {
+      "path": "experiments/qwen38-27b-alfworld-20260920/config.json",
+      "sha256": "9bba786366a85e90b169529c8f575c561b52116708d3ef7db2a37ebebcacf5b1",
+      "ep_w": 0.0,
+      "lambda_k_fixed": "",
+      "kappa": 2.0,
+      "full_strength": false,
+      "has_metrics": false,
+      "has_checkpoints": false
+    },
+    {
+      "path": "experiments/qwen38-27b-webshop-20260920/config.json",
+      "sha256": "881a55ee7d021faefe1a9d0827c060c5c59f557024b5b8ea99aae38c5c153bb6",
+      "ep_w": 0.0,
+      "lambda_k_fixed": "",
+      "kappa": 2.0,
+      "full_strength": false,
+      "has_metrics": false,
+      "has_checkpoints": false
+    },
+    {
+      "path": "legacy-experiments/attn-flash-20260909/config.json",
+      "sha256": "917b4c0509f70b1868f4ce11f6c5a38c6c5fef513b2df3b28b48f80846360d5e",
+      "ep_w": 0.0,
+      "lambda_k_fixed": "",
+      "kappa": 2.0,
+      "full_strength": false,
+      "has_metrics": true,
+      "has_checkpoints": false
+    },
+    {
+      "path": "legacy-experiments/attn-triton-20260909/config.json",
+      "sha256": "a16dadb10873fd6dbbce4a878d4a8c20c52a5c5a740fd4fe94a940c91d08914c",
+      "ep_w": 0.0,
+      "lambda_k_fixed": "",
+      "kappa": 2.0,
+      "full_strength": false,
+      "has_metrics": true,
+      "has_checkpoints": false
+    },
+    {
+      "path": "legacy-experiments/ccpo-anchor-20260909/config.json",
+      "sha256": "d7abedfb275a6c5179aabde81d420e0fc454cd4d76c82364033858f15045f9d1",
+      "ep_w": 0.0,
+      "lambda_k_fixed": "",
+      "kappa": 2.0,
+      "full_strength": false,
+      "has_metrics": true,
+      "has_checkpoints": false
+    },
+    {
+      "path": "legacy-experiments/ccpo-anchor-2gpu-20260909/config.json",
+      "sha256": "73280fae10852c9e8b6de2b2435286425fc7ae651ec53f0ceb12c44f9df1ba3b",
+      "ep_w": 0.0,
+      "lambda_k_fixed": "",
+      "kappa": 2.0,
+      "full_strength": false,
+      "has_metrics": true,
+      "has_checkpoints": true
+    },
+    {
+      "path": "legacy-experiments/ccpo-attncred-150-20260913/config.json",
+      "sha256": "804cfdda3a9984d0824b787b2399bb105f1458f009625f94da0a45235f3fd7f5",
+      "ep_w": 0.0,
+      "lambda_k_fixed": "",
+      "kappa": 2.0,
+      "full_strength": false,
+      "has_metrics": true,
+      "has_checkpoints": true
+    },
+    {
+      "path": "legacy-experiments/ccpo-attncred-20260912/config.json",
+      "sha256": "3e6bc0fd19cc8a5efab89448c2a78952af1416270a0abe48e328ce501819fc3a",
+      "ep_w": 0.0,
+      "lambda_k_fixed": "",
+      "kappa": 2.0,
+      "full_strength": false,
+      "has_metrics": true,
+      "has_checkpoints": true
+    },
+    {
+      "path": "legacy-experiments/ccpo-attncred-hardw-20260914/config.json",
+      "sha256": "d2c71c225fc601f699f5083697a1bed1fd858f16149887da6a87e447c7e5fb40",
+      "ep_w": 0.0,
+      "lambda_k_fixed": "",
+      "kappa": 2.0,
+      "full_strength": false,
+      "has_metrics": true,
+      "has_checkpoints": true
+    },
+    {
+      "path": "legacy-experiments/ccpo-attncred-noep-20260915/config.json",
+      "sha256": "339a2d000ec872f2263cc20d31ffda39fd23d77f01aec99a7a22abfa60ad8b9b",
+      "ep_w": 0.0,
+      "lambda_k_fixed": "",
+      "kappa": 2.0,
+      "full_strength": false,
+      "has_metrics": true,
+      "has_checkpoints": true
+    },
+    {
+      "path": "legacy-experiments/ccpo-attncred-ws-20260914/config.json",
+      "sha256": "03a5eafe287369b19a7a98eac752838e1e07d4f4a539d9447b72d2baf2df3cfd",
+      "ep_w": 0.0,
+      "lambda_k_fixed": "",
+      "kappa": 2.0,
+      "full_strength": false,
+      "has_metrics": true,
+      "has_checkpoints": true
+    }
+  ],
+  "external_jobs_not_audited": true
+}

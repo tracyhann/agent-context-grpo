@@ -15,6 +15,7 @@ hf/
 # environments and data, rebuilt by the benchmark setup scripts
 /.venv/
 /.venv-webshop/
+/.venv-qwen/
 /alfworld_data/
 /envdata/
 /jdk/
@@ -56,3 +57,8 @@ experiments/*/failure-analysis-*/behavior_diagnostics.json
 experiments/*/failure-analysis-*/oracle_targets.json
 experiments/*/failure-analysis-*/option_rescoring.json
 experiments/*/failure-analysis-*/trace_analysis.json
+
+# Prompt-only benchmark transcripts and resumable serving caches.
+experiments/qwen38-*/episodes.jsonl
+experiments/qwen38-*/turns.jsonl
+experiments/qwen38-*/episodes/

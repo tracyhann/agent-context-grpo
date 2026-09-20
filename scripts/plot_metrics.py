@@ -258,13 +258,13 @@ FUTURE_PROGRESS = [
     ("effective peers (future excludes terminals)", ["ccpo/progress_current_n_eff_mean", "ccpo/progress_future_n_eff_mean"], {}),
     ("raw progress / task normalization scale", ["ccpo/progress_raw_progress_absmean", "ccpo/progress_progress_norm_std_mean"], {}),
     ("history / standardized future / combined", ["ccpo/progress_history_adv_absmean", "ccpo/progress_progress_normalized_absmean", "ccpo/progress_combined_pre_absmean"], {}),
-    ("actual actor component magnitudes", ["ccpo/progress_history_applied_absmean", "ccpo/progress_future_applied_absmean", "ccpo/progress_combined_applied_absmean"], {}),
+    ("applied H / F / episode / total", ["ccpo/progress_history_applied_absmean", "ccpo/progress_future_applied_absmean", "ccpo/progress_episode_applied_absmean", "ccpo/progress_combined_applied_absmean", "ccpo/progress_actor_applied_absmean"], {}),
     ("correlation with original M5 edge", ["ccpo/progress_future_edge_corr", "ccpo/progress_history_edge_corr", "ccpo/progress_combined_edge_corr"], {"ylim":(-1.03,1.03)}),
     ("future / edge correlation, nonterminal", ["ccpo/progress_future_edge_nonterminal_corr"], {"ylim":(-1.03,1.03)}),
     ("support / terminal coverage", ["ccpo/progress_eligible_frac", "ccpo/progress_terminal_frac", "ccpo/progress_current_exact_frac", "ccpo/progress_current_backoff_frac"], {"ylim":(-.03,1.03)}),
     ("future / history magnitude ratio", ["ccpo/progress_future_history_absratio"], {}),
     ("applied weights", ["ccpo/progress_weight", "ccpo/progress_history_weight", "ccpo/progress_episode_weight", "ccpo/progress_original_edge_weight"], {}),
-    ("applied credit identity error", ["ccpo/progress_applied_identity_error"], {}),
+    ("step / full actor identity errors", ["ccpo/progress_applied_identity_error", "ccpo/progress_actor_identity_error"], {}),
 ]
 for _title, _keys, _opts in FUTURE_PROGRESS:
     _opts.setdefault("labels", {k:k.removeprefix("ccpo/progress_").replace("_", " ") for k in _keys})

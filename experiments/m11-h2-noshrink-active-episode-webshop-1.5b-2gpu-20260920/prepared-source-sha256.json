@@ -1,0 +1,22 @@
+{
+  "ablations/ablations.py": "2e861ca2fc8506fa7a11921726b330c6f8a9fcfe1a37d4fc1d8d433fcaf0c8b6",
+  "ccpo/arms.py": "4c930ee857e7846cf4709a69b0a012f833e3f7b135757fff9d6138f37ea07585",
+  "ccpo/core_ccpo.py": "c73fb7a96a1363c39b745bbfd79721d47db8d6ba3ce783ae263d4db8215ca6ff",
+  "ccpo/future_progress.py": "da790fb600aeaf554b8af24d6df3801107a9a79ed274ff2ed51568aaa1dcc764",
+  "ccpo/FUTURE_PROGRESS.md": "c6809aba2bed65048515054c3b64490ce8b337e6f9c52c6bba32f5100dd209e1",
+  "patches/verl-agent/verl/trainer/ppo/ray_trainer.py": "50378b739b10b25747c3bddb7b2f47ab681347e60e66e67f891eb0215739d3e9",
+  "verl-agent/verl/trainer/ppo/ray_trainer.py": "50378b739b10b25747c3bddb7b2f47ab681347e60e66e67f891eb0215739d3e9",
+  "verl-agent/gigpo/core_gigpo.py": "fa709b91baf2331c4857fee32a249c4ca8d8d69e864d1e71f08730cc8c5cc456",
+  "scripts/exp_run.py": "e9721072664dba8e543c583582cc3219e3c317bcb2e5129d76f06ca81a91df8f",
+  "scripts/plot_metrics.py": "777716a5fdff652b2618842c573217207be4ccea1fab2a85ce3b4fbe67b41a86",
+  "tests/test_future_progress.py": "7703d06f9a0d8c6db08b22e0881cb39f11c690833e7d8783378c4bc3a415cf50",
+  "tests/test_future_progress_active_episode.py": "7b2a7a6da019353a8a18cf056ade0c9cccdd2244cd11a441b780089ff134c56c",
+  "experiments/m11-h2-noshrink-active-episode-webshop-1.5b-2gpu-20260920/config.json": "8317cb313133aa4f54cf9cc8dbbb006d76cf1619a81192223d650d1e48e0f3b7",
+  "experiments/m11-h2-noshrink-active-episode-webshop-1.5b-2gpu-20260920/run.sh": "356ea355d23f1445a211edf5b683d1c1a7db8177951743d97fdc4444fa48aeb4",
+  "experiments/m11-h2-noshrink-active-episode-webshop-1.5b-2gpu-20260920/NOTES.md": "175d82a60a92ca7f18e1b7c00407bf22077bca6d369c0b502822ad7dcaad0c77",
+  "experiments/m11-h2-noshrink-active-episode-webshop-1.5b-2gpu-20260920/PREPARED.json": "f0b0bccc30f3dc483ee7c6c8d873a555e015e6cdffef01e52272b478c4f35c2f",
+  "experiments/m11-h2-noshrink-active-episode-webshop-1.5b-2gpu-20260920/VALIDATION.json": "65a5698a82713455f6ccae53cc60f1dd8cf8ab7f77faab523e28de3e7fea71be",
+  "experiments/m11-h2-noshrink-active-episode-webshop-1.5b-2gpu-20260920/HISTORY_AUDIT.json": "ac974c1b44d51b151f753c9e287c23af4a31e0cc23c01db13303676f8587d145",
+  "experiments/m11-h2-noshrink-active-episode-webshop-1.5b-2gpu-20260920/config-diff-from-h2.json": "b7db632e11d277eaf42e3dd271ef95f33209752ff105d46e7f2ffcda8656ee98",
+  "experiments/m11-h2-noshrink-active-episode-webshop-1.5b-2gpu-20260920/config-diff-from-noshrink.json": "e614b55d628be20d8ad0afdd91cb2ea834d86811b3310af8b96c5acb3b930b68"
+}
