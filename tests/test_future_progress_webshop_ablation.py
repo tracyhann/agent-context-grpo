@@ -50,7 +50,10 @@ class WebshopFutureProgressAblationTests(unittest.TestCase):
                 self.assertIn(f"env.history_length={cfg['history_length']}", record['hydra_overrides'])
                 self.assertIn('trainer.n_gpus_per_node=2', record['hydra_overrides'])
                 for k, env_key in er.ENV_KEYS.items():
-                    self.assertEqual(record['env'][env_key], str(cfg[k]), env_key)
+                    if k == 'ccpo_progress_history_weight' and k not in cfg:
+                        self.assertEqual(er.DEFAULTS[k], 1.0); self.assertNotIn(env_key, record['env'])
+                    else:
+                        self.assertEqual(record['env'][env_key], str(cfg[k]), env_key)
                 self.assertEqual(cfg['ccpo_target'], 'return')
                 self.assertEqual(cfg['adv_mode'], 'mean_norm')
                 self.assertEqual(cfg['ccpo_ep_w'], 0.)

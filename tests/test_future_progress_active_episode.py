@@ -58,7 +58,10 @@ class ActiveEpisodeFutureProgressTests(unittest.TestCase):
                 self.assertEqual(record['hydra_overrides'], er.build_command(cfg, str(folder))[3:])
                 self.assertIn('trainer.n_gpus_per_node=2', record['hydra_overrides'])
                 for k, env_name in er.ENV_KEYS.items():
-                    self.assertEqual(record['env'][env_name], str(cfg[k]))
+                    if k == 'ccpo_progress_history_weight' and k not in cfg:
+                        self.assertEqual(er.DEFAULTS[k], 1.0); self.assertNotIn(env_name, record['env'])
+                    else:
+                        self.assertEqual(record['env'][env_name], str(cfg[k]))
                 prepared = json.loads((folder/'PREPARED.json').read_text())
                 self.assertFalse(prepared['launched']); self.assertFalse(prepared['queued'])
                 for bad in [-1, float('nan'), float('inf')]:

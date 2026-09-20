@@ -69,7 +69,11 @@ class MainSevenBTests(unittest.TestCase):
             self.assertIn('trainer.n_gpus_per_node=8',record['hydra_overrides'])
             self.assertIn('actor_rollout_ref.rollout.tensor_model_parallel_size=2',record['hydra_overrides'])
             self.assertEqual(record['env']['CUDA_VISIBLE_DEVICES'],'0,1,2,3,4,5,6,7')
-            for key,env in prep.er.ENV_KEYS.items():self.assertEqual(record['env'][env],str(cfg[key]),env)
+            for key,env in prep.er.ENV_KEYS.items():
+                if key == 'ccpo_progress_history_weight' and key not in cfg:
+                    self.assertEqual(prep.er.DEFAULTS[key], 1.0); self.assertNotIn(env, record['env'])
+                else:
+                    self.assertEqual(record['env'][env],str(cfg[key]),env)
             ray_paths.append(record['env']['RAY_TMPDIR'])
             status=json.loads((folder/'PREPARED.json').read_text());self.assertFalse(status['launched']);self.assertFalse(status['queued'])
             command=json.loads((folder/'prepare-command.json').read_text());self.assertIn('--dry-run',command['argv'])

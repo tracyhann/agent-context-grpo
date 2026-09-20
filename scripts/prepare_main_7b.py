@@ -46,6 +46,7 @@ def prepare(benchmark, episode, stamp, gpus):
     key = ACTIVE if episode else MAIN
     control = ROOT/'experiments'/CONTROLS[benchmark, episode]
     old = json.loads((control/'config.json').read_text())['config']
+    old.setdefault('ccpo_progress_history_weight', 1.0)  # Legacy runtime default.
     name = run_name(benchmark, episode, stamp)
     destination = ROOT/'experiments'/name
     if destination.exists():

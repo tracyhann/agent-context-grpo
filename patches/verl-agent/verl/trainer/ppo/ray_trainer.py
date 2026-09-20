@@ -395,7 +395,8 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
                 turn_index=data.non_tensor_batch['ccpo_turn_index'],
                 episode_lengths=data.non_tensor_batch['episode_lengths'],
                 horizon=_progress_horizon,
-                progress_weight=float(os.environ.get('ACG_CCPO_PROGRESS_WEIGHT', '1')))
+                progress_weight=float(os.environ.get('ACG_CCPO_PROGRESS_WEIGHT', '1')),
+                history_weight=float(os.environ.get('ACG_CCPO_PROGRESS_HISTORY_WEIGHT', '1')))
         elif _fixed_anchor:
             if _outlook_horizon != 0 or _outlook_beta != 0:
                 raise ValueError("Fixed-anchor gain and endpoint OUTLOOK cannot both be enabled")

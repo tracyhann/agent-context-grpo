@@ -1,71 +1,71 @@
 {
   "title": "Qwen3.8-27B — full ALFWorld and WebShop, seed101",
   "provider": "local-qwen",
-  "updated": "2026-09-20T20:41:16.955758+00:00",
+  "updated": "2026-09-20T21:33:51.239359+00:00",
   "suites": {
     "alfworld-seen": {
       "benchmark": "alfworld",
       "split": "seen",
       "expected": 140,
-      "completed": 52,
+      "completed": 65,
       "running": 8,
       "errors": 0,
       "final": false,
-      "successes": 37,
-      "success_pct": 71.15384615384616,
-      "score_pct": 71.15384615384616,
-      "api_requests": 1445,
+      "successes": 45,
+      "success_pct": 69.23076923076923,
+      "score_pct": 69.23076923076923,
+      "api_requests": 1753,
       "usage": {
-        "prompt_tokens": 898880,
-        "completion_tokens": 1692427,
+        "prompt_tokens": 1087148,
+        "completion_tokens": 1983263,
         "cache_hit_tokens": 0,
-        "cache_miss_tokens": 898880
+        "cache_miss_tokens": 1087148
       },
       "cost_usd": 0.0,
       "unpriced_attempts": 0,
       "rejected_api_attempts": 0,
       "unpriced_ceiling_estimate_usd": 0.0,
       "finish_reasons": {
-        "stop": 1445
+        "stop": 1753
       },
       "models": {
-        "Qwen/Qwen3.8-27B@1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0": 1445
+        "Qwen/Qwen3.8-27B@1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0": 1753
       },
-      "mean_episode_length": 23.557692307692307,
+      "mean_episode_length": 24.26153846153846,
       "task_types": {
         "Pick": {
-          "count": 9,
-          "successes": 8,
+          "count": 12,
+          "successes": 10,
           "expected": 35,
-          "success_pct": 88.88888888888889
+          "success_pct": 83.33333333333333
         },
         "Look": {
-          "count": 8,
-          "successes": 5,
+          "count": 11,
+          "successes": 7,
           "expected": 13,
-          "success_pct": 62.5
+          "success_pct": 63.63636363636363
         },
         "Clean": {
-          "count": 9,
-          "successes": 5,
+          "count": 10,
+          "successes": 6,
           "expected": 27,
-          "success_pct": 55.55555555555556
+          "success_pct": 60.0
         },
         "Heat": {
-          "count": 8,
-          "successes": 4,
+          "count": 10,
+          "successes": 5,
           "expected": 16,
           "success_pct": 50.0
         },
         "Cool": {
-          "count": 9,
+          "count": 10,
           "successes": 9,
           "expected": 25,
-          "success_pct": 100.0
+          "success_pct": 90.0
         },
         "Pick2": {
-          "count": 9,
-          "successes": 6,
+          "count": 12,
+          "successes": 8,
           "expected": 24,
           "success_pct": 66.66666666666667
         }

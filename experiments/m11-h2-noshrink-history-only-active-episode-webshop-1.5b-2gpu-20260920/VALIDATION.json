@@ -1,0 +1,54 @@
+{
+  "broader_repository_guard": {
+    "command": "ccpo/test_arms.py",
+    "details": [
+      "FlashAttention absence/stub rejection probes see the already-installed compiled package",
+      "Global self-containment scanner rejects checkout-local absolute paths in existing scripts and generated launchers"
+    ],
+    "log": "repository-guard.log",
+    "method_registry_and_documentation_checks": "passed",
+    "status": "failed_existing_environment_and_path_assumptions"
+  },
+  "checks": [
+    "Only experiment ID and one disabled component coefficient differ from each matched control",
+    "ALFWorld history/future/episode 1/0/0 or 0/1/0; WebShop 1/0/1 or 0/1/1",
+    "No credit shrinkage, hidden+context, history2, H2 diagnostic or active horizon, 150 steps, seed0",
+    "Generated environment flags and Hydra command match resolved config",
+    "Preparation dry-run only; existing experiment directories refused"
+  ],
+  "commands": [
+    "CUDA_VISIBLE_DEVICES='' OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 PYTHONPATH=tests:. .venv/bin/python -m unittest test_future_progress_components test_future_progress test_future_progress_active_episode test_future_progress_ablation test_future_progress_webshop_ablation test_future_progress_hidden_compat test_episode_adv_isolation test_main_7b -v",
+    "CUDA_VISIBLE_DEVICES='' OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 .venv/bin/python ablations/test_ablations.py",
+    "ccpo/test_arms.py: test_doc_matches_code()",
+    "bash -n experiments/m11-h2-noshrink-history-only-active-episode-webshop-1.5b-2gpu-20260920/run.sh"
+  ],
+  "evidence_sha256": {
+    "ablation-guards.log": "a01c3980187c28f06d468e6c6cf0856f711b9d2df6d14192cc124ee9b146b98a",
+    "cpu-tests.log": "ae5ab2bd8fbd3d594c2b19e1af3b5f3f136c04f340490a38b9073eef77bd1509",
+    "repository-guard.log": "00ec0d111c7b5b1bd69344b9f2edbd9e5f7e69254e557273cc91df32d68a76cb"
+  },
+  "gpu_preflight_performed": false,
+  "gpu_used": false,
+  "initial_test_invocation": {
+    "details": "An initial invocation listed four nonexistent test module names; the corrected 53-case suite passed.",
+    "status": "corrected_test_module_names"
+  },
+  "launched": false,
+  "queued": false,
+  "source_hashes_verified": true,
+  "status": "passed_cpu_prepared_only",
+  "tests": {
+    "ablation_registry_and_estimator_guards": "passed",
+    "actual_trainer_and_ppo_gradient_isolation_all_four_variants": "passed",
+    "diff_whitespace": "passed",
+    "disabled_component_normalization_support_isolation": "passed",
+    "distinct_unittest_cases": 53,
+    "generated_shell_syntax": "passed",
+    "live_trainer_matches_overlay": "passed",
+    "new_component_tests": 7,
+    "python_compilation": "passed",
+    "raw_diagnostics_retained_disabled_applied_terms_zero": "passed",
+    "registry_document_guard": "passed: 35 variant names, 51 arm IDs, 2 historical runs"
+  },
+  "validated_at": "2026-09-20T21:29:59.727399+00:00"
+}

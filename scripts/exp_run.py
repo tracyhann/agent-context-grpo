@@ -244,6 +244,7 @@ DEFAULTS = {
     "ccpo_edge_w": 0.0,
     "ccpo_progress_horizon": 0,  # 1/2 enables contextual endpoint value progress
     "ccpo_progress_weight": 1.0,
+    "ccpo_progress_history_weight": 1.0,  # 0 isolates future progress; progress_weight=0 isolates history
     "ccpo_progress_snapshot_every": 1,
     "ccpo_fixed_anchor": 0,
     "ccpo_fixed_horizon": 2,
@@ -357,6 +358,7 @@ ENV_KEYS = {
     "ccpo_step_norm": "ACG_CCPO_STEP_NORM",
     "ccpo_progress_horizon": "ACG_CCPO_PROGRESS_HORIZON",
     "ccpo_progress_weight": "ACG_CCPO_PROGRESS_WEIGHT",
+    "ccpo_progress_history_weight": "ACG_CCPO_PROGRESS_HISTORY_WEIGHT",
     "ccpo_progress_snapshot_every": "ACG_CCPO_PROGRESS_SNAPSHOT_EVERY",
     "ccpo_fixed_anchor": "ACG_CCPO_FIXED_ANCHOR",
     "ccpo_fixed_horizon": "ACG_CCPO_FIXED_HORIZON",
@@ -425,8 +427,14 @@ def validate_future_progress_config(cfg):
     horizon = cfg.get("ccpo_progress_horizon", 0)
     if horizon not in (0, 1, 2):
         raise ValueError("ccpo_progress_horizon must be 0, 1 or 2")
+    import math
+    for key in ("ccpo_progress_history_weight", "ccpo_progress_weight"):
+        value = float(cfg.get(key, 1.0))
+        if not math.isfinite(value) or value < 0:
+            raise ValueError(f"{key} must be finite and nonnegative")
+    if not horizon and float(cfg.get("ccpo_progress_history_weight", 1.0)) != 1.0:
+        raise ValueError("History component ablation requires ccpo_progress_horizon=1 or 2")
     if horizon:
-        import math
         episode_weight = float(cfg.get("ccpo_ep_w", 1.0))
         if not math.isfinite(episode_weight) or episode_weight < 0:
             raise ValueError("Future progress requires finite nonnegative ccpo_ep_w")
@@ -618,7 +626,8 @@ def build_env(cfg, exp_dir):
            if cfg.get("gdump") else {}),
     }
     for k, e in ENV_KEYS.items():
-        env[e] = str(cfg[k])
+        # Historical recorded configs predate new knobs; use their runtime defaults.
+        env[e] = str(cfg.get(k, DEFAULTS[k]))
     return env
 
 

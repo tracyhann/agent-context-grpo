@@ -1,7 +1,8 @@
 """Context-conditioned endpoint value increases, with M3/M5 credit scaling.
 
 H_t = Y_t - B_t; P_t = V_context(t+h) - V_context(t).
-A_pre = H_t + weight * task_standardize(P_t).
+A_pre = history_weight * H_t + progress_weight * task_standardize(P_t).
+Only enabled components contribute to the trainer normalization support mask.
 The trainer then applies its existing benchmark-specific combined normalization.
 No new model forward is needed: the frozen reference already encodes every turn.
 """
@@ -131,14 +132,17 @@ def _check_round_trip(kwargs, canonical, restore):
 
 
 def ccpo_future_progress_advantage(*, turn_index, episode_lengths, horizon=1,
-                                   progress_weight=1., readout='context', **kwargs):
-    """A future-state value increase added to the unchanged historical residual.
+                                   progress_weight=1., history_weight=1., readout='context', **kwargs):
+    """Independently weighted historical residual and future-state value increase.
 
     readout='m5' is a CPU parity/reference option: self-inclusive uniform node
     potentials. The registered training method always uses readout='context'.
     """
-    if horizon not in (1, 2) or not np.isfinite(progress_weight) or progress_weight < 0:
-        raise ValueError('Invalid future-progress horizon or weight')
+    if horizon not in (1, 2):
+        raise ValueError('Invalid future-progress horizon')
+    for name, weight in [('history', history_weight), ('future', progress_weight)]:
+        if not np.isfinite(weight) or weight < 0:
+            raise ValueError(f'Invalid future-progress {name} weight: must be finite and nonnegative')
     if readout not in ('context', 'm5'):
         raise ValueError('Unknown future-progress readout')
     edge = core._EDGE_W if kwargs.get('edge_w') is None else float(kwargs['edge_w'])
@@ -195,11 +199,14 @@ def ccpo_future_progress_advantage(*, turn_index, episode_lengths, horizon=1,
     # Diagnostic reference is the ORIGINAL one-step edge, including for horizon 2.
     m5_raw = core._successor_values(m5_values, successors, n) - m5_current
     m5_edge, _, _ = standardize_progress(m5_raw, tasks, np.ones(n, dtype=bool))
-    mixed = history + progress_weight * progress
+    weighted_history = history_weight * history
+    weighted_progress = progress_weight * progress
+    mixed = weighted_history + weighted_progress
     if not np.isfinite(mixed).all():
         raise ValueError('Nonfinite future-progress credit')
     hist_live = np.asarray(diag['live_mask']).copy()
-    live = hist_live | eligible
+    # A diagnostic-only component must not change the normalization population.
+    live = ((history_weight > 0) & hist_live) | ((progress_weight > 0) & eligible)
     terminal = endpoint < 0
     arrays = dict(uid=tasks, traj_uid=np.asarray(canonical['traj_index']).astype(str),
         turn_index=np.asarray(turn_index, dtype=int)[take],
@@ -207,8 +214,9 @@ def ccpo_future_progress_advantage(*, turn_index, episode_lengths, horizon=1,
         anchor_obs=np.asarray(canonical['anchor_obs']).astype(str), episode_rewards=episodes,
         target=_numpy(canonical['step_rewards']).astype(float), value_target=labels,
         history_baseline=np.asarray(diag['baseline_values']).copy(), history_adv=history,
+        weighted_history=weighted_history,
         current_value=current, future_value=future, raw_progress=raw,
-        progress_normalized=progress, weighted_progress=progress_weight * progress,
+        progress_normalized=progress, weighted_progress=weighted_progress,
         progress_norm_mean=norm_mean, progress_norm_std=norm_std, combined_pre=mixed,
         m5_edge_raw=m5_raw, m5_edge_normalized=m5_edge, eligible=eligible,
         history_live=hist_live, live=live, terminal=terminal, endpoint_index=endpoint, window_length=window,
@@ -217,11 +225,12 @@ def ccpo_future_progress_advantage(*, turn_index, episode_lengths, horizon=1,
     if arrays['target'].ndim > 1:
         arrays['target'] = (arrays['target'] * _numpy(canonical['response_mask'])).sum(-1)
     diag.update(progress_enabled=1., progress_horizon=float(horizon), progress_weight=float(progress_weight),
-                progress_history_weight=1., progress_episode_weight=0., progress_original_edge_weight=0.,
+                progress_history_weight=float(history_weight), progress_episode_weight=0., progress_original_edge_weight=0.,
+                progress_live_frac=float(live.mean()),
                 progress_eligible_frac=float(eligible.mean()), progress_terminal_frac=float(terminal.mean()),
                 progress_unique_rows=float(n), progress_padding_frac=float(1 - n / len(restore)),
                 progress_m5_reference_mode=float(readout == 'm5'), **phi_diag)
-    for key in ('target', 'value_target', 'history_baseline', 'history_adv', 'current_value',
+    for key in ('target', 'value_target', 'history_baseline', 'history_adv', 'weighted_history', 'current_value',
                 'future_value', 'raw_progress', 'progress_normalized', 'weighted_progress', 'combined_pre',
                 'progress_norm_mean', 'progress_norm_std', 'm5_edge_normalized'):
         _stats(diag, key, arrays[key], live)
@@ -252,8 +261,8 @@ def ccpo_future_progress_advantage(*, turn_index, episode_lengths, horizon=1,
     for key, x in [('future_hidden', hidden), ('future_phi', phi), ('future_context', context)]:
         y = np.full_like(x, np.nan, dtype=float); y[~terminal] = x[endpoint[~terminal]]; arrays[key] = y
     diag['progress_payload'] = dict(arrays=arrays, take=take, restore=restore)
-    diag['progress_components_history'] = history[restore]
-    diag['progress_components_future'] = (progress_weight * progress)[restore]
+    diag['progress_components_history'] = weighted_history[restore]
+    diag['progress_components_future'] = weighted_progress[restore]
     diag['progress_components_mixed'] = mixed[restore]
     diag['history_adv_absmean'] = float(np.mean(abs(history[hist_live]))) if hist_live.any() else 0.
     diag['r_vs_g2po'] = _corr(mixed, core.g2po_step_advantage(tasks, m5_values, nodes,

@@ -20,6 +20,58 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(
 import arms                                                   # noqa: E402
 
 ABLATIONS = {
+    "future-progress-h2-no-credit-shrinkage-history-only": dict(
+        name="CCPO-ATTNCRED-TWO-STEP-NOSHRINK-HISTORY-ONLY",
+        tag="fph2-noshrink-history-only",
+        title="M10 H2 no shrinkage, history-only, episode weight 0",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("alfworld",),
+        delta={'ccpo_lk_fix': 1.0, 'ccpo_progress_weight': 0.0},
+        removes="future-progress credit from the actor update and its normalization support",
+        asks="how much does history credit contribute alone under the matched no-shrink protocol?",
+        watch="History-2 prompts and hidden+context features stay enabled. Raw history/future "
+              "remain diagnostic; the disabled channel has exactly zero applied advantage. "
+              "Episode weight 0; original edge weight 0; usable context baselines at full strength.",
+    ),
+    "future-progress-h2-no-credit-shrinkage-future-only": dict(
+        name="CCPO-ATTNCRED-TWO-STEP-NOSHRINK-FUTURE-ONLY",
+        tag="fph2-noshrink-future-only",
+        title="M10 H2 no shrinkage, future-only, episode weight 0",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("alfworld",),
+        delta={'ccpo_lk_fix': 1.0, 'ccpo_progress_history_weight': 0.0},
+        removes="historical-residual credit from the actor update and its normalization support",
+        asks="how much does future credit contribute alone under the matched no-shrink protocol?",
+        watch="History-2 prompts and hidden+context features stay enabled. Raw history/future "
+              "remain diagnostic; the disabled channel has exactly zero applied advantage. "
+              "Episode weight 0; original edge weight 0; usable context baselines at full strength.",
+    ),
+    "future-progress-h2-no-credit-shrinkage-history-only-active-episode": dict(
+        name="CCPO-ATTNCRED-TWO-STEP-NOSHRINK-HISTORY-ONLY-EPISODE",
+        tag="fph2-noshrink-history-only-ep",
+        title="M11 H2 no shrinkage, history-only, episode weight 1",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("webshop",),
+        delta={'ccpo_lk_fix': 1.0, 'ccpo_progress_weight': 0.0, 'ccpo_ep_w': 1.0},
+        removes="future-progress credit from the actor update and its normalization support",
+        asks="how much does history credit contribute alone under the matched no-shrink protocol?",
+        watch="History-2 prompts and hidden+context features stay enabled. Raw history/future "
+              "remain diagnostic; the disabled channel has exactly zero applied advantage. "
+              "Episode weight 1; original edge weight 0; usable context baselines at full strength.",
+    ),
+    "future-progress-h2-no-credit-shrinkage-future-only-active-episode": dict(
+        name="CCPO-ATTNCRED-TWO-STEP-NOSHRINK-FUTURE-ONLY-EPISODE",
+        tag="fph2-noshrink-future-only-ep",
+        title="M11 H2 no shrinkage, future-only, episode weight 1",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("webshop",),
+        delta={'ccpo_lk_fix': 1.0, 'ccpo_progress_history_weight': 0.0, 'ccpo_ep_w': 1.0},
+        removes="historical-residual credit from the actor update and its normalization support",
+        asks="how much does future credit contribute alone under the matched no-shrink protocol?",
+        watch="History-2 prompts and hidden+context features stay enabled. Raw history/future "
+              "remain diagnostic; the disabled channel has exactly zero applied advantage. "
+              "Episode weight 1; original edge weight 0; usable context baselines at full strength.",
+    ),
     # M10 H2: the shared readout applies the delta to history and both potentials.
     "future-progress-h2-no-context-vector": dict(
         name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOCTX",

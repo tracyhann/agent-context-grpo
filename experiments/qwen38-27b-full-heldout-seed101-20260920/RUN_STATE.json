@@ -13,7 +13,7 @@
       "started": "2026-09-20T15:21:11.794236+00:00"
     }
   },
-  "updated": "2026-09-20T20:41:17.140965+00:00",
+  "updated": "2026-09-20T21:33:51.453105+00:00",
   "training_status": "complete",
   "training_step": 150,
   "training_eval_step": 150,
@@ -46,7 +46,7 @@
   "server_ready": "2026-09-20T15:21:11.793059+00:00",
   "current_suite": "alfworld-seen",
   "progress": {
-    "alfworld-seen": "52/140",
+    "alfworld-seen": "65/140",
     "alfworld-unseen": "0/134",
     "webshop": "0/500"
   }

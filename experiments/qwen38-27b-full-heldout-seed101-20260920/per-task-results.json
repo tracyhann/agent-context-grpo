@@ -469,11 +469,15 @@
   },
   {
     "episode_id": 39,
-    "status": "running",
+    "status": "completed",
     "task_type": "pick_cool_then_place_in_recep",
     "gamefile": "alfworld_data/json_2.1.1/valid_seen/pick_cool_then_place_in_recep-Apple-None-CounterTop-14/trial_T20190909_044933_815840/game.tw-pddl",
+    "success": false,
+    "score": 0.0,
+    "length": 50,
+    "termination": "action_limit",
     "suite": "alfworld-seen",
-    "trajectory_sha256": "c6cffd2edfbc78a18e5d5eef068fb4c3e3bd7f22e06faf66e5f58e2a4f194337"
+    "trajectory_sha256": "9be4b772b7d153902393914d2df5cde3101b8fe4c4d9f69270e06e42ed0096c4"
   },
   {
     "episode_id": 40,
@@ -501,11 +505,15 @@
   },
   {
     "episode_id": 42,
-    "status": "running",
+    "status": "completed",
     "task_type": "look_at_obj_in_light",
     "gamefile": "alfworld_data/json_2.1.1/valid_seen/look_at_obj_in_light-CD-None-DeskLamp-302/trial_T20190907_154618_526741/game.tw-pddl",
+    "success": false,
+    "score": 0.0,
+    "length": 50,
+    "termination": "action_limit",
     "suite": "alfworld-seen",
-    "trajectory_sha256": "42b420ffe068cf9d3406ea50c31405e1f330b6c0fccb6e58c0b986621f1f0935"
+    "trajectory_sha256": "0f4eec6fba808d19902afbfa2282a5941ed13c327d0529469c3e1346d1bdd2e3"
   },
   {
     "episode_id": 43,
@@ -525,7 +533,7 @@
     "task_type": "pick_clean_then_place_in_recep",
     "gamefile": "alfworld_data/json_2.1.1/valid_seen/pick_clean_then_place_in_recep-ButterKnife-None-Drawer-30/trial_T20190908_052007_212776/game.tw-pddl",
     "suite": "alfworld-seen",
-    "trajectory_sha256": "5409af344f0fd96c3ea50a8003abba42c409302f1c5c7bbb2af0fcc75391772d"
+    "trajectory_sha256": "8cd05370153a2d691c04b0e57856d78efce67cbc71c7715b3c783a6f631385eb"
   },
   {
     "episode_id": 45,
@@ -613,11 +621,15 @@
   },
   {
     "episode_id": 52,
-    "status": "running",
+    "status": "completed",
     "task_type": "pick_heat_then_place_in_recep",
     "gamefile": "alfworld_data/json_2.1.1/valid_seen/pick_heat_then_place_in_recep-Tomato-None-DiningTable-16/trial_T20190907_201243_698086/game.tw-pddl",
+    "success": false,
+    "score": 0.0,
+    "length": 50,
+    "termination": "action_limit",
     "suite": "alfworld-seen",
-    "trajectory_sha256": "90c9f7849eff86465e818ae413450046f640d6f129a5d08e214386799f4ba1a9"
+    "trajectory_sha256": "62c9a000c23d6704ade1cdddb9b247053a7bb0526991ba3b8c090c2e4a11dac1"
   },
   {
     "episode_id": 53,
@@ -637,15 +649,19 @@
     "task_type": "look_at_obj_in_light",
     "gamefile": "alfworld_data/json_2.1.1/valid_seen/look_at_obj_in_light-CD-None-DeskLamp-320/trial_T20190907_224451_655673/game.tw-pddl",
     "suite": "alfworld-seen",
-    "trajectory_sha256": "818a70e54aed2b17d7e6c5064216df25908ae6d86846b2f3d35aa5a3b2dcb64a"
+    "trajectory_sha256": "5c492e9b90d03657c937944251d461536519dfa23c4ceb9974a847562add845b"
   },
   {
     "episode_id": 55,
-    "status": "running",
+    "status": "completed",
     "task_type": "pick_and_place_simple",
     "gamefile": "alfworld_data/json_2.1.1/valid_seen/pick_and_place_simple-SprayBottle-None-Cabinet-413/trial_T20190907_114931_692464/game.tw-pddl",
+    "success": false,
+    "score": 0.0,
+    "length": 50,
+    "termination": "action_limit",
     "suite": "alfworld-seen",
-    "trajectory_sha256": "2539311d5dcf4026317c43b1b0fe4cf793a78bb53d9c0c011d8a87705abc6eb2"
+    "trajectory_sha256": "4979edc0acfb6883a60c82eb2d92e085f2f52f614f5e2654b2f1688ba73e1bbc"
   },
   {
     "episode_id": 56,
@@ -677,14 +693,154 @@
     "task_type": "pick_heat_then_place_in_recep",
     "gamefile": "alfworld_data/json_2.1.1/valid_seen/pick_heat_then_place_in_recep-Egg-None-Fridge-14/trial_T20190909_091314_636733/game.tw-pddl",
     "suite": "alfworld-seen",
-    "trajectory_sha256": "f9fe24233bb22a0e70b67b79577fa4c5c2e1f1cd62191570eb2ef621f70a79c1"
+    "trajectory_sha256": "1e94627d4de44976462f4d81532fa051d99b4a005a5c30f88c387280172c7439"
   },
   {
     "episode_id": 59,
-    "status": "running",
+    "status": "completed",
     "task_type": "pick_two_obj_and_place",
     "gamefile": "alfworld_data/json_2.1.1/valid_seen/pick_two_obj_and_place-SprayBottle-None-GarbageCan-419/trial_T20190908_164236_518264/game.tw-pddl",
+    "success": true,
+    "score": 1.0,
+    "length": 26,
+    "termination": "success",
     "suite": "alfworld-seen",
-    "trajectory_sha256": "efe9d51c3ae09901683a6efc0c53110441cd03a41782c8116d2ae446a6f4a76a"
+    "trajectory_sha256": "aa59f2c6df07c1ed8e466efd1188821fb23281982e2e7fc7823839edd93c0973"
+  },
+  {
+    "episode_id": 60,
+    "status": "completed",
+    "task_type": "look_at_obj_in_light",
+    "gamefile": "alfworld_data/json_2.1.1/valid_seen/look_at_obj_in_light-Statue-None-DeskLamp-216/trial_T20190909_193045_208933/game.tw-pddl",
+    "success": true,
+    "score": 1.0,
+    "length": 4,
+    "termination": "success",
+    "suite": "alfworld-seen",
+    "trajectory_sha256": "3a029db69ab8f3e8b1820f4aa7b9dc97d8acfea295492ab309119ccea4a5cd5b"
+  },
+  {
+    "episode_id": 61,
+    "status": "completed",
+    "task_type": "pick_and_place_simple",
+    "gamefile": "alfworld_data/json_2.1.1/valid_seen/pick_and_place_simple-Pencil-None-Desk-310/trial_T20190909_113054_894334/game.tw-pddl",
+    "success": true,
+    "score": 1.0,
+    "length": 6,
+    "termination": "success",
+    "suite": "alfworld-seen",
+    "trajectory_sha256": "e34fe0ac647655e4196e0d19cde2fae93325d17f86d5ae9da1c58b221d8fa900"
+  },
+  {
+    "episode_id": 62,
+    "status": "completed",
+    "task_type": "pick_clean_then_place_in_recep",
+    "gamefile": "alfworld_data/json_2.1.1/valid_seen/pick_clean_then_place_in_recep-Mug-None-CoffeeMachine-26/trial_T20190907_233056_022802/game.tw-pddl",
+    "success": true,
+    "score": 1.0,
+    "length": 9,
+    "termination": "success",
+    "suite": "alfworld-seen",
+    "trajectory_sha256": "b2f0cc221579ca05d3bf6e032e37b727ff9311dee72b20872fa69b05fdfdcf36"
+  },
+  {
+    "episode_id": 63,
+    "status": "running",
+    "task_type": "pick_cool_then_place_in_recep",
+    "gamefile": "alfworld_data/json_2.1.1/valid_seen/pick_cool_then_place_in_recep-Tomato-None-GarbageCan-6/trial_T20190909_082934_483899/game.tw-pddl",
+    "suite": "alfworld-seen",
+    "trajectory_sha256": "aadf49b243b37c4f21b5ebacd99f4acceb11e5f1b120544a580595a25a716925"
+  },
+  {
+    "episode_id": 64,
+    "status": "completed",
+    "task_type": "pick_heat_then_place_in_recep",
+    "gamefile": "alfworld_data/json_2.1.1/valid_seen/pick_heat_then_place_in_recep-Plate-None-DiningTable-28/trial_T20190908_001247_096796/game.tw-pddl",
+    "success": true,
+    "score": 1.0,
+    "length": 29,
+    "termination": "success",
+    "suite": "alfworld-seen",
+    "trajectory_sha256": "7ad965748196cd27a5785b4db35f40c519bf4b53d2eef7738a62a274a8cc169f"
+  },
+  {
+    "episode_id": 65,
+    "status": "completed",
+    "task_type": "pick_two_obj_and_place",
+    "gamefile": "alfworld_data/json_2.1.1/valid_seen/pick_two_obj_and_place-Book-None-Desk-302/trial_T20190906_181233_363875/game.tw-pddl",
+    "success": false,
+    "score": 0.0,
+    "length": 50,
+    "termination": "action_limit",
+    "suite": "alfworld-seen",
+    "trajectory_sha256": "172a480db56d7dec9938d54f54d25e46cd68874340a77bc883dff2d2eb204c51"
+  },
+  {
+    "episode_id": 66,
+    "status": "completed",
+    "task_type": "look_at_obj_in_light",
+    "gamefile": "alfworld_data/json_2.1.1/valid_seen/look_at_obj_in_light-Bowl-None-DeskLamp-316/trial_T20190908_230702_962704/game.tw-pddl",
+    "success": true,
+    "score": 1.0,
+    "length": 7,
+    "termination": "success",
+    "suite": "alfworld-seen",
+    "trajectory_sha256": "c0ad2ab29824f6d0c6e11f64c0029fd5384a30ba8dbe32b60f89653bae3210eb"
+  },
+  {
+    "episode_id": 67,
+    "status": "completed",
+    "task_type": "pick_and_place_simple",
+    "gamefile": "alfworld_data/json_2.1.1/valid_seen/pick_and_place_simple-Egg-None-Microwave-4/trial_T20190906_234406_356490/game.tw-pddl",
+    "success": true,
+    "score": 1.0,
+    "length": 9,
+    "termination": "success",
+    "suite": "alfworld-seen",
+    "trajectory_sha256": "17858263bee3f8a182bc9527fb1bea549cd645f27f6f7614bb878fce82516594"
+  },
+  {
+    "episode_id": 68,
+    "status": "running",
+    "task_type": "pick_clean_then_place_in_recep",
+    "gamefile": "alfworld_data/json_2.1.1/valid_seen/pick_clean_then_place_in_recep-Lettuce-None-CounterTop-16/trial_T20190909_051630_092360/game.tw-pddl",
+    "suite": "alfworld-seen",
+    "trajectory_sha256": "92948914280bec7dbb284696c79f84a0869f3e788b28b16ead8fab75f07c2eb7"
+  },
+  {
+    "episode_id": 69,
+    "status": "running",
+    "task_type": "pick_cool_then_place_in_recep",
+    "gamefile": "alfworld_data/json_2.1.1/valid_seen/pick_cool_then_place_in_recep-Tomato-None-CounterTop-12/trial_T20190909_063844_274181/game.tw-pddl",
+    "suite": "alfworld-seen",
+    "trajectory_sha256": "b690a12066a807b56a8909c23c4b4cfde373c5baa31a8da58f7f7d233cbb15ec"
+  },
+  {
+    "episode_id": 70,
+    "status": "running",
+    "task_type": "pick_heat_then_place_in_recep",
+    "gamefile": "alfworld_data/json_2.1.1/valid_seen/pick_heat_then_place_in_recep-Potato-None-Fridge-11/trial_T20190909_011341_436523/game.tw-pddl",
+    "suite": "alfworld-seen",
+    "trajectory_sha256": "76c389e89ecdc0ee109a398d34ed91be6d7486cd4ed76afc06969d0ac6c7904e"
+  },
+  {
+    "episode_id": 71,
+    "status": "completed",
+    "task_type": "pick_two_obj_and_place",
+    "gamefile": "alfworld_data/json_2.1.1/valid_seen/pick_two_obj_and_place-ToiletPaper-None-Toilet-408/trial_T20190909_080302_174780/game.tw-pddl",
+    "success": true,
+    "score": 1.0,
+    "length": 12,
+    "termination": "success",
+    "suite": "alfworld-seen",
+    "trajectory_sha256": "7bd61ecc10bbc10fd035726f0cd70644488207d093e186704f844521066bba9b"
+  },
+  {
+    "episode_id": 72,
+    "status": "running",
+    "task_type": "look_at_obj_in_light",
+    "gamefile": "alfworld_data/json_2.1.1/valid_seen/look_at_obj_in_light-Pillow-None-DeskLamp-323/trial_T20190908_053153_077977/game.tw-pddl",
+    "suite": "alfworld-seen",
+    "trajectory_sha256": "6ca4146cff78b6a7a16ee6d4d92a4f4a9c9e197f6dd5a1c26dfc82dcca498597"
   }
 ]

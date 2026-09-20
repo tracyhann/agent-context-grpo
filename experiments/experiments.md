@@ -1352,3 +1352,23 @@ Method math, scaling-only config diffs, retained 50/15-turn ceilings, model-cach
 status, generation command and CPU validation are in [MAIN_METHOD_7B.md](MAIN_METHOD_7B.md).
 The preparation helper and backbone-aware launcher generate 7B model paths; no
 1.5B checkpoint is reused. GPU memory fit awaits an actual smoke test.
+
+## H2 no-shrink component ablations: history-only / future-only (2026-09-20)
+
+**Prepared only; not launched or queued.** Qwen2.5-1.5B-Instruct, 150 steps,
+seed 0, two GPUs per run. ALFWorld episode weight 0; WebShop episode weight 1.
+History length 2 and hidden+context features remain in all arms; future-only
+removes historical-residual credit, not historical input to the potential.
+
+| Benchmark | Variant | Weights H / F / E | Canonical registry ID | Notes |
+|---|---|---|---|---|
+| alfworld | `CCPO-ATTNCRED-TWO-STEP-NOSHRINK-HISTORY-ONLY` | 1 / 0 / 0 | `ccpo-attncred-abl-fph2-noshrink-history-only-alfworld-1.5b` | [NOTES](m10-h2-noshrink-history-only-alfworld-1.5b-2gpu-20260920/NOTES.md) |
+| alfworld | `CCPO-ATTNCRED-TWO-STEP-NOSHRINK-FUTURE-ONLY` | 0 / 1 / 0 | `ccpo-attncred-abl-fph2-noshrink-future-only-alfworld-1.5b` | [NOTES](m10-h2-noshrink-future-only-alfworld-1.5b-2gpu-20260920/NOTES.md) |
+| webshop | `CCPO-ATTNCRED-TWO-STEP-NOSHRINK-HISTORY-ONLY-EPISODE` | 1 / 0 / 1 | `ccpo-attncred-abl-fph2-noshrink-history-only-ep-ws-1.5b` | [NOTES](m11-h2-noshrink-history-only-active-episode-webshop-1.5b-2gpu-20260920/NOTES.md) |
+| webshop | `CCPO-ATTNCRED-TWO-STEP-NOSHRINK-FUTURE-ONLY-EPISODE` | 0 / 1 / 1 | `ccpo-attncred-abl-fph2-noshrink-future-only-ep-ws-1.5b` | [NOTES](m11-h2-noshrink-future-only-active-episode-webshop-1.5b-2gpu-20260920/NOTES.md) |
+
+[Method equations, protocol and reproduction](HISTORY_FUTURE_ABLATIONS.md).
+Each arm disables exactly one contextual channel relative to its matched control.
+Only enabled terms contribute to the normalization mask. Both raw terms remain
+logged; disabled weighted/applied terms are zero. The estimator, actual trainer
+and PPO gradient isolation have dedicated CPU regression tests.

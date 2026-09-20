@@ -90,3 +90,11 @@ now prepared for **Qwen2.5-7B-Instruct, eight GPUs, 150 steps, seed 0**, on both
 benchmarks. See [the four-run plan](MAIN_METHOD_7B.md) for exact configs, resource
 changes, reproduction commands and validation. The original 1.5B experiments
 above retain their recorded protocol. No 7B run is launched or queued.
+
+## History/future component comparisons
+
+[Four 1.5B component ablations](HISTORY_FUTURE_ABLATIONS.md) retain H2, no shrinkage
+and context statistics, disabling either the historical-residual channel or
+future-progress channel. ALFWorld uses EP0; WebShop uses its EP1 comparison.
+These are prepared comparisons; the main method's 1/1 history/future fusion
+remains unchanged.
