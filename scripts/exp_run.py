@@ -719,10 +719,17 @@ def main():
                         f"step_advantage_w {cfg['step_advantage_w']}",
                         f"mode {cfg['adv_mode']}",
                         "invalid-action penalty 0.1",
-                        f"env.max_steps {cfg['max_steps']}", f"env.seed {cfg['seed']}",
+                        *([f"env.max_steps {cfg['max_steps']}"]
+                          if "webshop" not in str(cfg["env_name"]).lower()
+                          or cfg["max_steps"] == WEBSHOP_PROTOCOL["max_steps"] else []),
+                        f"env.seed {cfg['seed']}",
                         f"history_length {cfg['history_length']}"],
             "deltas": _REFERENCE_DELTA + (_WEBSHOP_DELTA
                       if "webshop" in str(cfg["env_name"]).lower() else []) + (
+                      [f"env.max_steps {cfg['max_steps']} instead of the reference "
+                       f"{WEBSHOP_PROTOCOL['max_steps']}: applies to both training and validation"]
+                      if "webshop" in str(cfg["env_name"]).lower()
+                      and cfg["max_steps"] != WEBSHOP_PROTOCOL["max_steps"] else []) + (
                       [f"val_batch_size {cfg['val_batch_size']} not the reference 128: the val"
                        f" set (256 rows) is evaluated in {256 // int(cfg['val_batch_size'])} chunks"
                        f" instead of 2, same episodes. WebShop holds one Ray actor per"

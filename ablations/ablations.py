@@ -108,6 +108,32 @@ ABLATIONS = {
               "Episode weight is 1; applied history + future + episode must equal the actual "
               "masked actor advantage. Context statistics remain enabled; original edge weight stays 0.",
     ),
+    "future-progress-h2-no-credit-shrinkage-30turn": dict(
+        name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-THIRTYTURN-WS",
+        tag="fph2-noshrink-30turn",
+        title="M11 H2 full-strength context baselines with a 30-turn WebShop budget",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("webshop",),
+        delta={"ccpo_lk_fix": 1.0, "max_steps": 30},
+        removes="support-based task-prior shrinkage and the 15-turn episode cutoff",
+        asks="does a 30-turn train/eval budget improve M11 H2 without credit shrinkage?",
+        watch="env.max_steps=30 applies to training and validation; history and future "
+              "horizon remain 2. Context statistics stay enabled, usable lambda_k=1, "
+              "and episode/original-edge weights stay 0. Pair with the 15-turn no-shrink arm.",
+    ),
+    "future-progress-h2-no-credit-shrinkage-active-episode-30turn": dict(
+        name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-ACTIVE-EPISODE-THIRTYTURN-WS",
+        tag="fph2-noshrink-ep-30turn",
+        title="M11 H2 full-strength baselines and episode credit with a 30-turn WebShop budget",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("webshop",),
+        delta={"ccpo_lk_fix": 1.0, "ccpo_ep_w": 1.0, "max_steps": 30},
+        removes="support-based task-prior shrinkage, episode-credit exclusion and the 15-turn cutoff",
+        asks="does episode supervision improve full-strength H2 credit under a 30-turn budget?",
+        watch="only episode weight changes relative to the 30-turn no-shrink arm; "
+              "A=E+H+F under WebShop mean_norm. Both train/eval use 30 turns, while "
+              "history/future stay 2/2 and original edge stays 0. No final sum normalization.",
+    ),
     # -----------------------------------------------------------------------
     "hard-gate": dict(
         name="CCPO-ATTNCRED-HARDGATE",

@@ -1080,3 +1080,46 @@ the full E+H+F result. CPU tests verify episode-on gradient sensitivity and
 zero-weight gradient isolation in both benchmark modes, along with full-strength
 readouts, masking, configuration deltas and source/overlay parity. GPU execution
 remains untested. Use one source revision for paired controls.
+
+
+### M11 H2 WebShop: 30-turn no-shrink variants (2026-09-20)
+
+Registry names and canonical experiment IDs:
+
+- `CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-THIRTYTURN-WS`:
+  `ccpo-attncred-abl-fph2-noshrink-30turn-ws-1.5b`.
+- `CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-ACTIVE-EPISODE-THIRTYTURN-WS`:
+  `ccpo-attncred-abl-fph2-noshrink-ep-30turn-ws-1.5b`.
+
+**Prepared only; not launched or queued.** Both arms use fresh
+Qwen2.5-1.5B-Instruct, 150 training steps, two GPUs, seed 0 and 8 rollouts/task.
+Training and validation each allow up to **30 actions per episode**. Prompt
+history remains 2 and future progress remains H2; the accumulated context-stat
+vector stays enabled. The recorded GPU IDs are configuration placeholders.
+
+| Arm | Registry key | Paired 15-turn control | Actor advantage |
+|---|---|---|---|
+| [M11 H2 NOSHRINK 30TURN](m11-h2-noshrink-30turn-webshop-1.5b-2gpu-20260920/NOTES.md) | `future-progress-h2-no-credit-shrinkage-30turn` | M11 H2 NOSHRINK | H+F |
+| [M11 H2 NOSHRINK + EP 30TURN](m11-h2-noshrink-active-episode-30turn-webshop-1.5b-2gpu-20260920/NOTES.md) | `future-progress-h2-no-credit-shrinkage-active-episode-30turn` | M11 H2 NOSHRINK + EP | E+H+F |
+
+Each differs from its paired 15-turn configuration only in `max_steps: 15 -> 30`
+(plus the experiment ID); the two new arms differ only in `ccpo_ep_w: 0 -> 1`.
+Usable history/current/future baselines have lambda_k=1, original-edge weight
+is 0, and history/future weights are 1. The future difference remains standardized
+per task; WebShop does not normalize the combined H+F or E+H+F sum. The active
+episode channel preserves the existing mean-centered, task-turn-row calculation
+and per-turn invalid-action penalty.
+
+The 30-turn limit follows the current
+[HGPO WebShop launcher](https://github.com/langfengQ/verl-agent/blob/20bd331bdbc9026a5668e11362178e10ab7400c8/recipe/hgpo/run_qwen2.5_1.5b_webshop_train.sh).
+It is a budget ablation, not an HGPO K=4 reproduction: history remains 2, training
+length remains 150, and all other M11 settings, including the 1,000-item catalogue
+and original item-option scorer, remain the paired controls' settings. More turns
+may change collected trajectories, support and returns; no improvement is assumed.
+Compare each arm against its 15-turn control and compare episode on/off within
+the same turn budget, on one source revision. Generated config metadata records
+30 turns as a deviation from the existing G2PO 15-turn reference.
+
+Per-folder NOTES.md, PREPARED.json, config.json, config diffs, VALIDATION.json and
+source hashes record the implementation and CPU checks. GPU execution remains
+untested; these prepared variants do not change running experiments or queues.

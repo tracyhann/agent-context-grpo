@@ -1,0 +1,51 @@
+{
+  "status": "passed_targeted_cpu_checks",
+  "checked_at": "2026-09-20T09:19:24.505697+00:00",
+  "future_progress_suite": {
+    "status": "passed",
+    "tests": 39,
+    "command": "CUDA_VISIBLE_DEVICES='' .venv-webshop/bin/python -m unittest discover -s tests -p 'test_future_progress*.py' -v",
+    "log": ".local/m11-h2-30turn-20260920/future-progress-tests.log"
+  },
+  "ablation_registry_guard": {
+    "status": "passed",
+    "command": "CUDA_VISIBLE_DEVICES='' .venv-webshop/bin/python ablations/test_ablations.py",
+    "log": ".local/m11-h2-30turn-20260920/registry-guards.log"
+  },
+  "arm_guards": {
+    "status": "passed",
+    "checks": [
+      "test_keys_are_real",
+      "test_matches_control",
+      "test_overlays",
+      "test_flash_attn",
+      "test_trainer_wiring",
+      "test_doc_matches_code"
+    ],
+    "log": ".local/m11-h2-30turn-20260920/arm-doc-guards-targeted.log"
+  },
+  "config_runtime_checks": {
+    "status": "passed",
+    "variants": 2,
+    "parent_delta": "only max_steps and exp_id",
+    "hydra_and_environment": "passed",
+    "webshop_only": "passed",
+    "bash_n": "passed",
+    "reference_metadata": "passed",
+    "30_turn_h2_endpoint_check": "passed"
+  },
+  "pair_delta": "ccpo_ep_w and exp_id only",
+  "syntax_and_whitespace": {
+    "python_compile": "passed",
+    "bash_n": "passed",
+    "git_diff_check": "passed"
+  },
+  "full_repository_guard": {
+    "status": "not_clean",
+    "remaining_failure": "test_self_contained scans provisioned caches, environments and generated local run.sh files for absolute /workspace paths, including pre-existing files. This workspace-wide portability check was not changed. The initial documentation-name failure was fixed; all six scoped arm guards now pass.",
+    "log": ".local/m11-h2-30turn-20260920/arm-doc-guards.log"
+  },
+  "gpu_execution": "not_run",
+  "training_launched": false,
+  "queued": false
+}

@@ -107,3 +107,23 @@ The [experiment plan](../experiments/experiments.md) links both prepared 1.5B,
 150-step, two-GPU configurations and their full math/validation. No run is queued
 or launched. The existing generic registry CLI retains its separate GPU minimum;
 the prepared configs reproduce the recorded two-GPU local protocol.
+
+
+## M11 H2 WebShop: 30-turn no-shrink variants
+
+These WebShop-only registry entries use Qwen2.5-1.5B-Instruct for 150 training
+steps. Both set `max_steps=30` for training and validation, keep prompt history
+and future horizon at 2, and retain context statistics.
+
+| Registry key | Delta from M11 H2 | Episode weight |
+|---|---|---:|
+| `future-progress-h2-no-credit-shrinkage-30turn` | `ccpo_lk_fix=1`, `max_steps=30` | 0 |
+| `future-progress-h2-no-credit-shrinkage-active-episode-30turn` | `ccpo_lk_fix=1`, `ccpo_ep_w=1`, `max_steps=30` | 1 |
+
+Relative to their respective 15-turn no-shrink controls, only `max_steps` changes.
+The two new arms differ from each other only in `ccpo_ep_w`. Their advantage
+formulas remain H+F and E+H+F under WebShop mean_norm; full method definitions,
+paired config diffs and the two-GPU launch preparation are in the
+[no-episode notes](../experiments/m11-h2-noshrink-30turn-webshop-1.5b-2gpu-20260920/NOTES.md)
+and [active-episode notes](../experiments/m11-h2-noshrink-active-episode-30turn-webshop-1.5b-2gpu-20260920/NOTES.md).
+Prepared only; neither arm has been launched or queued.

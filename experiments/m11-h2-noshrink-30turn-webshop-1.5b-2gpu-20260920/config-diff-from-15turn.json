@@ -1,0 +1,13 @@
+{
+  "control": "experiments/m11-h2-no-credit-shrinkage-webshop-1.5b-2gpu-20260919",
+  "changes": {
+    "exp_id": {
+      "control": "m11-h2-no-credit-shrinkage-webshop-1.5b-2gpu-20260919",
+      "prepared": "m11-h2-noshrink-30turn-webshop-1.5b-2gpu-20260920"
+    },
+    "max_steps": {
+      "control": 15,
+      "prepared": 30
+    }
+  }
+}
