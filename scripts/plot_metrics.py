@@ -249,6 +249,9 @@ for _title, _keys, _opts in FIXED_ANCHOR:
                                else "future (exact anchors)") for k in _keys}
 
 FUTURE_PROGRESS = [
+    ("query trajectory excluded (1=yes)", ["ccpo/progress_loo"], {"ylim":(-.03,1.03)}),
+    ("query occurrence kernel weight mass", [f"ccpo/progress_{s}_self_mass_mean" for s in ("history", "current", "future")], {"ylim":(-.03,1.03)}),
+    ("query trajectory kernel weight mass", [f"ccpo/progress_{s}_same_traj_mass_mean" for s in ("history", "current", "future")], {"ylim":(-.03,1.03)}),
     ("current / future contextual potentials", ["ccpo/progress_current_value_mean", "ccpo/progress_future_value_mean"], {}),
     ("potential standard deviations", ["ccpo/progress_current_value_std", "ccpo/progress_future_value_std"], {}),
     ("current / future kernel readouts", ["ccpo/progress_current_kernel_mean", "ccpo/progress_future_kernel_mean"], {}),

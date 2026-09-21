@@ -12,6 +12,7 @@
 #   E3  scale-free distances -- raw ones group by episode position, not credit
 #   E6  cross-trajectory only: 21-47% of occurrences are same-trajectory revisits,
 #       where G_v is downstream of a_u and the baseline stops being valid
+#       (default; the explicit ACG_CCPO_LOO=0 ablation permits self matches).
 #
 # v1 uses a FROZEN context encoder (the plan's P1/P2 rung).  The learned
 # successor-feature variant (P4) is a separate arm: Phase 1 produced no evidence
@@ -61,6 +62,9 @@ _GATE = os.environ.get("ACG_CCPO_GATE", "hard").lower()
 # the angle rather than exponentially in the distance: the ablation for whether the
 # exponential kernel earns its place over a plain similarity score.
 _WMODE = os.environ.get("ACG_CCPO_WMODE", "soft").strip().lower()
+# Default: exclude the complete query trajectory. 0 permits every matched
+# occurrence, including the query itself; padding is still deduplicated upstream.
+_LOO = os.environ.get("ACG_CCPO_LOO", "1")
 
 # Kernel width as a multiple of the bucket's median phi-distance. Only meaningful
 # under the global gate, where it IS the gate: too tight rebuilds exact matching
@@ -573,8 +577,13 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
                         gamma=0.95, success_reward=10.0, target=None,
                         edge_w=None, sim=None, sim_backoff=None,
                         dense_scores=None, value_targets=None, prepared_phi=None,
-                        exact_only=False, dump_enabled=True):
-    """Weighted cross-trajectory leave-one-out step advantage.
+                        exact_only=False, dump_enabled=True, loo=None):
+    """Weighted contextual step advantage; whole-trajectory LOO by default.
+
+    loo=0 includes matching rows from the query trajectory, including the query.
+    min_traj retains its minimum peer support of max(1, min_traj-1); in no-LOO
+    mode the query trajectory can supply one of those peer trajectories.
+    Same-task observation gating and occurrence weighting are unchanged.
 
     phi_feats: optional (n, d) array of per-sample affinity features. When given
     and ACG_CCPO_PHI=hidden, distances are taken on these (whitened batch-wide)
@@ -589,6 +598,10 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
     environment values when None. (They were previously read from the
     environment unconditionally, so an explicitly passed `shrink` was ignored.)
     """
+    loo = _LOO if loo is None else loo
+    if str(loo) not in ("0", "1"):
+        raise ValueError("loo / ACG_CCPO_LOO must be 0 or 1")
+    loo = str(loo) == "1"
     rho = _RHO if rho is None else float(rho)
     shrink = _SHRINK if shrink is None else str(shrink).lower()
     target = _TARGET if target is None else str(target).lower()
@@ -645,7 +658,7 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
     # we find out whether it should. Terminal successors have no node -> -1.
     _node_sz = Counter(NODE) if NODE is not None else Counter()
 
-    # Leave-own-trajectory-out task mean of the target: the credibility prior.
+    # Task credibility prior follows the same trajectory-exclusion policy.
     B_TASK = None
     if (_PRIOR_KAPPA > 0.0 or _LK_FIX != "") and _GATE != "global":
         _ts, _tn = defaultdict(float), defaultdict(int)
@@ -659,9 +672,9 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
         B_TASK = np.full(n, np.nan, dtype=np.float64)
         for _i in range(n):
             _t, _j = str(index[_i]), str(traj_index[_i])
-            _m = _tn[_t] - _jn[(_t, _j)]
+            _m = _tn[_t] - (_jn[(_t, _j)] if loo else 0)
             if _m > 0:
-                B_TASK[_i] = (_ts[_t] - _js[(_t, _j)]) / _m
+                B_TASK[_i] = (_ts[_t] - (_js[(_t, _j)] if loo else 0.0)) / _m
 
     B_VALUE_TASK = None
     if VALUE is not None and B_TASK is not None:
@@ -673,9 +686,9 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
         B_VALUE_TASK = np.full(n, np.nan)
         for i in range(n):
             task, traj = str(index[i]), str(traj_index[i])
-            count = counts[task] - own_counts[(task, traj)]
+            count = counts[task] - (own_counts[(task, traj)] if loo else 0)
             if count:
-                B_VALUE_TASK[i] = (sums[task] - own_sums[(task, traj)]) / count
+                B_VALUE_TASK[i] = (sums[task] - (own_sums[(task, traj)] if loo else 0.0)) / count
 
     adv = np.zeros(n, dtype=np.float64)
     baseline_values = np.full(n, np.nan)
@@ -777,7 +790,8 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
             if not todo:
                 continue
             trajs = [str(traj_index[i]) for i in idx]
-            if len(set(trajs)) < min_traj:
+            required_traj = min_traj if loo else max(1, min_traj - 1)
+            if len(set(trajs)) < required_traj:
                 continue
             _bhash = hashlib.sha1(str(_bkey).encode()).hexdigest()[:10]
             F = PHI[idx] if PHI is not None else \
@@ -790,6 +804,8 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
             # approximation: ||u-v||^2 = ||u||^2 + ||v||^2 - 2 u.v.
             _sq = (F * F).sum(1)
             D = np.sqrt(np.maximum(_sq[:, None] + _sq[None, :] - 2.0 * (F @ F.T), 0.0))
+            if not loo:
+                np.fill_diagonal(D, 0.0)  # Exact self distance, no Gram roundoff.
             off = D[np.triu_indices(len(idx), 1)]
             tau = float(np.median(off)) if off.size and np.median(off) > 1e-9 else 1.0
             tau *= max(float(_TAU_ENV) if _TAU_ENV else tau_scale, 1e-6)
@@ -814,7 +830,7 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
 
             for a in todo:
                 i = idx[a]
-                other = [b for b in range(len(idx)) if trajs[b] != trajs[a]]
+                other = [b for b in range(len(idx)) if not loo or trajs[b] != trajs[a]]
                 if not other:
                     continue
                 if _WMODE == "hard":
@@ -843,7 +859,8 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
                     w = np.exp(-D[a, other] / tau)
                 w_all.extend(w.tolist())
                 # aggregate within each reference trajectory first, then across
-                # them: the independent unit is the trajectory, not the occurrence
+                # them: support is counted by trajectory, not by occurrence.
+                # No-LOO includes the query trajectory; it is not independent.
                 per = defaultdict(lambda: [0.0, 0.0])
                 for k, b in enumerate(other):
                     per[trajs[b]][0] += w[k] * TGT[idx[b]]
@@ -877,7 +894,9 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
                 # because "eb_pooled" needs the whole batch before it can choose one.
                 _rec.append(dict(i=i, lvl=lvl, bhash=_bhash, b_loo=b_loo, b_obs=b_obs,
                                  s2=s2, ne=ne, J=J, var_gain=var_gain, rho=rho_l,
-                                 sig=_sig,
+                                 sig=_sig, peer_rows=float(len(other)),
+                                 self_mass=float(sum(_wv[k] for k,b in enumerate(other) if b == a)),
+                                 same_traj_mass=float(sum(_wv[k] for k,b in enumerate(other) if trajs[b] == trajs[a])),
                                  value_loo=(float(np.dot(_wv, VALUE[oth])) if VALUE is not None else None),
                                  value_obs=(float(VALUE[oth].mean()) if VALUE is not None else None)))
                 assigned[i] = True
@@ -1134,7 +1153,8 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
 
     detail = {k: np.full(n, np.nan) for k in
               ('kernel_values', 'uniform_values', 'task_prior_values', 'support_values',
-               'effective_support_values', 'credibility_values')}
+               'effective_support_values', 'credibility_values',
+               'self_mass_values', 'same_traj_mass_values', 'peer_rows_values')}
     for rec in _rec:
         i = rec['i']
         detail['kernel_values'][i] = rec['b_loo']
@@ -1142,12 +1162,14 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
         detail['task_prior_values'][i] = B_TASK[i] if B_TASK is not None else np.nan
         detail['support_values'][i] = rec['J']
         detail['effective_support_values'][i] = rec['ne']
+        for key in ('self_mass', 'same_traj_mass', 'peer_rows'):
+            detail[key + '_values'][i] = rec[key]
         lk = rec['J']/(rec['J']+_PRIOR_KAPPA) if B_TASK is not None and rec['lvl']==0 else 1.
         if _LK_FIX != "" and B_TASK is not None and rec['lvl']==0:
             lk = min(1.,max(0.,float(_LK_FIX)))
         detail['credibility_values'][i] = lk
     return out, dict(
-        **detail, level_values=level_of, prepared_phi_values=PHI,
+        **detail, level_values=level_of, prepared_phi_values=PHI, loo=float(loo),
         lam_u_mean=float(np.mean(lam_all)) if lam_all else 0.0,
         lam_u_gt50=float(np.mean(np.array(lam_all) > 0.5)) if lam_all else 0.0,
         lam_pooled=(float(lam_pooled) if lam_pooled is not None else float('nan')),

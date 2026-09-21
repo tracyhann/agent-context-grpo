@@ -98,3 +98,11 @@ and context statistics, disabling either the historical-residual channel or
 future-progress channel. ALFWorld uses EP0; WebShop uses its EP1 comparison.
 These are prepared comparisons; the main method's 1/1 history/future fusion
 remains unchanged.
+
+
+## No-LOO comparison
+
+[Two 1.5B no-LOO ablations](NO_LOO_ABLATIONS.md) retain H2, no shrinkage, EP0 on
+both benchmarks, and history/future weights 1/1. They allow the query occurrence
+and matching same-trajectory turns into all contextual readouts. The main method
+above continues to exclude the whole query trajectory by default (`ccpo_loo=1`).

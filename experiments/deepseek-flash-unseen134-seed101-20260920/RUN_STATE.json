@@ -1,40 +1,30 @@
 {
-  "status": "blocked_insufficient_balance",
-  "pid": 644888,
-  "started": "2026-09-20T14:20:13.436391+00:00",
+  "status": "completed",
+  "pid": 670708,
+  "started": "2026-09-21T05:36:40.017595+00:00",
   "command": [
     "/workspace/agent-context-grpo/.venv/bin/python",
     "-u",
-    "/workspace/agent-context-grpo/scripts/deepseek_split_eval.py",
-    "--split",
-    "unseen",
-    "--seed",
-    "101",
+    "/workspace/agent-context-grpo/scripts/resume_deepseek_census.py",
+    "/workspace/agent-context-grpo/experiments/deepseek-flash-unseen134-seed101-20260920/outputs/alfworld-unseen",
     "--workers",
-    "32",
-    "--output",
-    "/workspace/agent-context-grpo/experiments/deepseek-flash-unseen134-seed101-20260920/outputs/alfworld-unseen"
+    "2",
+    "--key-file",
+    "/workspace/agent-context-grpo/baselines/deepseek/DEEPSEEK-API-KEY2.txt"
   ],
-  "log": "/workspace/agent-context-grpo/experiments/deepseek-flash-unseen134-seed101-20260920/run.log",
-  "requested_tasks": 134,
-  "updated": "2026-09-20T14:43:08.826713+00:00",
-  "progress": {
-    "alfworld-unseen": "132/134"
-  },
-  "cost_usd": 3.307043798999999,
-  "ended": "2026-09-20T14:43:08.826765+00:00",
-  "reason": "HTTP402; provider balance endpoint is_available=false",
-  "remaining_episode_ids": [
+  "credential_source_path": "/workspace/agent-context-grpo/baselines/deepseek/DEEPSEEK-API-KEY2.txt",
+  "previous_state": "key2-recovery-20260921/RUN_STATE.before.json",
+  "episode_ids": [
     100,
     123
   ],
-  "saved_action_counts": {
-    "100": 46,
-    "123": 25
+  "saved_actions": 71,
+  "log": "/workspace/agent-context-grpo/experiments/deepseek-flash-unseen134-seed101-20260920/key2-recovery-20260921/resume.log",
+  "requested_tasks": 134,
+  "updated": "2026-09-21T05:49:49.724008+00:00",
+  "progress": {
+    "alfworld-unseen": "134/134"
   },
-  "recovery_command": [
-    "/workspace/agent-context-grpo/.venv/bin/python",
-    "scripts/resume_deepseek_census.py",
-    "/workspace/agent-context-grpo/experiments/deepseek-flash-unseen134-seed101-20260920/outputs/alfworld-unseen"
-  ]
+  "cost_usd": 3.418961348999999,
+  "ended": "2026-09-21T05:49:49.724065+00:00"
 }

@@ -1201,13 +1201,15 @@
   },
   {
     "episode_id": 100,
-    "status": "error",
+    "status": "completed",
     "task_type": "pick_heat_then_place_in_recep",
     "gamefile": "alfworld_data/json_2.1.1/valid_unseen/pick_heat_then_place_in_recep-Apple-None-GarbageCan-10/trial_T20190908_145050_918567/game.tw-pddl",
-    "length": 46,
-    "error": "RuntimeError: API HTTP 402; response body omitted",
+    "success": false,
+    "score": 0.0,
+    "length": 50,
+    "termination": "action_limit",
     "suite": "alfworld-unseen",
-    "trajectory_sha256": "d567d4aa6117e2290e3c89e4031d27a4328a2e17ff7639700c59ad953bf1f7bc"
+    "trajectory_sha256": "cdad32dbee7c6bfc147a04291474deee53c11ab73e916ef0e6b1a02108b50a84"
   },
   {
     "episode_id": 101,
@@ -1475,13 +1477,15 @@
   },
   {
     "episode_id": 123,
-    "status": "error",
+    "status": "completed",
     "task_type": "pick_clean_then_place_in_recep",
     "gamefile": "alfworld_data/json_2.1.1/valid_unseen/pick_clean_then_place_in_recep-Cloth-None-Cabinet-424/trial_T20190908_022436_073995/game.tw-pddl",
-    "length": 25,
-    "error": "RuntimeError: API HTTP 402; response body omitted",
+    "success": false,
+    "score": 0.0,
+    "length": 50,
+    "termination": "action_limit",
     "suite": "alfworld-unseen",
-    "trajectory_sha256": "3a5430fcf4d850241089c51a7f7f51d381264d11662a52ef02bccf0406d8d301"
+    "trajectory_sha256": "67984d95e0fd9b21b766512a84f54acc3f4fa4568dd05df6565cc2b10b0f338b"
   },
   {
     "episode_id": 124,

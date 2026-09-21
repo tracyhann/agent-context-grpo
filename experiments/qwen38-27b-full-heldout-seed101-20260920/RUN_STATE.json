@@ -8,12 +8,19 @@
   ],
   "suites": {
     "alfworld-seen": {
-      "status": "running",
+      "status": "completed",
       "pid": 649191,
-      "started": "2026-09-20T15:21:11.794236+00:00"
+      "started": "2026-09-20T15:21:11.794236+00:00",
+      "returncode": 0,
+      "ended": "2026-09-21T04:22:08.904535+00:00"
+    },
+    "alfworld-unseen": {
+      "status": "running",
+      "pid": 667302,
+      "started": "2026-09-21T04:22:08.907590+00:00"
     }
   },
-  "updated": "2026-09-20T21:33:51.453105+00:00",
+  "updated": "2026-09-21T06:58:23.743395+00:00",
   "training_status": "complete",
   "training_step": 150,
   "training_eval_step": 150,
@@ -44,10 +51,10 @@
   "server_pid": 648982,
   "server_started": "2026-09-20T15:20:11.689156+00:00",
   "server_ready": "2026-09-20T15:21:11.793059+00:00",
-  "current_suite": "alfworld-seen",
+  "current_suite": "alfworld-unseen",
   "progress": {
-    "alfworld-seen": "65/140",
-    "alfworld-unseen": "0/134",
-    "webshop": "0/500"
+    "alfworld-seen": "140/140",
+    "alfworld-unseen": "35/134",
+    "webshop": "323/500"
   }
 }

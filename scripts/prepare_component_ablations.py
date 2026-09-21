@@ -46,6 +46,7 @@ def prepare(benchmark, component, stamp):
     control = ROOT/'experiments'/CONTROLS[benchmark]
     old = json.loads((control/'config.json').read_text())['config']
     old.setdefault('ccpo_progress_history_weight', 1.0)  # Implicit legacy coefficient.
+    old.setdefault('ccpo_loo', 1)  # Implicit legacy trajectory exclusion.
     name = run_name(benchmark, component, stamp)
     folder = ROOT/'experiments'/name
     if folder.exists():
@@ -83,11 +84,11 @@ def prepare(benchmark, component, stamp):
              prepared_at=datetime.now(timezone.utc).isoformat(), source_git=er.git_state())
     record['preparation'] = p
     record['reference_protocol'] = dict(source_config=str(control.relative_to(ROOT)/'config.json'),
-                                      changes=changes, missing_control_defaults={'ccpo_progress_history_weight':1.0})
+                                      changes=changes, missing_control_defaults={'ccpo_progress_history_weight':1.0, 'ccpo_loo':1})
     dump(folder/'config.json',record)
     dump(folder/'PREPARED.json',p)
     dump(folder/'config-diff-from-control.json',dict(control=p['control'],changes=changes,
-         missing_control_defaults={'ccpo_progress_history_weight':1.0}))
+         missing_control_defaults={'ccpo_progress_history_weight':1.0, 'ccpo_loo':1}))
     dump(folder/'prepare-command.json',dict(argv=command,gpu_visibility_for_preparation=''))
     dump(folder/'prepared-source-sha256.json',{s:hashlib.sha256((ROOT/s).read_bytes()).hexdigest() for s in SOURCES})
     (folder/'NOTES.md').write_text(notes(p))

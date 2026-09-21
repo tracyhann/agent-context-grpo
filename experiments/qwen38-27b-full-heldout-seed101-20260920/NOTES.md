@@ -38,3 +38,16 @@ cd /workspace/agent-context-grpo
 ```
 
 `source/` holds immutable snapshots of the adapters, prompts, parsers and scorers. `input-sha256.json`, `source-sha256.json`, `dataset-sha256.json`, package inventories and Git revision record the exact local state, including uncommitted changes. Raw `outputs/<suite>/episodes/*.json` and `api_calls/*.jsonl` hold prompts, observations, actions, responses, seeds, finish reasons and token usage. Raw outputs stay local; summaries remain versionable. Local inference has **$0 API fee**; GPU rental/electricity is not estimated, and server start/end timestamps are retained.
+
+## Acceleration applied September 21, 2026
+
+The original sequential schedule was amended after seen140 completed. WebShop500
+now runs concurrently with the ongoing unseen134 evaluation, using a second
+BF16 server on GPUs2,3, port8019, with compilation/CUDA graphs enabled and 16
+workers. The original unseen server and trajectories remain uninterrupted.
+Model, xhigh thinking, seed formula, generation budget and scoring are retained.
+The old controller joins the managed WebShop execution instead of repeating it.
+Serving configuration differs between the ALFWorld and WebShop suites and is
+recorded explicitly; bit-identical generation across batching/kernels is not
+claimed. [Acceleration commands, measurements, tests and provenance](acceleration-20260921/NOTES.md).
+Parallel WebShop process status: [STATE.json](acceleration-20260921/STATE.json).

@@ -1,0 +1,11 @@
+{
+  "command": [
+    "/workspace/agent-context-grpo/.venv/bin/python",
+    "-u",
+    "/workspace/agent-context-grpo/scripts/run_qwen_parallel_webshop.py",
+    "/workspace/agent-context-grpo/experiments/qwen38-27b-full-heldout-seed101-20260920",
+    "--workers",
+    "16"
+  ],
+  "started": "2026-09-21T04:41:19.509714+00:00"
+}

@@ -1,38 +1,38 @@
 {
   "title": "DeepSeek Flash — unseen ALFWorld134, seed101",
   "provider": "deepseek",
-  "updated": "2026-09-20T14:48:08.177086+00:00",
+  "updated": "2026-09-21T05:49:53.558375+00:00",
   "suites": {
     "alfworld-unseen": {
       "benchmark": "alfworld",
       "split": "unseen",
       "expected": 134,
-      "completed": 132,
+      "completed": 134,
       "running": 0,
-      "errors": 2,
-      "final": false,
+      "errors": 0,
+      "final": true,
       "successes": 104,
-      "success_pct": 78.78787878787878,
-      "score_pct": 78.78787878787878,
-      "api_requests": 2667,
+      "success_pct": 77.61194029850746,
+      "score_pct": 77.61194029850746,
+      "api_requests": 2696,
       "usage": {
-        "prompt_tokens": 1349398,
-        "completion_tokens": 5183059,
+        "prompt_tokens": 1361483,
+        "completion_tokens": 5366567,
         "cache_hit_tokens": 35383,
-        "cache_miss_tokens": 1314015,
-        "reasoning_tokens": 4955478
+        "cache_miss_tokens": 1326100,
+        "reasoning_tokens": 5135806
       },
-      "cost_usd": 3.307043798999999,
+      "cost_usd": 3.418961348999999,
       "unpriced_attempts": 0,
       "rejected_api_attempts": 2,
       "unpriced_ceiling_estimate_usd": 0.0,
       "finish_reasons": {
-        "stop": 2667
+        "stop": 2696
       },
       "models": {
-        "deepseek-flash": 2667
+        "deepseek-flash": 2696
       },
-      "mean_episode_length": 19.666666666666668,
+      "mean_episode_length": 20.119402985074625,
       "task_types": {
         "Pick": {
           "count": 24,
@@ -47,16 +47,16 @@
           "success_pct": 83.33333333333333
         },
         "Clean": {
-          "count": 30,
+          "count": 31,
           "successes": 25,
           "expected": 31,
-          "success_pct": 83.33333333333333
+          "success_pct": 80.64516129032258
         },
         "Heat": {
-          "count": 22,
+          "count": 23,
           "successes": 12,
           "expected": 23,
-          "success_pct": 54.54545454545455
+          "success_pct": 52.17391304347826
         },
         "Cool": {
           "count": 21,
@@ -73,11 +73,11 @@
       }
     }
   },
-  "status": "incomplete",
-  "cost_usd": 3.307043798999999,
+  "status": "completed",
+  "cost_usd": 3.418961348999999,
   "unpriced_attempts": 0,
   "rejected_api_attempts": 2,
   "unpriced_ceiling_estimate_usd": 0.0,
   "previous_completed_api_cost_usd": 9.940843355999993,
-  "combined_api_cost_usd": 13.247887154999992
+  "combined_api_cost_usd": 13.359804704999991
 }

@@ -1,0 +1,30 @@
+{
+  "validated_at": "2026-09-21T04:43:33.631705+00:00",
+  "tests": 11,
+  "test_status": "passed",
+  "optimized_server_health": "passed",
+  "torch_compile_and_cuda_graphs": "enabled per server log",
+  "parallel_webshop_launched": true,
+  "original_unseen_uninterrupted": true,
+  "protocol_preserved": [
+    "pinned Qwen3.8-27B BF16 checkpoint",
+    "native xhigh thinking",
+    "65,536 output cap",
+    "131,072 context",
+    "seed101 per-task/per-turn seeds",
+    "15 actions WebShop",
+    "frozen 500-goal manifest and original scorer"
+  ],
+  "changed": [
+    "WebShop concurrent with unseen",
+    "WebShop server on GPUs2,3 port8019",
+    "compilation and CUDA graphs enabled",
+    "WebShop workers/max sequences 8 to16"
+  ],
+  "coordination": "Original sequential controller joins the managed census and validates every planned task; no duplicate launches",
+  "real_calls_checked": 98,
+  "real_native_reasoning_finished": 98,
+  "throughput_benchmark": "THROUGHPUT.json; synthetic fixed-length requests excluded from evaluation ledgers",
+  "runtime_sources": "source-sha256.json hashes the source/ snapshot captured when the supervisor launched",
+  "final_code_note": "After launch, stop_owned received an additional guard for absent process identity; active supervisor already verified a nonempty identity. No running inference/evaluation code was reloaded."
+}

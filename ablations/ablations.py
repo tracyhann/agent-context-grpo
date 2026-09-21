@@ -72,6 +72,19 @@ ABLATIONS = {
               "remain diagnostic; the disabled channel has exactly zero applied advantage. "
               "Episode weight 1; original edge weight 0; usable context baselines at full strength.",
     ),
+    "future-progress-h2-no-credit-shrinkage-no-loo": dict(
+        name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-NOLOO",
+        tag="fph2-noshrink-noloo",
+        title="M10/M11 H2 no shrinkage, no episode, self-inclusive contextual peers",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("alfworld", "webshop"),
+        delta={"ccpo_lk_fix": 1.0, "ccpo_loo": 0},
+        removes="whole-trajectory leave-one-out exclusion and credit shrinkage",
+        asks="what changes when the contextual readouts may use the query and matching same-trajectory revisits?",
+        watch="History and both potentials include self; exact observation/task gates remain. "
+              "Log self and same-trajectory kernel mass. Episode and original edge weights are 0; "
+              "padding copies are still deduplicated before peer selection.",
+    ),
     # M10 H2: the shared readout applies the delta to history and both potentials.
     "future-progress-h2-no-context-vector": dict(
         name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOCTX",

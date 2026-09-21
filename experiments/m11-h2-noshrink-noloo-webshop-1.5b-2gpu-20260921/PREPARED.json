@@ -1,0 +1,33 @@
+{
+  "ablation": "future-progress-h2-no-credit-shrinkage-no-loo",
+  "backbone": "1.5b",
+  "benchmark": "webshop",
+  "canonical_id": "ccpo-attncred-abl-fph2-noshrink-noloo-ws-1.5b",
+  "control": "experiments/m11-h2-no-credit-shrinkage-webshop-1.5b-2gpu-20260919",
+  "episode_weight": 0.0,
+  "experiment": "m11-h2-noshrink-noloo-webshop-1.5b-2gpu-20260921",
+  "future_horizon": 2,
+  "future_weight": 1.0,
+  "gpu_count": 2,
+  "gpu_preflight_performed": false,
+  "gpus": "2,3",
+  "history_length": 2,
+  "history_weight": 1.0,
+  "lambda_k_fixed": 1.0,
+  "launched": false,
+  "loo": false,
+  "max_steps": 15,
+  "original_edge_weight": 0.0,
+  "prepared_at": "2026-09-21T06:06:27.641457+00:00",
+  "query_included": true,
+  "queued": false,
+  "same_trajectory_matches": true,
+  "seed": 0,
+  "source_git": {
+    "branch": "adb",
+    "commit": "ce6f48b6f125b3f0aa0d4956b5d04f8ddc006c35",
+    "dirty": true
+  },
+  "status": "prepared_not_launched",
+  "steps": 150
+}

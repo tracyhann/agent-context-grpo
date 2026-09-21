@@ -47,6 +47,7 @@ def prepare(benchmark, episode, stamp, gpus):
     control = ROOT/'experiments'/CONTROLS[benchmark, episode]
     old = json.loads((control/'config.json').read_text())['config']
     old.setdefault('ccpo_progress_history_weight', 1.0)  # Legacy runtime default.
+    old.setdefault('ccpo_loo', 1)  # Implicit legacy trajectory exclusion.
     name = run_name(benchmark, episode, stamp)
     destination = ROOT/'experiments'/name
     if destination.exists():

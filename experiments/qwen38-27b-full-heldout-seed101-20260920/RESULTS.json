@@ -1,71 +1,71 @@
 {
   "title": "Qwen3.8-27B — full ALFWorld and WebShop, seed101",
   "provider": "local-qwen",
-  "updated": "2026-09-20T21:33:51.239359+00:00",
+  "updated": "2026-09-21T06:58:22.399965+00:00",
   "suites": {
     "alfworld-seen": {
       "benchmark": "alfworld",
       "split": "seen",
       "expected": 140,
-      "completed": 65,
-      "running": 8,
+      "completed": 140,
+      "running": 0,
       "errors": 0,
-      "final": false,
-      "successes": 45,
-      "success_pct": 69.23076923076923,
-      "score_pct": 69.23076923076923,
-      "api_requests": 1753,
+      "final": true,
+      "successes": 99,
+      "success_pct": 70.71428571428571,
+      "score_pct": 70.71428571428571,
+      "api_requests": 3454,
       "usage": {
-        "prompt_tokens": 1087148,
-        "completion_tokens": 1983263,
+        "prompt_tokens": 2173233,
+        "completion_tokens": 3775382,
         "cache_hit_tokens": 0,
-        "cache_miss_tokens": 1087148
+        "cache_miss_tokens": 2173233
       },
       "cost_usd": 0.0,
       "unpriced_attempts": 0,
       "rejected_api_attempts": 0,
       "unpriced_ceiling_estimate_usd": 0.0,
       "finish_reasons": {
-        "stop": 1753
+        "stop": 3454
       },
       "models": {
-        "Qwen/Qwen3.8-27B@1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0": 1753
+        "Qwen/Qwen3.8-27B@1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0": 3454
       },
-      "mean_episode_length": 24.26153846153846,
+      "mean_episode_length": 24.67142857142857,
       "task_types": {
         "Pick": {
-          "count": 12,
-          "successes": 10,
+          "count": 35,
+          "successes": 30,
           "expected": 35,
-          "success_pct": 83.33333333333333
+          "success_pct": 85.71428571428571
         },
         "Look": {
-          "count": 11,
-          "successes": 7,
+          "count": 13,
+          "successes": 8,
           "expected": 13,
-          "success_pct": 63.63636363636363
+          "success_pct": 61.53846153846154
         },
         "Clean": {
-          "count": 10,
-          "successes": 6,
+          "count": 27,
+          "successes": 18,
           "expected": 27,
-          "success_pct": 60.0
+          "success_pct": 66.66666666666667
         },
         "Heat": {
-          "count": 10,
-          "successes": 5,
+          "count": 16,
+          "successes": 9,
           "expected": 16,
-          "success_pct": 50.0
+          "success_pct": 56.25
         },
         "Cool": {
-          "count": 10,
-          "successes": 9,
+          "count": 25,
+          "successes": 18,
           "expected": 25,
-          "success_pct": 90.0
+          "success_pct": 72.0
         },
         "Pick2": {
-          "count": 12,
-          "successes": 8,
+          "count": 24,
+          "successes": 16,
           "expected": 24,
           "success_pct": 66.66666666666667
         }
@@ -75,58 +75,67 @@
       "benchmark": "alfworld",
       "split": "unseen",
       "expected": 134,
-      "completed": 0,
-      "running": 0,
+      "completed": 35,
+      "running": 8,
       "errors": 0,
       "final": false,
-      "successes": 0,
-      "success_pct": null,
-      "score_pct": null,
-      "api_requests": 0,
-      "usage": {},
+      "successes": 31,
+      "success_pct": 88.57142857142857,
+      "score_pct": 88.57142857142857,
+      "api_requests": 807,
+      "usage": {
+        "prompt_tokens": 491312,
+        "completion_tokens": 830038,
+        "cache_hit_tokens": 0,
+        "cache_miss_tokens": 491312
+      },
       "cost_usd": 0.0,
       "unpriced_attempts": 0,
       "rejected_api_attempts": 0,
       "unpriced_ceiling_estimate_usd": 0.0,
-      "finish_reasons": {},
-      "models": {},
-      "mean_episode_length": null,
+      "finish_reasons": {
+        "stop": 807
+      },
+      "models": {
+        "Qwen/Qwen3.8-27B@1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0": 807
+      },
+      "mean_episode_length": 18.057142857142857,
       "task_types": {
         "Pick": {
-          "count": 0,
-          "successes": 0,
-          "expected": null,
-          "success_pct": null
+          "count": 7,
+          "successes": 7,
+          "expected": 24,
+          "success_pct": 100.0
         },
         "Look": {
-          "count": 0,
-          "successes": 0,
-          "expected": null,
-          "success_pct": null
+          "count": 6,
+          "successes": 6,
+          "expected": 18,
+          "success_pct": 100.0
         },
         "Clean": {
-          "count": 0,
-          "successes": 0,
-          "expected": null,
-          "success_pct": null
+          "count": 6,
+          "successes": 4,
+          "expected": 31,
+          "success_pct": 66.66666666666667
         },
         "Heat": {
-          "count": 0,
-          "successes": 0,
-          "expected": null,
-          "success_pct": null
+          "count": 5,
+          "successes": 4,
+          "expected": 23,
+          "success_pct": 80.0
         },
         "Cool": {
-          "count": 0,
-          "successes": 0,
-          "expected": null,
-          "success_pct": null
+          "count": 6,
+          "successes": 5,
+          "expected": 21,
+          "success_pct": 83.33333333333333
         },
         "Pick2": {
-          "count": 0,
-          "successes": 0,
-          "expected": null,
-          "success_pct": null
+          "count": 5,
+          "successes": 5,
+          "expected": 17,
+          "success_pct": 100.0
         }
       }
     },
@@ -134,22 +143,31 @@
       "benchmark": "webshop",
       "split": "test",
       "expected": 500,
-      "completed": 0,
-      "running": 0,
+      "completed": 323,
+      "running": 16,
       "errors": 0,
       "final": false,
-      "successes": 0,
-      "success_pct": null,
-      "score_pct": null,
-      "api_requests": 0,
-      "usage": {},
+      "successes": 101,
+      "success_pct": 31.269349845201237,
+      "score_pct": 42.625447308109855,
+      "api_requests": 3938,
+      "usage": {
+        "prompt_tokens": 5356189,
+        "completion_tokens": 4724864,
+        "cache_hit_tokens": 0,
+        "cache_miss_tokens": 5356189
+      },
       "cost_usd": 0.0,
       "unpriced_attempts": 0,
       "rejected_api_attempts": 0,
       "unpriced_ceiling_estimate_usd": 0.0,
-      "finish_reasons": {},
-      "models": {},
-      "mean_episode_length": null
+      "finish_reasons": {
+        "stop": 3938
+      },
+      "models": {
+        "Qwen/Qwen3.8-27B@1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0": 3938
+      },
+      "mean_episode_length": 11.789473684210526
     }
   },
   "status": "in_progress",

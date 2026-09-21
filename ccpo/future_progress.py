@@ -224,7 +224,8 @@ def ccpo_future_progress_advantage(*, turn_index, episode_lengths, horizon=1,
         response_lengths=_numpy(canonical['response_mask'].sum(-1)).astype(int))
     if arrays['target'].ndim > 1:
         arrays['target'] = (arrays['target'] * _numpy(canonical['response_mask'])).sum(-1)
-    diag.update(progress_enabled=1., progress_horizon=float(horizon), progress_weight=float(progress_weight),
+    diag.update(progress_enabled=1., progress_loo=diag['loo'],
+                progress_horizon=float(horizon), progress_weight=float(progress_weight),
                 progress_history_weight=float(history_weight), progress_episode_weight=0., progress_original_edge_weight=0.,
                 progress_live_frac=float(live.mean()),
                 progress_eligible_frac=float(eligible.mean()), progress_terminal_frac=float(terminal.mean()),
@@ -240,7 +241,8 @@ def ccpo_future_progress_advantage(*, turn_index, episode_lengths, horizon=1,
         for label, key in [('kernel', 'kernel_values'), ('uniform', 'uniform_values'),
                            ('task_prior', 'task_prior_values'), ('J', 'support_values'),
                            ('n_eff', 'effective_support_values'), ('lambda_k', 'credibility_values'),
-                           ('level', 'level_values')]:
+                           ('level', 'level_values'), ('self_mass', 'self_mass_values'),
+                           ('same_traj_mass', 'same_traj_mass_values'), ('peer_rows', 'peer_rows_values')]:
             x = np.asarray(src[key]).copy(); arrays[source + '_' + label] = x
             _stats(diag, source + '_' + label, x, hist_live if source == 'history' else np.isfinite(current))
             if source == 'current':

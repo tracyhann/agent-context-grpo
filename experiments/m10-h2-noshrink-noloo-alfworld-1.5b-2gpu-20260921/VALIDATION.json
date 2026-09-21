@@ -1,0 +1,103 @@
+{
+  "artifact_sha256": {
+    "NOTES.md": "a6c7326409a529d91cc6cf12e40049fc7d3ec6fb79dbbb7d734e6bacdde0a717",
+    "config-diff-from-control.json": "66307ed789cd7c18e6aecbb02550af380f1226c44bf3dc508d83711482f96ef2",
+    "config.json": "7582bab5c80728e892b442ff74c634132bd4ebcf3c1298695134e5e7fddb282a",
+    "run.sh": "5e6d96ababd77c720e3466ea8e7c42a1b43a9ad36339deb79ab424ec7ea5bff0",
+    "validation-no-loo.log": "ac8fdc02ea8b6612b04d0a9aa51392b8a790c5402377b0d78e9753995fc6ae29",
+    "validation-registry.log": "e28da03fb98626ee5ea025e35c952858c1e30e31f5530c7cb21507811dda8e9f",
+    "validation-regression.log": "6bdeb60e43a2ac51ce13ad3bc93fbbcb87a438834eeeffe2c5901c199e3756f1"
+  },
+  "benchmark": "alfworld",
+  "checked_at": "2026-09-21T06:11:43.501126+00:00",
+  "checks": [
+    {
+      "argv": [
+        ".venv/bin/python",
+        "-m",
+        "unittest",
+        "test_future_progress_no_loo",
+        "-v"
+      ],
+      "exit_code": 0
+    },
+    {
+      "argv": [
+        ".venv/bin/python",
+        "-m",
+        "unittest",
+        "test_future_progress_components",
+        "test_future_progress",
+        "test_future_progress_active_episode",
+        "test_future_progress_ablation",
+        "test_future_progress_webshop_ablation",
+        "test_future_progress_hidden_compat",
+        "test_episode_adv_isolation",
+        "test_main_7b",
+        "test_outlook",
+        "test_fixed_anchor",
+        "-v"
+      ],
+      "exit_code": 0
+    },
+    {
+      "argv": [
+        ".venv/bin/python",
+        "ablations/test_ablations.py"
+      ],
+      "exit_code": 0
+    },
+    {
+      "check": "ccpo.test_arms.test_doc_matches_code()",
+      "passed": true
+    },
+    {
+      "check": "bash -n on both prepared run.sh files",
+      "passed": true
+    },
+    {
+      "check": "git diff --check",
+      "passed": true
+    }
+  ],
+  "coverage": [
+    "self and same-trajectory matched kernel weights and support",
+    "singleton exact groups and same-task observation gating",
+    "history/current/future readout self dependence and default LOO parity",
+    "task and auxiliary value priors obey exclusion mode",
+    "strict padded-feature checks and duplicate/shuffle invariance",
+    "actual trainer/PPO gradient changes with no LOO; raw episode diagnostics cannot flow into EP0 gradient",
+    "fresh processes using both prepared environments activate no LOO",
+    "full matched config comparison changes only exclusion and experiment identity"
+  ],
+  "cpu_only": true,
+  "env": {
+    "CUDA_VISIBLE_DEVICES": "",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "PYTHONPATH": "tests:."
+  },
+  "experiment": "m10-h2-noshrink-noloo-alfworld-1.5b-2gpu-20260921",
+  "focused_tests_passed": 10,
+  "gpu_validation_performed": false,
+  "limitations": [
+    "CPU estimator and actual trainer/loss fixtures; no GPU forward, rollout, or optimizer training step executed"
+  ],
+  "regression_tests_passed": 79,
+  "source_sha256": {
+    "ablations/ablations.py": "11bdb1f2f8e02e3c86fb926f7f58b0962a623624d5a2584174f8447ea0047ded",
+    "ccpo/arms.py": "4c930ee857e7846cf4709a69b0a012f833e3f7b135757fff9d6138f37ea07585",
+    "ccpo/core_ccpo.py": "d3dac41eeb05d084073d665e2cc240a4fc428f33d17cc0f5c5026821cf4969b6",
+    "ccpo/future_progress.py": "7cfdb6320a6f646eda1c8c7fe0a47dc20c5da9b4064ba0e1270a63e3208234d7",
+    "ccpo/outlook.py": "10190257cee49607b133fe745c1d35013840be1b857baa5679917b79d95d8ffb",
+    "patches/verl-agent/verl/trainer/ppo/ray_trainer.py": "8a2bd50d4a4bc33dfcc7cb7e6bc597b2514dea5859a70df35a9c7cf85135bc21",
+    "scripts/exp_run.py": "f8200b76677b7a38ad36231f4158ac2debae68400eb2abcfa81feef112b1bd15",
+    "scripts/plot_metrics.py": "a1cccd8e8e7cce82673d54232890617ca5df96e59a085d8ab49143c4de9317cc",
+    "scripts/prepare_no_loo_ablations.py": "05b02cdb1d92156baa4ce0a7827313ae5bc590042d662f1416339b97c3c7a7d2",
+    "tests/test_future_progress_no_loo.py": "9ab8122f8c3d32d553d322ddd7f6ac1e22e9db9f998f6546a37840dfef121850",
+    "verl-agent/verl/trainer/ppo/ray_trainer.py": "8a2bd50d4a4bc33dfcc7cb7e6bc597b2514dea5859a70df35a9c7cf85135bc21"
+  },
+  "status": "passed",
+  "training_launched": false,
+  "unit_tests_passed": 89
+}

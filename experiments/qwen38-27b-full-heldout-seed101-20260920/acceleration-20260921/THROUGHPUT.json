@@ -1,0 +1,171 @@
+{
+  "created": "2026-09-21T04:39:29.654333+00:00",
+  "purpose": "Serving throughput diagnostic only; synthetic fixed-length requests excluded from benchmark scores",
+  "model": "Qwen/Qwen3.8-27B@1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+  "port": 8019,
+  "compiled": true,
+  "graphs": true,
+  "gpus": [
+    2,
+    3
+  ],
+  "runs": [
+    {
+      "concurrency": 1,
+      "tokens": 256,
+      "elapsed_s": 5.380877450981643,
+      "tokens_per_s": 47.575883734965466,
+      "median_request_s": 5.3767941179685295,
+      "requests": [
+        {
+          "seconds": 5.3767941179685295,
+          "tokens": 256,
+          "finish_reason": "length"
+        }
+      ]
+    },
+    {
+      "concurrency": 8,
+      "tokens": 2048,
+      "elapsed_s": 6.550857303023804,
+      "tokens_per_s": 312.6308367386763,
+      "median_request_s": 6.52962162901531,
+      "requests": [
+        {
+          "seconds": 6.482656851992942,
+          "tokens": 256,
+          "finish_reason": "length"
+        },
+        {
+          "seconds": 6.529709534021094,
+          "tokens": 256,
+          "finish_reason": "length"
+        },
+        {
+          "seconds": 6.529688384034671,
+          "tokens": 256,
+          "finish_reason": "length"
+        },
+        {
+          "seconds": 6.529554873995949,
+          "tokens": 256,
+          "finish_reason": "length"
+        },
+        {
+          "seconds": 6.52814974001376,
+          "tokens": 256,
+          "finish_reason": "length"
+        },
+        {
+          "seconds": 6.5283811439876445,
+          "tokens": 256,
+          "finish_reason": "length"
+        },
+        {
+          "seconds": 6.546206781000365,
+          "tokens": 256,
+          "finish_reason": "length"
+        },
+        {
+          "seconds": 6.545604923041537,
+          "tokens": 256,
+          "finish_reason": "length"
+        }
+      ]
+    },
+    {
+      "concurrency": 16,
+      "tokens": 4096,
+      "elapsed_s": 6.996766377997119,
+      "tokens_per_s": 585.4132864691294,
+      "median_request_s": 6.9684772874752525,
+      "requests": [
+        {
+          "seconds": 6.9263000339851715,
+          "tokens": 256,
+          "finish_reason": "length"
+        },
+        {
+          "seconds": 6.902402150037233,
+          "tokens": 256,
+          "finish_reason": "length"
+        },
+        {
+          "seconds": 6.950738443003502,
+          "tokens": 256,
+          "finish_reason": "length"
+        },
+        {
+          "seconds": 6.950232114002574,
+          "tokens": 256,
+          "finish_reason": "length"
+        },
+        {
+          "seconds": 6.949310039984994,
+          "tokens": 256,
+          "finish_reason": "length"
+        },
+        {
+          "seconds": 6.948422582005151,
+          "tokens": 256,
+          "finish_reason": "length"
+        },
+        {
+          "seconds": 6.948389298981056,
+          "tokens": 256,
+          "finish_reason": "length"
+        },
+        {
+          "seconds": 6.970967169036157,
+          "tokens": 256,
+          "finish_reason": "length"
+        },
+        {
+          "seconds": 6.970024171983823,
+          "tokens": 256,
+          "finish_reason": "length"
+        },
+        {
+          "seconds": 6.970207245962229,
+          "tokens": 256,
+          "finish_reason": "length"
+        },
+        {
+          "seconds": 6.969370326958597,
+          "tokens": 256,
+          "finish_reason": "length"
+        },
+        {
+          "seconds": 6.968494694971014,
+          "tokens": 256,
+          "finish_reason": "length"
+        },
+        {
+          "seconds": 6.968459879979491,
+          "tokens": 256,
+          "finish_reason": "length"
+        },
+        {
+          "seconds": 6.98820020101266,
+          "tokens": 256,
+          "finish_reason": "length"
+        },
+        {
+          "seconds": 6.987518863985315,
+          "tokens": 256,
+          "finish_reason": "length"
+        },
+        {
+          "seconds": 6.9865783409914,
+          "tokens": 256,
+          "finish_reason": "length"
+        }
+      ]
+    }
+  ],
+  "original_observed_tokens_per_s": {
+    "1": 12.1,
+    "8": 91.6
+  },
+  "comparison_caveat": "Original rates are production observations, not a controlled same-batch benchmark"
+}

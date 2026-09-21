@@ -43,7 +43,7 @@ The previous seen140 + WebShop500 run cost **$9.940843356** in received usage, p
 
 After both datasets complete, `finalize.py` verifies the frozen source/data inputs and writes [COMBINED_RESULTS.md](COMBINED_RESULTS.md), joining seen140, unseen134 and WebShop500 with separate and total costs. `REPLAY_VALIDATION.json` records one successful and one horizon-failure unseen episode replayed locally with exact prompts, actions, observations and scores, without API calls.
 
-## Current interruption: insufficient API balance
+## Original interruption: insufficient API balance (resolved September 21)
 
 The first invocation completed **132/134** tasks with **104 successes** and stopped with HTTP402 on episodes100 (46 saved actions) and123 (25 saved actions). The provider balance endpoint confirmed `is_available=false`. Neither interrupted task has been counted as a completed failure; the full134 score remains pending. All returned responses are retained. Received usage cost is **$3.307043799**; the two HTTP402 rejections are tracked separately from unknown-usage transport interruptions.
 
@@ -58,3 +58,44 @@ cd /workspace/agent-context-grpo
 The helper checks balance first. It rebuilds the exact unseen environment, replays the71 saved actions/responses, checks their prompt hashes, then requests only the remaining continuation. Originals are archived and completed tasks are untouched. Its insufficient-credit path was checked and issued zero generation requests. Source snapshots include the recovery helper. After completion, rerun the reporter, update the final audit and run `finalize.py` to generate the combined table.
 
 `RESUME_VALIDATION.json` independently confirms both interrupted prefixes (46 +25 =71 actions) replay exactly, including their next-request hashes; zero API calls were made.
+
+## September 21 recovery with replacement credential
+
+The user supplied `baselines/deepseek/DEEPSEEK-API-KEY2.txt` and authorized finishing
+the two interrupted tasks. Recovery started at 2026-09-21 05:36:40 UTC with two
+CPU workers. The runtime credential override leaves the original config, old
+credential file, 132 completed trajectories and saved responses intact. No key
+contents or key hashes are recorded.
+
+```bash
+.venv/bin/python scripts/resume_deepseek_census.py \
+  experiments/deepseek-flash-unseen134-seed101-20260920/outputs/alfworld-unseen \
+  --workers 2 --key-file baselines/deepseek/DEEPSEEK-API-KEY2.txt
+```
+
+The helper replays episode100's 46 and episode123's 25 saved actions with prompt
+hash validation; API calls begin only after each saved prefix is exhausted.
+Model alias, thinking/high, 65,536 token cap, history2, seed101 and 50-action
+ceiling are retained. Separate recovery metadata records the credential source
+path and counts of replayed versus new responses.
+
+[key2-recovery-20260921/BEFORE.json](key2-recovery-20260921/BEFORE.json) records
+all 132 completed trajectory hashes, the original config hash, prefix lengths
+and pre-recovery cost. The two interrupted trajectories and their API ledgers
+are also archived. [INPUT_VERIFICATION.json](key2-recovery-20260921/INPUT_VERIFICATION.json)
+checks 892 original pinned inputs. The only changed input revisions are the two
+credential-override helpers and the unrelated Qwen scheduling entrypoint; each
+old/new hash and reason is retained. All other benchmark/source/data inputs
+match. The finalizer accepts only those exact verified revisions.
+
+Three CPU regression tests passed: cached turns make no new API calls, the key
+override does not mutate the original config, replay mismatch rejects new calls,
+and completed tasks are skipped. Logs and recovery source snapshots are retained
+in `key2-recovery-20260921/`. Current official Flash rates were rechecked and
+recorded in [PRICING.json](key2-recovery-20260921/PRICING.json); they match the
+existing usage reporter. New continuation cost is separated from the original
+unseen and combined seen/unseen/WebShop totals in the final recovery report.
+
+### Recovery completed and audited
+
+All **134/134** unseen tasks completed; **104/134 = 77.61%**. The new key funded 29 new requests costing **$0.111918**. All 132 prior completed trajectories and all 71 cached actions/responses are unchanged. [Recovery audit and costs](key2-recovery-20260921/RESULTS.md); [combined final results](COMBINED_RESULTS.md).

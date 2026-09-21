@@ -204,6 +204,7 @@ DEFAULTS = {
 
     # CCPO estimator knobs (see ccpo/core_ccpo.py)
     "ccpo_phi": "hidden",
+    "ccpo_loo": 1,  # 0 includes matched own-trajectory rows, including the query itself
     "ccpo_rho": 0.59,
     "ccpo_shrink": "eb",
     "ccpo_whiten": 3,
@@ -352,7 +353,7 @@ ENV_KEYS = {
     "ccpo_prior_kappa": "ACG_CCPO_PRIOR_KAPPA", "keep_ckpts": "ACG_KEEP_CKPTS",
     "pin_steps": "ACG_PIN_STEPS",
     "ccpo_lam_fix": "ACG_CCPO_LAM_FIX", "ccpo_wmode": "ACG_CCPO_WMODE", "ccpo_ep_w": "ACG_CCPO_EP_W", "ccpo_ctx_w": "ACG_CCPO_CTX_W",
-    "ccpo_lk_fix": "ACG_CCPO_LK_FIX",
+    "ccpo_lk_fix": "ACG_CCPO_LK_FIX", "ccpo_loo": "ACG_CCPO_LOO",
     "ccpo_gate": "ACG_CCPO_GATE", "ccpo_tau": "ACG_CCPO_TAU",
     "ccpo_std": "ACG_CCPO_STD", "ccpo_std_floor": "ACG_CCPO_STD_FLOOR",
     "ccpo_step_norm": "ACG_CCPO_STEP_NORM",
@@ -424,6 +425,8 @@ def validate_future_progress_config(cfg):
     """Reject unsupported feature modes before setup, model probes or launch."""
     if cfg.get("arm", "ccpo") != "ccpo":
         return
+    if str(cfg.get("ccpo_loo", 1)) not in ("0", "1"):
+        raise ValueError("ccpo_loo must be 0 or 1")
     horizon = cfg.get("ccpo_progress_horizon", 0)
     if horizon not in (0, 1, 2):
         raise ValueError("ccpo_progress_horizon must be 0, 1 or 2")

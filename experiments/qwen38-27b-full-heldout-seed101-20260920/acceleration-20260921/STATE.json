@@ -1,0 +1,38 @@
+{
+  "status": "evaluating_webshop",
+  "started": "2026-09-21T04:41:19.670318+00:00",
+  "coordinator_pid": 668506,
+  "server_pid": 667744,
+  "server_start_ticks": "43765911",
+  "gpus": [
+    2,
+    3
+  ],
+  "command": [
+    "/workspace/agent-context-grpo/.venv-webshop/bin/python",
+    "-u",
+    "/workspace/agent-context-grpo/scripts/qwen_census_eval.py",
+    "--suite",
+    "webshop",
+    "--seed",
+    "101",
+    "--workers",
+    "16",
+    "--max-tokens",
+    "65536",
+    "--max-model-len",
+    "131072",
+    "--output",
+    "/workspace/agent-context-grpo/experiments/qwen38-27b-full-heldout-seed101-20260920/outputs/webshop",
+    "--webshop-goal-manifest",
+    "/workspace/agent-context-grpo/experiments/qwen38-27b-full-heldout-seed101-20260920/webshop-goals-seed101.json",
+    "--base-url",
+    "http://127.0.0.1:8019/v1",
+    "--managed-owner"
+  ],
+  "output": "/workspace/agent-context-grpo/experiments/qwen38-27b-full-heldout-seed101-20260920/outputs/webshop",
+  "workers": 16,
+  "updated": "2026-09-21T06:58:28.536165+00:00",
+  "evaluator_pid": 668509,
+  "evaluator_start_ticks": "43805406"
+}

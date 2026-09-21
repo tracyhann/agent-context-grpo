@@ -1,0 +1,10 @@
+{
+  "checked": "2026-09-21T04:41:19.669909+00:00",
+  "original_inputs": 889,
+  "allowed_changes": {
+    "scripts/qwen_census_eval.py": {
+      "original": "87681f1bed5a2f9da7ade58cd617bae15615734b2cf942b7c9bde596ec020503",
+      "accelerated": "17a463882491516e8233325d37a71a53832ef6313cfe499b2ef91b0fc84bce4a"
+    }
+  }
+}

@@ -70,7 +70,7 @@ class MainSevenBTests(unittest.TestCase):
             self.assertIn('actor_rollout_ref.rollout.tensor_model_parallel_size=2',record['hydra_overrides'])
             self.assertEqual(record['env']['CUDA_VISIBLE_DEVICES'],'0,1,2,3,4,5,6,7')
             for key,env in prep.er.ENV_KEYS.items():
-                if key == 'ccpo_progress_history_weight' and key not in cfg:
+                if key in ('ccpo_progress_history_weight', 'ccpo_loo') and key not in cfg:
                     self.assertEqual(prep.er.DEFAULTS[key], 1.0); self.assertNotIn(env, record['env'])
                 else:
                     self.assertEqual(record['env'][env],str(cfg[key]),env)

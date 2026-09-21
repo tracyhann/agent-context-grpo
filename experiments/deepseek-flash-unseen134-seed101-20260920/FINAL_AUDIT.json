@@ -1,13 +1,31 @@
 {
-  "status": "incomplete",
-  "checked": "2026-09-20T14:43:08.826765+00:00",
+  "status": "passed",
+  "checked": "2026-09-21T05:49:49.724065+00:00",
   "suite_counts": {
-    "alfworld-unseen": 132
+    "alfworld-unseen": 134
   },
   "checks": [
     "Complete unique planned task census",
     "Actual environment task identity",
     "Received request/trajectory reconciliation",
     "Usage and cost accounting"
-  ]
+  ],
+  "key2_recovery": {
+    "previously_completed_trajectories_unchanged": 132,
+    "replayed_actions_unchanged": 71,
+    "new_received_requests": 29,
+    "continuation_cost_usd": 0.11191754999999999,
+    "original_config_unchanged": true,
+    "credential_contents_logged": false
+  },
+  "source_and_data_hashes_verified": 892,
+  "verified_source_updates": [
+    "scripts/qwen_census_eval.py",
+    "scripts/resume_deepseek_census.py",
+    "scripts/recover_deepseek_eval.py"
+  ],
+  "source_update_verification": "key2-recovery-20260921/INPUT_VERIFICATION.json",
+  "local_replays": "REPLAY_VALIDATION.json",
+  "combined_results": "COMBINED_RESULTS.json",
+  "finalized": "2026-09-21T05:49:54.089878+00:00"
 }

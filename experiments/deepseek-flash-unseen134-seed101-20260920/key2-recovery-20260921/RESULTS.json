@@ -1,0 +1,37 @@
+{
+  "status": "completed_and_audited",
+  "finished_at": "2026-09-21T05:49:54.237215+00:00",
+  "credential_source_path": "/workspace/agent-context-grpo/baselines/deepseek/DEEPSEEK-API-KEY2.txt",
+  "previously_completed_trajectories_preserved": 132,
+  "replayed_actions": 71,
+  "new_received_requests": 29,
+  "episodes": [
+    {
+      "episode_id": 100,
+      "replayed_actions": 46,
+      "new_actions": 4,
+      "total_actions": 50,
+      "success": false,
+      "termination": "action_limit"
+    },
+    {
+      "episode_id": 123,
+      "replayed_actions": 25,
+      "new_actions": 25,
+      "total_actions": 50,
+      "success": false,
+      "termination": "action_limit"
+    }
+  ],
+  "completed": 134,
+  "successes": 104,
+  "success_pct": 77.61194029850746,
+  "mean_turns_all": 20.119402985074625,
+  "mean_turns_wins": 11.5,
+  "continuation_cost_usd": 0.11191754999999999,
+  "total_unseen_cost_usd": 3.418961348999999,
+  "all_benchmarks_cost_usd": 13.359804704999991,
+  "prior_unpriced_allowance_usd": 0.15768915,
+  "new_unpriced_attempts": 0,
+  "validation": "Three CPU regression tests; exact saved-prefix/ledger equality; 132 trajectory hashes and config hash preserved; complete census and cost reconciliation passed"
+}

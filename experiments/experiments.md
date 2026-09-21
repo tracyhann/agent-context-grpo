@@ -1372,3 +1372,50 @@ Each arm disables exactly one contextual channel relative to its matched control
 Only enabled terms contribute to the normalization mask. Both raw terms remain
 logged; disabled weighted/applied terms are zero. The estimator, actual trainer
 and PPO gradient isolation have dedicated CPU regression tests.
+
+## Qwen3.8 evaluation acceleration (2026-09-21)
+
+Seen140 completed at 99/140 = 70.71%. Unseen134 continues on the original GPUs0,1
+server. WebShop500 started concurrently on idle GPUs2,3 with compiled CUDA-graph
+serving and 16 workers, preserving the pinned model, BF16, xhigh reasoning,
+seed101 and 65,536 output cap. The original chain joins the managed WebShop
+execution without repeating tasks. [Runtime changes and reproduction](qwen38-27b-full-heldout-seed101-20260920/acceleration-20260921/NOTES.md).
+
+## DeepSeek full evaluation completed after credential replacement (2026-09-21)
+
+The two interrupted ALFWorld unseen tasks were resumed with the user-supplied
+second credential. All 71 saved responses were replayed without API calls;
+29 new requests completed the remaining actions. Both tasks reached the 50-action
+ceiling without success. All 132 previously completed trajectories and the
+original config remain byte-identical. Full census and cost audits passed.
+
+Final DeepSeek Flash seed101: **seen 105/140 = 75.00%**, **unseen 104/134 = 77.61%**,
+**WebShop score 27.87 / success 22.00% (110/500)**. New continuation cost
+**$0.111918**; unseen total **$3.418961**; all three splits **$13.359805** in
+received-usage charges, plus a separate historical unknown-usage allowance up
+to $0.157689. No new unknown-usage attempts occurred.
+
+[Final task-type tables and costs](deepseek-flash-unseen134-seed101-20260920/COMBINED_RESULTS.md),
+[recovery audit and reproduction](deepseek-flash-unseen134-seed101-20260920/key2-recovery-20260921/RESULTS.md).
+
+
+## 2026-09-21: M10 / M11 H2 main-method no-LOO ablations
+
+Prepared two matched **1.5B, 150-step, two-GPU** variants: H2, no credit shrinkage,
+no episode advantage, no original edge. Whole-trajectory exclusion is disabled
+with `ccpo_loo=0`: the query turn and matching same-trajectory revisits can enter
+history/current/future contextual readouts. Padding replicas are still removed.
+
+Registry key `future-progress-h2-no-credit-shrinkage-no-loo`; variant
+`CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-NOLOO`.
+Canonical IDs `ccpo-attncred-abl-fph2-noshrink-noloo-alfworld-1.5b` and
+`ccpo-attncred-abl-fph2-noshrink-noloo-ws-1.5b`.
+
+[Full math, support semantics, diagnostics and reproduction](NO_LOO_ABLATIONS.md).
+[M10 ALFWorld notes](m10-h2-noshrink-noloo-alfworld-1.5b-2gpu-20260921/NOTES.md);
+[M11 WebShop notes](m11-h2-noshrink-noloo-webshop-1.5b-2gpu-20260921/NOTES.md).
+Both use **EP0**, including WebShop. Only peer exclusion differs from the selected
+main controls; prepared configs document the formerly implicit default flags.
+Own-occurrence and own-trajectory kernel mass are logged and plotted alongside
+support, applied coefficients and actor identity checks. **Prepared only: no
+launch, queue entry, GPU reservation or training result.**

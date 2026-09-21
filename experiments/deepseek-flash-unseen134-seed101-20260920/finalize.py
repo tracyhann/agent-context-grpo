@@ -11,7 +11,18 @@ assert a['status']==b['status']=='completed','Both runs must complete before fin
 assert json.loads((old/'FINAL_AUDIT.json').read_text())['status']=='passed'
 assert json.loads((exp/'REPLAY_VALIDATION.json').read_text())['status']=='passed'
 inputs=json.loads((exp/'input-sha256.json').read_text())
-for name,digest in inputs.items():assert hashlib.sha256((root/name).read_bytes()).hexdigest()==digest,name
+# Credential rotation changes only the recovery entrypoints. Preserve original
+# hashes and accept precisely the revisions independently recorded before resume.
+verification=exp/'key2-recovery-20260921/INPUT_VERIFICATION.json'
+updates=json.loads(verification.read_text())['allowed_changes'] if verification.exists() else {}
+changed_inputs=[]
+for name,digest in inputs.items():
+    current=hashlib.sha256((root/name).read_bytes()).hexdigest()
+    if current!=digest:
+        change=updates.get(name,{})
+        assert change.get('original')==digest and change.get('current')==current,name
+        changed_inputs.append(name)
+assert json.loads((exp/'FINAL_AUDIT.json').read_text())['status']=='passed'
 seen=a['benchmarks']['alfworld'];unseen=b['suites']['alfworld-unseen'];ws=a['benchmarks']['webshop']
 assert (seen['completed'],unseen['completed'],ws['completed'])==(140,134,500)
 allowance=a['unpriced_charge_ceiling_estimate_usd']+b['unpriced_ceiling_estimate_usd']
@@ -35,6 +46,8 @@ lines+=['','| WebShop | Score | Succ. |','|---|---:|---:|',f"| 500 test goals | 
     f"{result['unpriced_attempts']} interrupted attempts lacked returned usage. Their charges are excluded above; conservative additional allowance **up to ${allowance:.6f}**. This is an allowance assuming full output caps, not measured usage or an invoice.",'',
     '[Unseen protocol and reproduction](NOTES.md); [seen/WebShop protocol and reproduction](../deepseek-flash-default-full-seed101-20260920/NOTES.md). Exact tasks, data/package/source snapshots and raw prompt/action/token ledgers are retained. API generation is not seedable; seed101 fixes the environment and task order. Model aliases can change over time.','']
 (exp/'COMBINED_RESULTS.md').write_text('\n'.join(lines))
-audit=json.loads((exp/'FINAL_AUDIT.json').read_text());audit.update(source_and_data_hashes_verified=len(inputs),local_replays='REPLAY_VALIDATION.json',combined_results='COMBINED_RESULTS.json',finalized=result['completed'])
+audit=json.loads((exp/'FINAL_AUDIT.json').read_text());audit.update(source_and_data_hashes_verified=len(inputs),verified_source_updates=changed_inputs,
+    source_update_verification=str(verification.relative_to(exp)) if updates else None,
+    local_replays='REPLAY_VALIDATION.json',combined_results='COMBINED_RESULTS.json',finalized=result['completed'])
 (exp/'FINAL_AUDIT.json').write_text(json.dumps(audit,indent=2)+'\n')
 print(json.dumps({k:result[k] for k in ['incremental_unseen_cost_usd','combined_api_cost_usd','unpriced_attempts','unpriced_charge_ceiling_estimate_usd']}))
