@@ -58,29 +58,3 @@ endpoint and full-strength baseline checks; the actual trainer's episode-zero
 gradient-isolation test under no shrinkage; actual ALFWorld/WebShop prompt checks;
 config/Hydra/environment checks; shell syntax; and six scoped arm/documentation
 guards. GPU execution remains untested. See VALIDATION.json for details.
-
-
-## Refreshed preparation — 2026-09-21
-
-Revalidated for the requested **M10 ALFWorld 1.5B, no shrinkage, history 1 /
-future 1** run. Reuse this existing arm: 150 steps, seed 0, two GPUs (`0,1`),
-50-turn ceiling, context statistics enabled, episode/original-edge weights 0/0.
-Whole-query-trajectory LOO remains enabled. Both H/F actor coefficients are 1.
-
-The current launcher explicitly exports `ACG_CCPO_LOO=1` and
-`ACG_CCPO_PROGRESS_HISTORY_WEIGHT=1.0`, resolving previously implicit defaults.
-The scientific configuration is unchanged. Compared with H2 no-shrink, only the
-history window and future horizon change from 2 to 1. The two added explicit
-config fields equal the main control's old runtime defaults.
-
-[Current CPU validation](refresh-20260921/VALIDATION.json) verifies the full
-config/Hydra/environment mapping, matched H2 delta, shell syntax, H1 endpoints,
-full-strength history/current/future baselines, LOO, terminal values, actual PPO
-episode-gradient isolation, and the real ALFWorld prompt's one-turn history.
-[Validation script](refresh-20260921/validate.py) reproduces these checks;
-[source hashes](refresh-20260921/source-sha256.json) record the refreshed code.
-The earlier preparation files are archived in `refresh-20260921/*.before`;
-the original dated validation/source manifest remains as historical provenance.
-
-Run remains **prepared only, not launched or queued**. No GPU training step was
-performed. The launch command above points to the refreshed `run.sh`.

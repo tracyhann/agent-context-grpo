@@ -1,0 +1,23 @@
+{
+  "checked_at": "2026-09-21T22:43:15.813636+00:00",
+  "checks": [
+    "matched full config, Hydra and environment mapping",
+    "bash -n",
+    "history/future window 1/1; H/F coefficients 1/1; EP0; LOO enabled",
+    "H1 endpoint temporal alignment and terminal 10/0 potential",
+    "lambda_k=1 and baseline=kernel for history/current/future",
+    "actual trainer/PPO loss and gradient isolation under no shrinkage",
+    "actual ALFWorld prompt retains one previous observation/action pair; accumulated memory remains"
+  ],
+  "command": [
+    ".venv/bin/python",
+    "experiments/m10-history1-future1-noshrink-alfworld-1.5b-2gpu-20260920/refresh-20260921/validate.py"
+  ],
+  "estimator_or_trainer_changes": false,
+  "exit_code": 0,
+  "gpu_execution": "not_run",
+  "launched": false,
+  "log": "validation.log",
+  "queued": false,
+  "status": "passed_targeted_cpu_checks"
+}

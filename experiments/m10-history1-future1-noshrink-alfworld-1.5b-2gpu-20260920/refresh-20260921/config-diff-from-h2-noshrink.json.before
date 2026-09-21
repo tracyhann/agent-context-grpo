@@ -1,0 +1,17 @@
+{
+  "control": "experiments/m10-h2-no-credit-shrinkage-alfworld-1.5b-2gpu-20260919",
+  "changes": {
+    "ccpo_progress_horizon": {
+      "before": 2,
+      "after": 1
+    },
+    "exp_id": {
+      "before": "m10-h2-no-credit-shrinkage-alfworld-1.5b-2gpu-20260919",
+      "after": "m10-history1-future1-noshrink-alfworld-1.5b-2gpu-20260920"
+    },
+    "history_length": {
+      "before": 2,
+      "after": 1
+    }
+  }
+}

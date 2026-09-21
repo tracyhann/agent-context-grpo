@@ -1419,3 +1419,15 @@ main controls; prepared configs document the formerly implicit default flags.
 Own-occurrence and own-trajectory kernel mass are logged and plotted alongside
 support, applied coefficients and actor identity checks. **Prepared only: no
 launch, queue entry, GPU reservation or training result.**
+
+
+### 2026-09-21: M10 ALFWorld 1.5B history-1 / future-1 no-shrink preparation refreshed
+
+Reused the existing `future-progress-history1-future1-no-credit-shrinkage` arm:
+[M10 configuration and method notes](m10-history1-future1-noshrink-alfworld-1.5b-2gpu-20260920/NOTES.md).
+History window 1, future horizon 1, lambda_u=lambda_k=1, H/F weights 1/1,
+episode/original-edge weights 0/0, context statistics enabled, whole-trajectory
+LOO on. Qwen2.5-1.5B-Instruct, 150 steps, seed 0, two GPUs, ALFWorld 50-turn cap.
+The launcher now pins previously implicit LOO/history-weight defaults explicitly.
+Targeted CPU checks passed, including actual ALFWorld prompt and PPO gradient
+isolation. **Prepared only; no launch, queue entry or GPU reservation.**

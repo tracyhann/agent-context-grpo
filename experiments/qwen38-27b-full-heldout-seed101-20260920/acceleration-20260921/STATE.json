@@ -1,5 +1,5 @@
 {
-  "status": "evaluating_webshop",
+  "status": "completed",
   "started": "2026-09-21T04:41:19.670318+00:00",
   "coordinator_pid": 668506,
   "server_pid": 667744,
@@ -32,7 +32,18 @@
   ],
   "output": "/workspace/agent-context-grpo/experiments/qwen38-27b-full-heldout-seed101-20260920/outputs/webshop",
   "workers": 16,
-  "updated": "2026-09-21T06:58:28.536165+00:00",
+  "updated": "2026-09-21T08:19:38.315284+00:00",
   "evaluator_pid": 668509,
-  "evaluator_start_ticks": "43805406"
+  "evaluator_start_ticks": "43805406",
+  "evaluator_returncode": 0,
+  "metrics": {
+    "status": "completed",
+    "requested": 500,
+    "completed": 500,
+    "errors": 0,
+    "observed_success_rate": 0.29,
+    "observed_score": 0.394812813852814
+  },
+  "ended": "2026-09-21T08:19:32.307400+00:00",
+  "server_stopped": "2026-09-21T08:19:38.315252+00:00"
 }

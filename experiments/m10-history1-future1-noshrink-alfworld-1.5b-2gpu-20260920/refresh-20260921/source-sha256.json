@@ -1,0 +1,27 @@
+{
+  "captured_at": "2026-09-21T22:43:15.813636+00:00",
+  "sha256": {
+    "ablations/ablations.py": "11bdb1f2f8e02e3c86fb926f7f58b0962a623624d5a2584174f8447ea0047ded",
+    "ccpo/arms.py": "4c930ee857e7846cf4709a69b0a012f833e3f7b135757fff9d6138f37ea07585",
+    "ccpo/core_ccpo.py": "d3dac41eeb05d084073d665e2cc240a4fc428f33d17cc0f5c5026821cf4969b6",
+    "ccpo/future_progress.py": "7cfdb6320a6f646eda1c8c7fe0a47dc20c5da9b4064ba0e1270a63e3208234d7",
+    "experiments/m10-history1-future1-noshrink-alfworld-1.5b-2gpu-20260920/NOTES.md": "58ff220abf14363d46f54e288c6b89446405229293ffa47b231f6707fe57ba1b",
+    "experiments/m10-history1-future1-noshrink-alfworld-1.5b-2gpu-20260920/PREPARED.json": "55d6591bd21a1562e0cff11b26a5fecb830b248a81c11842de1b83ad57c8601e",
+    "experiments/m10-history1-future1-noshrink-alfworld-1.5b-2gpu-20260920/config-diff-from-h2-noshrink.json": "27ddb9e76dfaf84a35a708eb98d0eef4fdc7564443e07b7753ad5f2635aaff74",
+    "experiments/m10-history1-future1-noshrink-alfworld-1.5b-2gpu-20260920/config.json": "9a1cd4495497316a4950fe2cf9d4d1909cd3521672c629433e4056de1e27e5f2",
+    "experiments/m10-history1-future1-noshrink-alfworld-1.5b-2gpu-20260920/refresh-20260921/prepare-command.json": "aeffc37e9f2e29b14dd34b85eab430f8898bda8c09f29d6bbb4163a9d18e91ec",
+    "experiments/m10-history1-future1-noshrink-alfworld-1.5b-2gpu-20260920/refresh-20260921/validate.py": "d7fb2857067fc18dacc2da8a524cb6403bf10db565e8b4ca77ff07772976816c",
+    "experiments/m10-history1-future1-noshrink-alfworld-1.5b-2gpu-20260920/run.sh": "e60096959c4fab95cf119939dccec070d5c4e0eeaac8fe8c0d50d48203e699f2",
+    "patches/verl-agent/verl/trainer/ppo/ray_trainer.py": "8a2bd50d4a4bc33dfcc7cb7e6bc597b2514dea5859a70df35a9c7cf85135bc21",
+    "scripts/exp_run.py": "f8200b76677b7a38ad36231f4158ac2debae68400eb2abcfa81feef112b1bd15",
+    "tests/test_future_progress.py": "7703d06f9a0d8c6db08b22e0881cb39f11c690833e7d8783378c4bc3a415cf50",
+    "verl-agent/agent_system/environments/env_manager.py": "7fb709ad7b07e959ca535a12cbc8c6835f8f9968015f5aa9ef2d772b647c1cad",
+    "verl-agent/agent_system/memory/memory.py": "d9940bf9d49442f76667b80aff7e80b7c93f37bef015b06641e60229bb3f0d9c",
+    "verl-agent/verl/trainer/ppo/ray_trainer.py": "8a2bd50d4a4bc33dfcc7cb7e6bc597b2514dea5859a70df35a9c7cf85135bc21"
+  },
+  "source_git": {
+    "branch": "adb",
+    "commit": "ac8910a47798cc72f0b3023a288a2f7194f556cc",
+    "dirty": true
+  }
+}

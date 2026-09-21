@@ -1,7 +1,7 @@
 {
   "title": "Qwen3.8-27B — full ALFWorld and WebShop, seed101",
   "provider": "local-qwen",
-  "updated": "2026-09-21T06:58:22.399965+00:00",
+  "updated": "2026-09-21T15:49:33.633435+00:00",
   "suites": {
     "alfworld-seen": {
       "benchmark": "alfworld",
@@ -75,67 +75,67 @@
       "benchmark": "alfworld",
       "split": "unseen",
       "expected": 134,
-      "completed": 35,
-      "running": 8,
+      "completed": 134,
+      "running": 0,
       "errors": 0,
-      "final": false,
-      "successes": 31,
-      "success_pct": 88.57142857142857,
-      "score_pct": 88.57142857142857,
-      "api_requests": 807,
+      "final": true,
+      "successes": 99,
+      "success_pct": 73.88059701492537,
+      "score_pct": 73.88059701492537,
+      "api_requests": 3358,
       "usage": {
-        "prompt_tokens": 491312,
-        "completion_tokens": 830038,
+        "prompt_tokens": 2047401,
+        "completion_tokens": 3544824,
         "cache_hit_tokens": 0,
-        "cache_miss_tokens": 491312
+        "cache_miss_tokens": 2047401
       },
       "cost_usd": 0.0,
       "unpriced_attempts": 0,
       "rejected_api_attempts": 0,
       "unpriced_ceiling_estimate_usd": 0.0,
       "finish_reasons": {
-        "stop": 807
+        "stop": 3358
       },
       "models": {
-        "Qwen/Qwen3.8-27B@1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0": 807
+        "Qwen/Qwen3.8-27B@1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0": 3358
       },
-      "mean_episode_length": 18.057142857142857,
+      "mean_episode_length": 25.059701492537314,
       "task_types": {
         "Pick": {
-          "count": 7,
-          "successes": 7,
+          "count": 24,
+          "successes": 23,
           "expected": 24,
-          "success_pct": 100.0
+          "success_pct": 95.83333333333333
         },
         "Look": {
-          "count": 6,
-          "successes": 6,
+          "count": 18,
+          "successes": 12,
           "expected": 18,
-          "success_pct": 100.0
-        },
-        "Clean": {
-          "count": 6,
-          "successes": 4,
-          "expected": 31,
           "success_pct": 66.66666666666667
         },
+        "Clean": {
+          "count": 31,
+          "successes": 19,
+          "expected": 31,
+          "success_pct": 61.29032258064516
+        },
         "Heat": {
-          "count": 5,
-          "successes": 4,
+          "count": 23,
+          "successes": 14,
           "expected": 23,
-          "success_pct": 80.0
+          "success_pct": 60.869565217391305
         },
         "Cool": {
-          "count": 6,
-          "successes": 5,
+          "count": 21,
+          "successes": 17,
           "expected": 21,
-          "success_pct": 83.33333333333333
+          "success_pct": 80.95238095238095
         },
         "Pick2": {
-          "count": 5,
-          "successes": 5,
+          "count": 17,
+          "successes": 14,
           "expected": 17,
-          "success_pct": 100.0
+          "success_pct": 82.3529411764706
         }
       }
     },
@@ -143,34 +143,34 @@
       "benchmark": "webshop",
       "split": "test",
       "expected": 500,
-      "completed": 323,
-      "running": 16,
+      "completed": 500,
+      "running": 0,
       "errors": 0,
-      "final": false,
-      "successes": 101,
-      "success_pct": 31.269349845201237,
-      "score_pct": 42.625447308109855,
-      "api_requests": 3938,
+      "final": true,
+      "successes": 145,
+      "success_pct": 29.0,
+      "score_pct": 39.4812813852814,
+      "api_requests": 6000,
       "usage": {
-        "prompt_tokens": 5356189,
-        "completion_tokens": 4724864,
+        "prompt_tokens": 8189451,
+        "completion_tokens": 7210749,
         "cache_hit_tokens": 0,
-        "cache_miss_tokens": 5356189
+        "cache_miss_tokens": 8189451
       },
       "cost_usd": 0.0,
       "unpriced_attempts": 0,
       "rejected_api_attempts": 0,
       "unpriced_ceiling_estimate_usd": 0.0,
       "finish_reasons": {
-        "stop": 3938
+        "stop": 6000
       },
       "models": {
-        "Qwen/Qwen3.8-27B@1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0": 3938
+        "Qwen/Qwen3.8-27B@1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0": 6000
       },
-      "mean_episode_length": 11.789473684210526
+      "mean_episode_length": 12.0
     }
   },
-  "status": "in_progress",
+  "status": "completed",
   "cost_usd": 0.0,
   "unpriced_attempts": 0,
   "rejected_api_attempts": 0,
