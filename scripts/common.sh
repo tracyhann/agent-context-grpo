@@ -12,9 +12,17 @@
 #  4. RAY_* thread caps + ray_init.num_cpus=64
 #     Ray otherwise sizes itself from nproc (256) and prestarts a worker per CPU. This
 #     container allows 8192 pids; 128 train env actors + GPU workers already use ~7.5k.
-#  5. VAL_BATCH=64 (upstream 128)    one ray actor is built per validation env; 128 train
-#     + 128 val actors exceed the pid ceiling. All 128 validation games still run, in two
-#     chunks. This changes evaluation batching only, never the objective.
+#  5. VAL_BATCH=128 (upstream 128)   RESTORED. It was lowered to 64 because 128 train +
+#     128 val ray actors exceeded the pid ceiling -- but the 128 train actors came from
+#     passing env.rollout.n=8 to a val_only run, and validation envs are ALWAYS built
+#     with group_n=1 (env_manager.py:813/850), so those actors were never used. The eval
+#     scripts now pass env.rollout.n=1 and the pressure is gone.
+#     The old note claimed halving this "changes evaluation batching only, never the
+#     objective". That was wrong. ALFWorld hands games out PER WORKER -- each worker
+#     shuffles its own copy of the pool and reset() takes the next one -- so 128 workers
+#     playing one game each and 64 workers playing two each are different samples, not
+#     two chunks of one. That is where the repeat-weighting came from: a 140-episode
+#     pass covering only 92 distinct games, counting some up to 4 times.
 #  6. GPU_MEM_UTIL=0.3 (upstream 0.6)  upstream's 0.6 assumes the actor is offloaded or
 #     sharded across a bigger tensor-parallel group. At 0.6 a 1.5B reference allocated
 #     ~99 GB on a 96 GB card and died inside vLLM's cumem wake_up.
@@ -30,7 +38,7 @@ VENV=${VENV:-$REPO_ROOT/.venv/bin/python3}
 ALFWORLD_DATA=${ALFWORLD_DATA:-$REPO_ROOT/alfworld_data}
 DATA_DIR=${DATA_DIR:-$REPO_ROOT/envdata/verl_data/text}
 HF_HOME=${HF_HOME:-$REPO_ROOT/hf}
-VAL_BATCH=${VAL_BATCH:-64}
+VAL_BATCH=${VAL_BATCH:-128}
 GPU_MEM_UTIL=${GPU_MEM_UTIL:-0.3}
 RAY_CPUS=${RAY_CPUS:-64}
 

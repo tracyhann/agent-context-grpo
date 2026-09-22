@@ -4,9 +4,16 @@
 #   scripts/evaluate.sh <method> <size> <benchmark> <checkpoint> [gpus]
 #   scripts/evaluate.sh hgpo 7b alfworld runs/hgpo-7b-alfworld-20260918/outputs/checkpoints/global_step_150
 #
-# WHY FIVE SEEDS. One 128-game evaluation at T=0.4 is noisy: the same FROZEN checkpoint
-# scored 83.6 / 86.7 / 89.1 on the first three of these -- a 5.5-point spread with no
-# training variance at all. Every headline number in RESULTS.md is a multi-seed mean ± std,
+# WHY FIVE SEEDS. One 128-game evaluation is noisy: the same FROZEN checkpoint scored
+# 83.6 / 86.7 / 89.1 on the first three of these -- a 5.5-point spread with no training
+# variance at all.
+#
+# That spread is TASK DRAW, not temperature. These seeds move env.seed only; the vLLM
+# sampler seed is rollout.seed, which defaults to 0 and is pinned to DECODE_SEED below,
+# so all five evaluations decode identically. Prefer scripts/census.sh, which plays the
+# whole split once (zero sampling variance) and reproduces any 128-task draw offline
+# from its per-episode dump -- five seeds of GPU time for one pass, and an exact answer
+# instead of an average of five noisy ones. Every headline number in RESULTS.md is a multi-seed mean ± std,
 # and a single evaluation must never be quoted. A training run's own final score is the
 # worst case of this: HGPO 7B logged 92.2 at step 160, while the 3-seed mean of that exact
 # checkpoint is 96.09 ± 0.78.
@@ -86,7 +93,9 @@ for SEED in $SEEDS; do
       actor_rollout_ref.rollout.val_kwargs.temperature=0.4 \
       actor_rollout_ref.rollout.val_kwargs.do_sample=True \
       algorithm.gamma=0.95 env.env_name="$ENV_NAME" env.resources_per_worker.num_cpus=0.1 \
-      env.seed="$SEED" env.history_length=2 env.max_steps="$MAX_STEPS" env.rollout.n=8 \
+      env.seed="$SEED" env.history_length=2 env.max_steps="$MAX_STEPS" \
+      env.rollout.n=1 \
+      +actor_rollout_ref.rollout.seed="${DECODE_SEED:-0}" \
       ray_init.num_cpus="$RAY_CPUS" trainer.critic_warmup=0 "trainer.logger=[console]" \
       trainer.project_name=baselines_eval trainer.experiment_name="$TAG-s$SEED" \
       trainer.n_gpus_per_node="$NG" trainer.nnodes=1 \
@@ -99,7 +108,11 @@ for SEED in $SEEDS; do
   [ -z "${sc:-}" ] && sc=$("$HERE/../logging/extract_val.py" "$D/outputs/train.log" 2>/dev/null)
   if [ -n "${sc:-}" ]; then echo "RESULT seed=$SEED $(awk "BEGIN{printf \"%.2f\", 100*$sc}")%"
   else echo "RESULT seed=$SEED PARSE-FAILED (see $D/outputs/train.log)"; fi
-  for p in $(ps -eo pid,args | awk '/[r]ay::|[r]aylet|[g]cs_server/ {print $1}'); do kill -9 "$p" 2>/dev/null; done
+  # Only this run's ray session. The previous pattern matched /ray::/ box-wide, which
+  # on a shared pid namespace also kills every other container's actors mid-run.
+  for p in $(ps -eo pid,args --no-headers | grep -F "$RT" | grep -v grep | awk '{print $1}'); do
+    kill -9 "$p" 2>/dev/null
+  done
   rm -rf "$RT"; sleep 20
 done
 "$HERE/../logging/summarise_eval.py" "/workspace/baseline-repo/runs/$TAG"

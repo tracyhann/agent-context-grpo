@@ -201,6 +201,37 @@ Checkpoint pinning: `logging/pin_checkpoint.sh <ckpt_dir> <step> <name>` hard-li
 checkpoint so the trainer's rotation cannot delete it (hard links cost no disk until the
 trainer removes its own copy).
 
+## Evaluation: census, not multi-seed sampling
+
+`scripts/evaluate.sh` scores a *sample* of the held-out split and repeats it
+across five seeds to average the sampling noise out. `scripts/census.sh` plays
+the whole split **exactly once** instead, which makes sampling variance zero, and
+then reproduces any 128-task draw offline from a per-episode dump at no GPU cost.
+
+Prefer it. One pass replaces five, and you get the whole sampling distribution
+rather than five draws from it:
+
+```bash
+census/apply_census_patch.py /workspace/baselines/verl-agent   # once per tree
+scripts/census.sh hgpo 7b alfworld <ckpt> 0,1,2,3 101
+census/census_draw.py <run>/outputs/episodes.jsonl --seeds 997 101 3173 869 2917
+census/census_draw.py <run>/outputs/episodes.jsonl --draws 20000
+```
+
+Why it is needed, and the two traps it avoids: `census/README.md`. The short
+version is that neither environment hands out its tasks exactly once — a
+140-episode ALFWorld pass covers about 92 distinct games and counts some of them
+up to four times — so the reported figure is a re-weighted average whose weights
+move with the seed.
+
+The same finding explains why `VAL_BATCH` is back at 128: halving it was never
+"batching only". ALFWorld hands games out per worker, so 64 workers playing two
+games each is a different sample from 128 playing one each. The pid pressure that
+forced the change came from `env.rollout.n=8` building 128 **training** env
+actors inside a `val_only` run that never touches them — validation envs are
+always built with `group_n=1` (`env_manager.py:813/850`). The eval paths now pass
+`env.rollout.n=1`; `train.sh` still uses 8, where it belongs.
+
 ## Gotchas learned the hard way
 
 - **Resume needs the original GPU count.** FSDP shards are saved as
