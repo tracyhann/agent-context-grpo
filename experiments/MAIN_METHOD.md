@@ -123,3 +123,12 @@ from H2 no-shrink EP0; earlier WebShop EP1 component comparisons remain availabl
 that actor channel; history 0 also removes prior prompt turns while retaining
 the task goal. Context statistics and whole-trajectory LOO remain enabled.
 These are prepared ablations; the designated main method remains H2.
+
+
+## WebShop active-episode peer and representation comparisons
+
+[Three EP1 ablations](WEBSHOP_EP1_ABLATIONS.md) independently allow same-trajectory
+peers, remove context statistics, or replace soft weights with clipped cosine.
+Each retains H2/no shrinkage and active episode weight 1 on the same 1.5B,
+150-step, 15-turn WebShop protocol. They compare against the EP1 control; the
+primary method designation above remains EP0. All are prepared only.

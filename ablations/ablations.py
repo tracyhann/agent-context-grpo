@@ -254,6 +254,32 @@ ABLATIONS = {
               "Episode weight is 1; applied history + future + episode must equal the actual "
               "masked actor advantage. Context statistics remain enabled; original edge weight stays 0.",
     ),
+    "future-progress-h2-no-credit-shrinkage-active-episode-no-loo": dict(
+        name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-ACTIVE-EPISODE-NOLOO",
+        tag="fph2-noshrink-ep-noloo",
+        title="M11 H2 no shrinkage, active episode, self-inclusive contextual peers",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("webshop",),
+        delta={"ccpo_lk_fix": 1.0, "ccpo_ep_w": 1.0, "ccpo_loo": 0},
+        removes="whole-query-trajectory exclusion under the full-strength EP1 control",
+        asks="does allowing the query and matching same-trajectory turns improve H2 credit with episode supervision?",
+        watch="Self inclusion applies to history and both potentials; padding copies are "
+              "still deduplicated. H/F/episode weights are 1/1/1, original edge 0. "
+              "Exact observation groups, context statistics and the soft kernel remain.",
+    ),
+    "future-progress-h2-no-credit-shrinkage-active-episode-no-context-vector": dict(
+        name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-ACTIVE-EPISODE-NOCTX",
+        tag="fph2-noshrink-ep-noctx",
+        title="M11 H2 no shrinkage, active episode, hidden-only contextual baselines",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("webshop",),
+        delta={"ccpo_lk_fix": 1.0, "ccpo_ep_w": 1.0, "ccpo_ctx_w": 0.0},
+        removes="the accumulated context-statistics block under the full-strength EP1 control",
+        asks="does the context summary help H2 credit when episode advantage is active?",
+        watch="History and both potentials use processed frozen hidden states (1536 dims "
+              "on 1.5B). Prompt history remains 2; LOO and soft weighting remain. "
+              "H/F/episode weights are 1/1/1, with no final fused normalization.",
+    ),
     "future-progress-h2-no-credit-shrinkage-cosine": dict(
         name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-COS",
         tag="fph2-noshrink-cos",

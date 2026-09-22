@@ -1475,3 +1475,25 @@ prompt retains the task goal and current observation, with no prior turns.
 Initial and positive-history prompts keep their existing behavior. ALFWorld turn
 ceiling 50, seed 0 and the rest of the main protocol remain matched.
 **Prepared only: none launched, queued or assigned GPUs.**
+
+
+### 2026-09-22: M11 H2 no shrinkage + active episode peer/representation ablations
+
+Three independent **1.5B / 150-step / two-GPU / 15-turn** preparations use
+`A=A_CC+A_EP=H+F+E`, with H/F/episode weights 1/1/1 and original edge 0.
+All usable baselines have lambda_u=lambda_k=1. Each changes one setting from the
+same active-episode control; prompt history/future horizon remain 2/2.
+
+| Variant | Registry name | Canonical ID | Notes |
+|---|---|---|---|
+| No self-trajectory exclusion | `CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-ACTIVE-EPISODE-NOLOO` | `ccpo-attncred-abl-fph2-noshrink-ep-noloo-ws-1.5b` | [NOTES](m11-h2-noshrink-active-episode-noloo-webshop-1.5b-2gpu-20260922/NOTES.md) |
+| No context summary | `CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-ACTIVE-EPISODE-NOCTX` | `ccpo-attncred-abl-fph2-noshrink-ep-noctx-ws-1.5b` | [NOTES](m11-h2-noshrink-active-episode-noctx-webshop-1.5b-2gpu-20260922/NOTES.md) |
+| Cosine representation weighting (existing method) | `CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-ACTIVE-EPISODE-COS` | `ccpo-attncred-abl-fph2-noshrink-ep-cos-ws-1.5b` | [NOTES](m11-h2-noshrink-active-episode-cosine-webshop-1.5b-2gpu-20260922/NOTES.md) |
+
+[Full comparison and equations](WEBSHOP_EP1_ABLATIONS.md).
+No-LOO allows the query and matching same-trajectory turns, retaining padding
+deduplication. No-context removes the accumulated statistics block while keeping
+hidden states and prompt history. Cosine reuses the existing clipped-cosine
+implementation. Episode credit remains active and is added without final
+renormalization. Earlier EP0 and cosine preparations are preserved.
+**Prepared only: none launched or queued.**
