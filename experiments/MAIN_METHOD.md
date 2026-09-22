@@ -106,3 +106,20 @@ remains unchanged.
 both benchmarks, and history/future weights 1/1. They allow the query occurrence
 and matching same-trajectory turns into all contextual readouts. The main method
 above continues to exclude the whole query trajectory by default (`ccpo_loo=1`).
+
+
+## WebShop EP0 component comparisons
+
+[Three 1.5B WebShop ablations](WEBSHOP_EP0_ABLATIONS.md) now use the main method's
+EP0 protocol: remove future-progress credit, historical-residual credit, or the
+context-statistics representation block. Each is a separate one-setting change
+from H2 no-shrink EP0; earlier WebShop EP1 component comparisons remain available.
+
+
+## ALFWorld window allocation comparisons
+
+[Five 1.5B no-shrink EP0 variants](ALFWORLD_WINDOW_ABLATIONS.md) replace the main
+2/2 history/future windows with 4/0, 0/4, 3/1, 1/3 and 3/3. Zero windows disable
+that actor channel; history 0 also removes prior prompt turns while retaining
+the task goal. Context statistics and whole-trajectory LOO remain enabled.
+These are prepared ablations; the designated main method remains H2.

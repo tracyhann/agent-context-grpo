@@ -21,8 +21,8 @@ from ccpo.outlook import canonical_trajectory_rows, _take
 
 def endpoint_map(groups, n, horizon):
     """A negative endpoint index denotes the trajectory's terminal sentinel."""
-    if horizon not in (1, 2):
-        raise ValueError('Future progress supports horizon 1 or 2')
+    if isinstance(horizon, (bool, np.bool_)) or not isinstance(horizon, (int, np.integer)) or horizon not in range(5):
+        raise ValueError('Future progress supports integer horizons 0 through 4')
     endpoint = np.full(n, -1, dtype=int)
     window = np.zeros(n, dtype=int)
     for ids in groups:
@@ -38,7 +38,8 @@ def progress_from_values(values, groups, episode_rewards, horizon=1, success_rew
     """M5 terminal convention: success potential 10, other endings 0.
 
     There is no added reward or outer gamma here. Discounting is already in the
-    value labels. A two-step window telescopes over the same value function.
+    value labels. Multi-step windows telescope over the same value function.
+    Horizon 0 is the history-only mode: current endpoints, no eligible progress.
     """
     values = np.asarray(values, dtype=float)
     rewards = np.asarray(episode_rewards, dtype=float)
@@ -46,7 +47,7 @@ def progress_from_values(values, groups, episode_rewards, horizon=1, success_rew
     terminal = endpoint < 0
     future = np.where(np.abs(rewards - success_reward) < 1e-9, success_reward, 0.)
     future[~terminal] = values[endpoint[~terminal]]
-    eligible = np.isfinite(values) & np.isfinite(future)
+    eligible = np.isfinite(values) & np.isfinite(future) & (horizon > 0)
     raw = np.zeros(len(values))
     raw[eligible] = future[eligible] - values[eligible]
     return raw, future, endpoint, window, eligible
@@ -138,8 +139,10 @@ def ccpo_future_progress_advantage(*, turn_index, episode_lengths, horizon=1,
     readout='m5' is a CPU parity/reference option: self-inclusive uniform node
     potentials. The registered training method always uses readout='context'.
     """
-    if horizon not in (1, 2):
-        raise ValueError('Invalid future-progress horizon')
+    if isinstance(horizon, (bool, np.bool_)) or not isinstance(horizon, (int, np.integer)) or horizon not in range(5):
+        raise ValueError('Invalid future-progress horizon: expected integer 0 through 4')
+    if horizon == 0 and progress_weight != 0:
+        raise ValueError('Zero future horizon requires progress_weight=0')
     for name, weight in [('history', history_weight), ('future', progress_weight)]:
         if not np.isfinite(weight) or weight < 0:
             raise ValueError(f'Invalid future-progress {name} weight: must be finite and nonnegative')
@@ -225,6 +228,7 @@ def ccpo_future_progress_advantage(*, turn_index, episode_lengths, horizon=1,
     if arrays['target'].ndim > 1:
         arrays['target'] = (arrays['target'] * _numpy(canonical['response_mask'])).sum(-1)
     diag.update(progress_enabled=1., progress_loo=diag['loo'],
+                progress_future_active=float(horizon > 0 and progress_weight > 0),
                 progress_horizon=float(horizon), progress_weight=float(progress_weight),
                 progress_history_weight=float(history_weight), progress_episode_weight=0., progress_original_edge_weight=0.,
                 progress_live_frac=float(live.mean()),

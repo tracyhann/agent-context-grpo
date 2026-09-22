@@ -20,12 +20,78 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(
 import arms                                                   # noqa: E402
 
 ABLATIONS = {
+    "future-progress-noshrink-history4-future0": dict(
+        name="CCPO-ATTNCRED-NOSHRINK-HISTORYFOUR-FUTUREZERO",
+        tag="noshrink-hist4-fut0",
+        title="M10 no shrinkage, EP0, history 4 / future 0",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("alfworld",),
+        delta={'ccpo_lk_fix': 1.0, 'history_length': 4, 'ccpo_progress_horizon': 0, 'ccpo_progress_weight': 0.0},
+        removes="the default two-history/two-future window allocation",
+        asks="how does allocating prompt history and future-progress steps change credit?",
+        watch="Window lengths are counts, not fusion coefficients. A zero window also "
+              "disables that advantage channel. Context statistics, LOO and EP0 remain; "
+              "history=0 retains the task goal and current observation.",
+    ),
+    "future-progress-noshrink-history0-future4": dict(
+        name="CCPO-ATTNCRED-NOSHRINK-HISTORYZERO-FUTUREFOUR",
+        tag="noshrink-hist0-fut4",
+        title="M10 no shrinkage, EP0, history 0 / future 4",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("alfworld",),
+        delta={'ccpo_lk_fix': 1.0, 'history_length': 0, 'ccpo_progress_horizon': 4, 'ccpo_progress_history_weight': 0.0},
+        removes="the default two-history/two-future window allocation",
+        asks="how does allocating prompt history and future-progress steps change credit?",
+        watch="Window lengths are counts, not fusion coefficients. A zero window also "
+              "disables that advantage channel. Context statistics, LOO and EP0 remain; "
+              "history=0 retains the task goal and current observation.",
+    ),
+    "future-progress-noshrink-history3-future1": dict(
+        name="CCPO-ATTNCRED-NOSHRINK-HISTORYTHREE-FUTUREONE",
+        tag="noshrink-hist3-fut1",
+        title="M10 no shrinkage, EP0, history 3 / future 1",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("alfworld",),
+        delta={'ccpo_lk_fix': 1.0, 'history_length': 3, 'ccpo_progress_horizon': 1},
+        removes="the default two-history/two-future window allocation",
+        asks="how does allocating prompt history and future-progress steps change credit?",
+        watch="Window lengths are counts, not fusion coefficients. A zero window also "
+              "disables that advantage channel. Context statistics, LOO and EP0 remain; "
+              "history=0 retains the task goal and current observation.",
+    ),
+    "future-progress-noshrink-history1-future3": dict(
+        name="CCPO-ATTNCRED-NOSHRINK-HISTORYONE-FUTURETHREE",
+        tag="noshrink-hist1-fut3",
+        title="M10 no shrinkage, EP0, history 1 / future 3",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("alfworld",),
+        delta={'ccpo_lk_fix': 1.0, 'history_length': 1, 'ccpo_progress_horizon': 3},
+        removes="the default two-history/two-future window allocation",
+        asks="how does allocating prompt history and future-progress steps change credit?",
+        watch="Window lengths are counts, not fusion coefficients. A zero window also "
+              "disables that advantage channel. Context statistics, LOO and EP0 remain; "
+              "history=0 retains the task goal and current observation.",
+    ),
+    "future-progress-noshrink-history3-future3": dict(
+        name="CCPO-ATTNCRED-NOSHRINK-HISTORYTHREE-FUTURETHREE",
+        tag="noshrink-hist3-fut3",
+        title="M10 no shrinkage, EP0, history 3 / future 3",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("alfworld",),
+        delta={'ccpo_lk_fix': 1.0, 'history_length': 3, 'ccpo_progress_horizon': 3},
+        removes="the default two-history/two-future window allocation",
+        asks="how does allocating prompt history and future-progress steps change credit?",
+        watch="Window lengths are counts, not fusion coefficients. A zero window also "
+              "disables that advantage channel. Context statistics, LOO and EP0 remain; "
+              "history=0 retains the task goal and current observation.",
+    ),
+
     "future-progress-h2-no-credit-shrinkage-history-only": dict(
         name="CCPO-ATTNCRED-TWO-STEP-NOSHRINK-HISTORY-ONLY",
         tag="fph2-noshrink-history-only",
-        title="M10 H2 no shrinkage, history-only, episode weight 0",
+        title="M10/M11 H2 no shrinkage, history-only, episode weight 0",
         base_method="attncred-context-future-progress-h2",
-        benchmarks=("alfworld",),
+        benchmarks=("alfworld", "webshop"),
         delta={'ccpo_lk_fix': 1.0, 'ccpo_progress_weight': 0.0},
         removes="future-progress credit from the actor update and its normalization support",
         asks="how much does history credit contribute alone under the matched no-shrink protocol?",
@@ -36,9 +102,9 @@ ABLATIONS = {
     "future-progress-h2-no-credit-shrinkage-future-only": dict(
         name="CCPO-ATTNCRED-TWO-STEP-NOSHRINK-FUTURE-ONLY",
         tag="fph2-noshrink-future-only",
-        title="M10 H2 no shrinkage, future-only, episode weight 0",
+        title="M10/M11 H2 no shrinkage, future-only, episode weight 0",
         base_method="attncred-context-future-progress-h2",
-        benchmarks=("alfworld",),
+        benchmarks=("alfworld", "webshop"),
         delta={'ccpo_lk_fix': 1.0, 'ccpo_progress_history_weight': 0.0},
         removes="historical-residual credit from the actor update and its normalization support",
         asks="how much does future credit contribute alone under the matched no-shrink protocol?",
@@ -105,14 +171,14 @@ ABLATIONS = {
     "future-progress-h2-no-credit-shrinkage-no-context-vector": dict(
         name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-NOCTX",
         tag="fph2-noshrink-noctx",
-        title="M10 H2 with full-strength hidden-only baselines",
+        title="M10/M11 H2 with full-strength hidden-only baselines",
         base_method="attncred-context-future-progress-h2",
-        benchmarks=("alfworld",),
+        benchmarks=("alfworld", "webshop"),
         delta={"ccpo_lk_fix": 1.0, "ccpo_ctx_w": 0.0},
         removes="both support-based task-prior shrinkage and the context-statistics block",
         # Compose the two existing H2 interventions; frozen hidden features and
         # prompt history remain. CTX_W=0 skips statistics for all three readouts.
-        asks="how do credit shrinkage and accumulated context statistics interact in M10 H2?",
+        asks="how do credit shrinkage and accumulated context statistics interact in M10/M11 H2?",
         watch="history/current/future usable baselines equal their hidden-only kernel "
               "estimates at lambda_k=1; 1.5B phi has 1536 dimensions. Context-stat "
               "perturbations and kappa cannot change credit; fallback and terminal "

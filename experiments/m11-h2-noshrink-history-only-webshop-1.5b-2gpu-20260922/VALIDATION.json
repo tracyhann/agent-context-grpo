@@ -1,0 +1,72 @@
+{
+  "artifact_sha256": {
+    "NOTES.md": "aded98b7ec0bd9967dd1e7d4da295cfcff391aef02e2fce8f9a419a3775c96e3",
+    "PREPARED.json": "75ae992a3fd7290d8706bd130252b16e1b09d9ff308896481d9a964de85b2d9f",
+    "config-diff-from-control.json": "0a0a0733fc4ef389a3aef5e7b352c61d4a68fd2a008142136bdf23c2a33e9e74",
+    "config.json": "bec90c61f826cc9e68a7206790c9b73d8822297bde2f60cf087b61331a83d5f9",
+    "run.sh": "975c1fbc1917ea5a83b76511eca6a8486a47fefb7a4c2ede1f6f10bfb44bbc63",
+    "validation-registry.log": "de92b6cbafee9517b815e82ed5697bb2f411117512c5d000397acde4c450a315",
+    "validation-tests.log": "c5a4ef20db0d140f772486cbb0e6c9da3745f82ebe02aeb08b8211f72c1c1136"
+  },
+  "checked_at": "2026-09-22T00:18:15.194871+00:00",
+  "coverage": [
+    "matched EP0 control delta",
+    "prepared config/Hydra/environment mapping",
+    "disabled channel and episode PPO gradient isolation",
+    "disabled support cannot affect enabled channel",
+    "no-context vector invariance and 1536-dimensional processed hidden features",
+    "hidden feature-mode compatibility",
+    "full-strength history/current/future baselines",
+    "existing ALFWorld and WebShop EP1 behavior retained"
+  ],
+  "cpu_tests_passed": 29,
+  "documentation_registry_consistency": "passed",
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "PYTHONPATH": "tests:."
+  },
+  "gpu_execution": "not_run",
+  "launched": false,
+  "queued": false,
+  "registry_command": [
+    ".venv/bin/python",
+    "ablations/test_ablations.py"
+  ],
+  "registry_guard": "passed",
+  "registry_log": "validation-registry.log",
+  "shell_syntax": "passed",
+  "source_sha256": {
+    "ablations/ablations.py": "582eb8e882d2ee03b4e2723956d00edc76d18dc72a88291afa9a70bb382cd410",
+    "ccpo/arms.py": "4c930ee857e7846cf4709a69b0a012f833e3f7b135757fff9d6138f37ea07585",
+    "ccpo/core_ccpo.py": "d3dac41eeb05d084073d665e2cc240a4fc428f33d17cc0f5c5026821cf4969b6",
+    "ccpo/future_progress.py": "7cfdb6320a6f646eda1c8c7fe0a47dc20c5da9b4064ba0e1270a63e3208234d7",
+    "patches/verl-agent/verl/trainer/ppo/ray_trainer.py": "8a2bd50d4a4bc33dfcc7cb7e6bc597b2514dea5859a70df35a9c7cf85135bc21",
+    "scripts/exp_run.py": "f8200b76677b7a38ad36231f4158ac2debae68400eb2abcfa81feef112b1bd15",
+    "scripts/plot_metrics.py": "a1cccd8e8e7cce82673d54232890617ca5df96e59a085d8ab49143c4de9317cc",
+    "scripts/prepare_webshop_ep0_ablations.py": "db6362756e6768a1c0a7e4f082895a14ba1fedbaa475ded3f70495f9be34d63f",
+    "tests/test_future_progress_ablation.py": "fd229a993740f1e38c0dbae527b6b0c43fba16618dddadf6ef35cf267f8e9d30",
+    "tests/test_future_progress_active_episode.py": "4185fcb2c50fb631acb0849536bb4de6e09f3c286069e27c275b4b6c49b66a31",
+    "tests/test_future_progress_components.py": "1f3e72f30ee223f7b96734131ed39289efe15f7fe14801aba0259d18719f8a6e",
+    "tests/test_future_progress_hidden_compat.py": "929b37ae8d82c3e694ebd4836c71c41ddd3ffd28a2876be4c7403114b2cbf785",
+    "tests/test_future_progress_webshop_ablation.py": "2ff2d6bcc536ee1e450dc0c2a8b1a0f38d0ff6e4afe08984ffc8a3b64307e9b0",
+    "tests/test_webshop_ep0_ablations.py": "86ef2c90a075a22ad9c6ead8c6b58f3bd789d8837c7452e78522a854aa2a18df",
+    "verl-agent/verl/trainer/ppo/ray_trainer.py": "8a2bd50d4a4bc33dfcc7cb7e6bc597b2514dea5859a70df35a9c7cf85135bc21"
+  },
+  "status": "passed",
+  "test_command": [
+    ".venv-webshop/bin/python",
+    "-m",
+    "unittest",
+    "test_webshop_ep0_ablations",
+    "test_future_progress_components",
+    "test_future_progress_hidden_compat",
+    "test_future_progress_ablation",
+    "test_future_progress_active_episode",
+    "test_future_progress_webshop_ablation",
+    "-v"
+  ],
+  "tests_log": "validation-tests.log",
+  "variant": "no-future"
+}

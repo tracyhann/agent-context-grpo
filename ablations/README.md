@@ -182,3 +182,24 @@ The two H2 no-shrink keys, with and without active episode credit, have
 Run `python ablations/run.py --list --backbone 7b` to inspect IDs. The prepared
 full configs retain the matched 1.5B benchmark settings and use rollout TP2.
 No training is launched or queued by preparation.
+
+
+## WebShop H2 no-shrink EP0 components
+
+`future-progress-h2-no-credit-shrinkage-history-only`,
+`future-progress-h2-no-credit-shrinkage-future-only`, and
+`future-progress-h2-no-credit-shrinkage-no-context-vector` now accept WebShop
+as well as ALFWorld. They retain episode weight 0. The active-episode component
+keys retain episode weight 1. [Three prepared WebShop EP0 variants](../experiments/WEBSHOP_EP0_ABLATIONS.md)
+include configs, math and reproducible preparation commands; no runs launched.
+
+
+## M10 ALFWorld window allocation
+
+`future-progress-noshrink-history{h}-future{f}` is available for (h,f) in
+(4,0), (0,4), (3,1), (1,3), (3,3), on ALFWorld. These arms use no shrinkage,
+EP0, context statistics and whole-trajectory LOO. Zero history removes prior
+prompt turns and history credit; zero future disables progress with an explicit
+zero horizon/weight. Positive advantage coefficients remain 1.
+[Five prepared 1.5B / 150-step configurations](../experiments/ALFWORLD_WINDOW_ABLATIONS.md)
+include full method notes and reproduction commands. None launched or queued.

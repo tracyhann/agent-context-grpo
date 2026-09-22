@@ -102,7 +102,7 @@ Current and future groups can have different `J`, effective support and credibil
 
 ## Future progress and normalization
 
-For horizon `h` equal to 1 (primary) or 2 (ablation), set `e=min(t+h,T_i)`. At a recorded terminal endpoint,
+For positive horizon `h` in 1, 2, 3, 4, set `e=min(t+h,T_i)`. The original H1/H2 definitions remain unchanged. At a recorded terminal endpoint,
 
 \[
 \widehat V_{i,T_i}=
@@ -197,3 +197,21 @@ Full math, protocol and paired controls:
 [M10 ALFWorld](../experiments/m10-h2-noshrink-active-episode-alfworld-1.5b-2gpu-20260920/NOTES.md),
 [M11 WebShop](../experiments/m11-h2-noshrink-active-episode-webshop-1.5b-2gpu-20260920/NOTES.md).
 Both are prepared and unlaunched; GPU execution has not been validated.
+
+
+## Extended windows and explicit history-only mode (2026-09-22)
+
+The endpoint map now supports integer horizons 0 through 4. Positive horizons
+use the same terminal-clipped contextual value difference and task normalization.
+Horizon 0 is accepted by the progress estimator only with progress_weight=0:
+endpoints are current rows, future eligibility and raw/normalized credit are zero.
+In the trainer, `(ACG_CCPO_PROGRESS_HORIZON=0, ACG_CCPO_PROGRESS_WEIGHT=0)` selects
+this component path, retaining verified reference-feature capture and snapshots.
+The legacy zero-horizon/default-weight path remains ordinary CCPO.
+
+History window length is controlled separately by `env.history_length`. The new
+[ALFWorld window arms](../experiments/ALFWORLD_WINDOW_ABLATIONS.md) map a zero
+history window to zero historical-residual actor weight as well. The zero-history
+ALFWorld prompt retains the task goal/current observation and omits prior turns;
+accumulated statistics remain enabled. Weights for positive channels remain 1.
+`progress_future_active` explicitly logs whether future credit is active.

@@ -59,7 +59,7 @@ class ComponentCreditTests(unittest.TestCase):
         torch.testing.assert_close(a,b,rtol=0,atol=0)
         self.assertGreater(np.max(abs(da['progress_payload']['arrays']['history_adv']-db['progress_payload']['arrays']['history_adv'])),1.)
 
-    def test_all_four_trainer_paths_log_zero_disabled_channel_and_isolate_ppo_gradient(self):
+    def test_all_trainer_paths_log_zero_disabled_channel_and_isolate_ppo_gradient(self):
         compute=load_compute_advantage();kw=training_fixture()
         original_core=core.ccpo_step_advantage;original_progress=fp.progress_from_values
         def altered_history(**args):
@@ -73,7 +73,7 @@ class ComponentCreditTests(unittest.TestCase):
             raw=np.arange(len(raw),dtype=float)**2
             eligible=np.arange(len(raw))%2==0
             return raw,future,endpoint,window,eligible
-        for benchmark,mode,ep in [('alfworld','mean_std_norm',0),('webshop','mean_norm',1)]:
+        for benchmark,mode,ep in [('alfworld','mean_std_norm',0),('webshop','mean_norm',1),('webshop','mean_norm',0)]:
             for component,hw,fw in [('history',1,0),('future',0,1)]:
                 with self.subTest(benchmark=benchmark,component=component),tempfile.TemporaryDirectory() as temp:
                     outputs=[];snapshots=[]

@@ -34,3 +34,10 @@ Now it's your turn to take an action.
 You should first reason step-by-step about the current situation. This reasoning process MUST be enclosed within <think> </think> tags. 
 Once you've finished your reasoning, you should choose an admissible action for current step and present it within <action> </action> tags.
 """
+
+# No previous turns, but retain the task goal after the initial observation.
+ALFWORLD_TEMPLATE_CURRENT_ONLY = ALFWORLD_TEMPLATE_NO_HIS.replace(
+    "You are an expert agent operating in the ALFRED Embodied Environment.",
+    "You are an expert agent operating in the ALFRED Embodied Environment. Your task is to: {task_description}",
+    1,
+)

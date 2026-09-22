@@ -243,7 +243,7 @@ DEFAULTS = {
     "ccpo_ep_w": 1.0,
     "ccpo_wmode": "soft",         # "1.0": use the phi-weighted (attention) readout instead of the EB-estimated lam
     "ccpo_edge_w": 0.0,
-    "ccpo_progress_horizon": 0,  # 1/2 enables contextual endpoint value progress
+    "ccpo_progress_horizon": 0,  # 1..4 enables progress; 0 + progress_weight=0 selects history-only logging
     "ccpo_progress_weight": 1.0,
     "ccpo_progress_history_weight": 1.0,  # 0 isolates future progress; progress_weight=0 isolates history
     "ccpo_progress_snapshot_every": 1,
@@ -428,22 +428,23 @@ def validate_future_progress_config(cfg):
     if str(cfg.get("ccpo_loo", 1)) not in ("0", "1"):
         raise ValueError("ccpo_loo must be 0 or 1")
     horizon = cfg.get("ccpo_progress_horizon", 0)
-    if horizon not in (0, 1, 2):
-        raise ValueError("ccpo_progress_horizon must be 0, 1 or 2")
+    if isinstance(horizon, bool) or not isinstance(horizon, int) or horizon not in range(5):
+        raise ValueError("ccpo_progress_horizon must be an integer from 0 through 4")
     import math
     for key in ("ccpo_progress_history_weight", "ccpo_progress_weight"):
         value = float(cfg.get(key, 1.0))
         if not math.isfinite(value) or value < 0:
             raise ValueError(f"{key} must be finite and nonnegative")
-    if not horizon and float(cfg.get("ccpo_progress_history_weight", 1.0)) != 1.0:
-        raise ValueError("History component ablation requires ccpo_progress_horizon=1 or 2")
-    if horizon:
+    enabled = horizon > 0 or float(cfg.get("ccpo_progress_weight", 1.0)) == 0.0
+    if not enabled and float(cfg.get("ccpo_progress_history_weight", 1.0)) != 1.0:
+        raise ValueError("History component ablation requires a future-progress or explicit history-only arm")
+    if enabled:
         episode_weight = float(cfg.get("ccpo_ep_w", 1.0))
         if not math.isfinite(episode_weight) or episode_weight < 0:
             raise ValueError("Future progress requires finite nonnegative ccpo_ep_w")
         if float(cfg.get("step_advantage_w", 1.0)) != 1.0:
             raise ValueError("Prepared future-progress arms require step_advantage_w=1")
-    if horizon and str(cfg.get("ccpo_phi", "hidden")).lower() not in ("hidden", "hidden+ctx"):
+    if enabled and str(cfg.get("ccpo_phi", "hidden")).lower() not in ("hidden", "hidden+ctx"):
         raise ValueError("Future progress requires ccpo_phi=hidden or hidden+ctx; "
                          "hidden-only also supports hidden+ctx with ccpo_ctx_w=0")
 

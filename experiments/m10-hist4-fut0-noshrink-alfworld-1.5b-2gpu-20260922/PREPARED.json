@@ -1,0 +1,33 @@
+{
+  "ablation": "future-progress-noshrink-history4-future0",
+  "backbone": "1.5b",
+  "benchmark": "alfworld",
+  "canonical_id": "ccpo-attncred-abl-noshrink-hist4-fut0-alfworld-1.5b",
+  "context_stat_weight": 1.0,
+  "control": "experiments/m10-h2-no-credit-shrinkage-alfworld-1.5b-2gpu-20260919",
+  "episode_weight": 0.0,
+  "experiment": "m10-hist4-fut0-noshrink-alfworld-1.5b-2gpu-20260922",
+  "future_horizon": 0,
+  "future_weight": 0.0,
+  "gpu_count": 2,
+  "gpu_preflight_performed": false,
+  "gpus": "0,1",
+  "history_length": 4,
+  "history_weight": 1.0,
+  "lambda_k_fixed": 1.0,
+  "launched": false,
+  "loo": true,
+  "max_steps": 50,
+  "original_edge_weight": 0.0,
+  "prepared_at": "2026-09-22T02:21:17.441471+00:00",
+  "queued": false,
+  "seed": 0,
+  "source_git": {
+    "branch": "adb",
+    "commit": "36d748f70f5a9d3eba3c52fe8402da731a255614",
+    "dirty": true
+  },
+  "status": "prepared_not_launched",
+  "steps": 150,
+  "window": "h4f0"
+}

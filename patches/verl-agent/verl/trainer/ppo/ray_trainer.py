@@ -384,9 +384,13 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
             raise ValueError("Positive outlook beta requires a positive horizon")
         _fixed_anchor = os.environ.get('ACG_CCPO_FIXED_ANCHOR', '0') == '1'
         _progress_horizon = int(os.environ.get('ACG_CCPO_PROGRESS_HORIZON', '0'))
-        if _progress_horizon not in (0, 1, 2):
-            raise ValueError("Future-progress horizon must be 0, 1 or 2")
-        if _progress_horizon:
+        if _progress_horizon not in range(5):
+            raise ValueError("Future-progress horizon must be 0 through 4")
+        _progress_weight = float(os.environ.get('ACG_CCPO_PROGRESS_WEIGHT', '1'))
+        # (horizon=0, weight=0) explicitly requests history-only credit through
+        # the same canonicalization, component logging and support-mask path.
+        _progress_enabled = _progress_horizon > 0 or _progress_weight == 0.0
+        if _progress_enabled:
             if _fixed_anchor or _outlook_horizon != 0 or _outlook_beta != 0:
                 raise ValueError("Future progress cannot be combined with another OUTLOOK variant")
             from ccpo.future_progress import ccpo_future_progress_advantage
@@ -395,7 +399,7 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
                 turn_index=data.non_tensor_batch['ccpo_turn_index'],
                 episode_lengths=data.non_tensor_batch['episode_lengths'],
                 horizon=_progress_horizon,
-                progress_weight=float(os.environ.get('ACG_CCPO_PROGRESS_WEIGHT', '1')),
+                progress_weight=_progress_weight,
                 history_weight=float(os.environ.get('ACG_CCPO_PROGRESS_HISTORY_WEIGHT', '1')))
         elif _fixed_anchor:
             if _outlook_horizon != 0 or _outlook_beta != 0:
@@ -503,7 +507,7 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
         scores = _ep_w * episode_adv + step_advantage_w * step_adv.unsqueeze(-1) * data.batch['response_mask']
         data.batch['advantages'] = scores
         data.batch['returns'] = scores
-        if _progress_horizon:
+        if _progress_enabled:
             from ccpo.future_progress import finalize_progress_logging
             finalize_progress_logging(diag, step_adv, data.non_tensor_batch['uid'], _do_std,
                 kwargs.get('ccpo_step_tag', ''), _ep_w, step_advantage_w,
@@ -1411,7 +1415,8 @@ class RayPPOTrainer:
                     
                     # Source IDs must predate copy padding and length balancing.
                     _verified_phi = (self.config.algorithm.adv_estimator == AdvantageEstimator.CCPO
-                                     and int(os.environ.get('ACG_CCPO_PROGRESS_HORIZON', '0')) > 0)
+                                     and (int(os.environ.get('ACG_CCPO_PROGRESS_HORIZON', '0')) > 0
+                                          or float(os.environ.get('ACG_CCPO_PROGRESS_WEIGHT', '1')) == 0.0))
                     if _verified_phi:
                         from ccpo.phi_capture import mark_source_rows
                         mark_source_rows(batch)

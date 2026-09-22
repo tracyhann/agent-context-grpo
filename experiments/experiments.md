@@ -1431,3 +1431,47 @@ LOO on. Qwen2.5-1.5B-Instruct, 150 steps, seed 0, two GPUs, ALFWorld 50-turn cap
 The launcher now pins previously implicit LOO/history-weight defaults explicitly.
 Targeted CPU checks passed, including actual ALFWorld prompt and PPO gradient
 isolation. **Prepared only; no launch, queue entry or GPU reservation.**
+
+
+### 2026-09-22: M11 WebShop H2 no-shrink EP0 component ablations
+
+Three separate **1.5B / 150-step / two-GPU** variants are prepared against the
+WebShop EP0 main control. History-2 prompts, the standard H2 diagnostic horizon,
+15-turn budget, full-strength context readouts and whole-trajectory LOO remain.
+[Full comparison, equations and reproduction](WEBSHOP_EP0_ABLATIONS.md).
+
+| Variant | H / F / EP | Context stats | Canonical ID | Notes |
+|---|---|---|---|---|
+| No future | 1 / 0 / 0 | on | `ccpo-attncred-abl-fph2-noshrink-history-only-ws-1.5b` | [NOTES](m11-h2-noshrink-history-only-webshop-1.5b-2gpu-20260922/NOTES.md) |
+| No history credit | 0 / 1 / 0 | on | `ccpo-attncred-abl-fph2-noshrink-future-only-ws-1.5b` | [NOTES](m11-h2-noshrink-future-only-webshop-1.5b-2gpu-20260922/NOTES.md) |
+| No context-statistics vector | 1 / 1 / 0 | off | `ccpo-attncred-abl-fph2-noshrink-noctx-ws-1.5b` | [NOTES](m11-h2-noshrink-noctx-webshop-1.5b-2gpu-20260922/NOTES.md) |
+
+Existing EP0 component/no-context registry entries now accept WebShop. The older
+WebShop EP1 preparations keep their original protocol. Original edge weight is
+0; episode reward still labels returns, but episode advantage has zero actor
+weight. Disabled component support and diagnostics do not flow into the enabled
+PPO credit. **Prepared only: no launch, queue entry or GPU reservation.**
+
+
+### 2026-09-22: M10 ALFWorld no-shrink EP0 history/future window allocation
+
+Five **1.5B / 150-step / two-GPU** arms use the H2 main method as control, replacing
+its 2/2 windows with the pairs below. Counts specify previous prompt turns and
+future endpoint offsets. A zero also disables that side's actor coefficient.
+Context statistics, whole-trajectory LOO and full-strength baselines remain on.
+
+| History / future steps | H / F / EP weights | Variant | Canonical ID | Notes |
+|---|---|---|---|---|
+| 4 / 0 | 1 / 0 / 0 | `CCPO-ATTNCRED-NOSHRINK-HISTORYFOUR-FUTUREZERO` | `ccpo-attncred-abl-noshrink-hist4-fut0-alfworld-1.5b` | [NOTES](m10-hist4-fut0-noshrink-alfworld-1.5b-2gpu-20260922/NOTES.md) |
+| 0 / 4 | 0 / 1 / 0 | `CCPO-ATTNCRED-NOSHRINK-HISTORYZERO-FUTUREFOUR` | `ccpo-attncred-abl-noshrink-hist0-fut4-alfworld-1.5b` | [NOTES](m10-hist0-fut4-noshrink-alfworld-1.5b-2gpu-20260922/NOTES.md) |
+| 3 / 1 | 1 / 1 / 0 | `CCPO-ATTNCRED-NOSHRINK-HISTORYTHREE-FUTUREONE` | `ccpo-attncred-abl-noshrink-hist3-fut1-alfworld-1.5b` | [NOTES](m10-hist3-fut1-noshrink-alfworld-1.5b-2gpu-20260922/NOTES.md) |
+| 1 / 3 | 1 / 1 / 0 | `CCPO-ATTNCRED-NOSHRINK-HISTORYONE-FUTURETHREE` | `ccpo-attncred-abl-noshrink-hist1-fut3-alfworld-1.5b` | [NOTES](m10-hist1-fut3-noshrink-alfworld-1.5b-2gpu-20260922/NOTES.md) |
+| 3 / 3 | 1 / 1 / 0 | `CCPO-ATTNCRED-NOSHRINK-HISTORYTHREE-FUTURETHREE` | `ccpo-attncred-abl-noshrink-hist3-fut3-alfworld-1.5b` | [NOTES](m10-hist3-fut3-noshrink-alfworld-1.5b-2gpu-20260922/NOTES.md) |
+
+[Full equations, zero-window semantics and reproduction](ALFWORLD_WINDOW_ABLATIONS.md).
+Runtime horizon support extends to 3/4 and explicit history-only horizon 0;
+verified feature capture and component logging remain active. At history 0 the
+prompt retains the task goal and current observation, with no prior turns.
+Initial and positive-history prompts keep their existing behavior. ALFWorld turn
+ceiling 50, seed 0 and the rest of the main protocol remain matched.
+**Prepared only: none launched, queued or assigned GPUs.**

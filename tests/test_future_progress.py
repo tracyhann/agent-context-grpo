@@ -107,7 +107,7 @@ class FutureProgressTests(unittest.TestCase):
         np.testing.assert_array_equal(adv.numpy(),0.)
 
     def test_invalid_settings_and_ambiguous_trajectory_fail(self):
-        for extra in [{'horizon':0},{'horizon':3},{'progress_weight':float('nan')},{'edge_w':1.},{'target':'score'}]:
+        for extra in [{'horizon':0},{'horizon':5},{'progress_weight':float('nan')},{'edge_w':1.},{'target':'score'}]:
             with self.subTest(extra=extra), self.assertRaises(ValueError):
                 ccpo_future_progress_advantage(**dict(arguments(),**extra))
         kw=arguments();kw['episode_rewards'][1]=0
