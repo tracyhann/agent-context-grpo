@@ -1,8 +1,0 @@
-{
-  "webshop": {
-    "state": "acceleration-20260921/STATE.json",
-    "notes": "acceleration-20260921/NOTES.md",
-    "managed_execution": "outputs/webshop/ACCELERATED_EXECUTION.json",
-    "original_controller_action": "join managed census; do not launch duplicate"
-  }
-}

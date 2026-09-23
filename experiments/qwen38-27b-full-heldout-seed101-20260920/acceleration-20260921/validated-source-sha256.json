@@ -1,6 +1,0 @@
-{
-  "scripts/qwen_census_eval.py": "17a463882491516e8233325d37a71a53832ef6313cfe499b2ef91b0fc84bce4a",
-  "scripts/qwen_eval_coordination.py": "ec560fc398ae20453b6586acb7fd6be57d8758b8fb43aaf8b16f808e58924b52",
-  "scripts/run_qwen_parallel_webshop.py": "f067cae451e508d9fc1382a2c372be1c676e3bf1e3e2295d71a1798fc483b77e",
-  "tests/test_qwen_eval_coordination.py": "5ac54252213f1802466e6c297a73bd751d7af773aa52b4c3be3bea45c09f6823"
-}

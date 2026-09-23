@@ -1,9 +1,0 @@
-{
-  "ccpo_fixed_gain_weight": 1.0,
-  "ccpo_outlook_horizon": 0,
-  "ccpo_fixed_max_prompt": 8192,
-  "ccpo_fixed_horizon": 2,
-  "ccpo_fixed_snapshot_every": 1,
-  "ccpo_outlook_beta": 0.0,
-  "ccpo_fixed_anchor": 1
-}

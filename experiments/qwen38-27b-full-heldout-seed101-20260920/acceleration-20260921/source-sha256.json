@@ -1,9 +1,0 @@
-{
-  "scripts/qwen_census_eval.py": "17a463882491516e8233325d37a71a53832ef6313cfe499b2ef91b0fc84bce4a",
-  "scripts/qwen_eval_coordination.py": "ec560fc398ae20453b6586acb7fd6be57d8758b8fb43aaf8b16f808e58924b52",
-  "scripts/run_qwen_parallel_webshop.py": "6a94b047c69451af9b4c0f54a8ae6882e39113002a93243c37d216444c44fabf",
-  "scripts/report_census_eval.py": "ecd77be4580654ce62d81bb44540452333571697fec9de037ed9c37c42772404",
-  "scripts/benchmark_census.py": "7608fd31ae4b8b85735067bba63a876f627444535295dd5d9ebe868be000a924",
-  "scripts/deepseek_api_eval.py": "c8a17cc20305c6fffe80200336c6cc8c03df926bf936352dc12275ca53cc0563",
-  "baselines/qwen/serve.py": "661484a8a203db566667f7e963f1d02bafddbb4c99123aadcef4c339d7681810"
-}
