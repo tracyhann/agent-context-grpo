@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "ccpo"
 version = "0.1.0"
-description = "Context-Conditioned Policy Optimization: history credit and future progress"
+description = "Contextual Credit Policy Optimization: history credit and future progress"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = ["numpy>=1.24"]

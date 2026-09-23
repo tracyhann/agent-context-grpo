@@ -1,4 +1,4 @@
-# CCPO: Context-Conditioned Policy Optimization
+# CCPO: Contextual Credit Policy Optimization
 
 CCPO assigns credit to each agent turn using a context-conditioned historical
 return residual and a future potential increase. This package contains the
