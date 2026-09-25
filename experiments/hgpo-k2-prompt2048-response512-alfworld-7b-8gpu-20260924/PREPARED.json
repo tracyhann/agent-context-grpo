@@ -1,0 +1,15 @@
+{
+  "backbone": "7b",
+  "benchmark": "alfworld",
+  "gpu_preflight_performed": false,
+  "history_length": 2,
+  "launched": false,
+  "max_turns": 50,
+  "prepared_at": "2026-09-24T12:00:34.742680+00:00",
+  "prompt_tokens": 2048,
+  "queued": false,
+  "response_tokens": 512,
+  "status": "prepared_not_launched",
+  "steps": 150,
+  "upstream_commit": "20bd331bdbc9026a5668e11362178e10ab7400c8"
+}

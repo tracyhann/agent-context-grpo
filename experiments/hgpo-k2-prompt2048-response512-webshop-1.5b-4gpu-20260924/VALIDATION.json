@@ -1,0 +1,41 @@
+{
+  "backbone_pair_check": "passed",
+  "budget_interpretation": "2048 input prompt tokens, separate 512 generated tokens per turn",
+  "checks": [
+    {
+      "command": ".venv-webshop/bin/python -m unittest discover -s tests -p test_hgpo_baseline.py -v",
+      "coverage": [
+        "8 real Hydra schema combinations: two benchmarks x two backbones x K=2/4",
+        "all four prepared runs match actual HGPO entrypoint and explicit 150-step cap",
+        "1.5B/7B differ only in model/path, GPU count, TP, and experiment identity",
+        "HGPO hierarchy, PPO gradients, detached targets, and current invalid-action penalty"
+      ],
+      "result": "passed",
+      "tests": 9,
+      "validated_at": "2026-09-24T12:02:11.011102+00:00"
+    },
+    {
+      "command": ".venv-webshop/bin/python tests/test_webshop_protocol.py",
+      "protocol_overrides_checked": 37,
+      "result": "passed",
+      "tests": 2
+    },
+    {
+      "command": ".venv-webshop/bin/python -m unittest discover -s tests -p test_future_progress_active_episode.py -v",
+      "result": "passed",
+      "tests": 4
+    }
+  ],
+  "dataset_rows": {
+    "train": 16,
+    "validation": 256
+  },
+  "gpu_training_run": false,
+  "launched": false,
+  "model_and_environment_startup": "not tested on GPUs",
+  "queued": false,
+  "shell_syntax": "passed",
+  "status": "cpu_checks_passed",
+  "test_source_sha256": "cf49632000c0771cc25bc7e19ed43f959ab2aae8352fc7535aaa579a9fa556c9",
+  "validated_at": "2026-09-24T12:02:11.011102+00:00"
+}

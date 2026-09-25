@@ -1,0 +1,25 @@
+{
+  "changes": {
+    "exp_id": {
+      "1.5b": "hgpo-k2-prompt2048-response512-webshop-1.5b-4gpu-20260924",
+      "7b": "hgpo-k2-prompt2048-response512-webshop-7b-8gpu-20260924"
+    },
+    "gpus": {
+      "1.5b": "0,1,2,3",
+      "7b": "0,1,2,3,4,5,6,7"
+    },
+    "model": {
+      "1.5b": "Qwen/Qwen2.5-1.5B-Instruct",
+      "7b": "Qwen/Qwen2.5-7B-Instruct"
+    },
+    "model_path": {
+      "1.5b": "/workspace/agent-context-grpo/hf/hub/models--Qwen--Qwen2.5-1.5B-Instruct/snapshots/989aa7980e4cf806f80c7fef2b1adb7bc71aa306",
+      "7b": "Qwen/Qwen2.5-7B-Instruct"
+    },
+    "tp_size": {
+      "1.5b": 1,
+      "7b": 2
+    }
+  },
+  "control": "experiments/hgpo-k2-prompt2048-response512-webshop-1.5b-4gpu-20260924"
+}

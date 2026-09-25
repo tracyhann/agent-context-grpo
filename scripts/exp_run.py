@@ -35,7 +35,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Anything that differs from that reference is flagged in `_REFERENCE_DELTA`.
 # ---------------------------------------------------------------------------
 DEFAULTS = {
-    "arm": "ccpo",                      # ccpo | grpo | gigpo
+    "arm": "ccpo",                      # ccpo | grpo | gigpo | hgpo
     "model": "Qwen/Qwen2.5-1.5B-Instruct",
     # Four, not six: verl asserts train_batch_size * rollout.n % n_gpus == 0 and the
     # reference batch of 128 does not divide by 6. Two GPUs idle is the price of
@@ -241,7 +241,7 @@ DEFAULTS = {
     # 0.0 removes the trajectory-level term, leaving the step term -- which already
     # carries the edge contribution -- as the whole advantage. That is HGPO's shape.
     "ccpo_ep_w": 1.0,
-    "ccpo_wmode": "soft",         # "1.0": use the phi-weighted (attention) readout instead of the EB-estimated lam
+    "ccpo_wmode": "soft",         # soft | hard | cos | uniform (equal peer occurrences)
     "ccpo_edge_w": 0.0,
     "ccpo_progress_horizon": 0,  # 1..4 enables progress; 0 + progress_weight=0 selects history-only logging
     "ccpo_progress_weight": 1.0,
@@ -452,7 +452,8 @@ def validate_future_progress_config(cfg):
 def build_command(cfg, exp_dir):
     validate_future_progress_config(cfg)
     ngpu = len(cfg["gpus"].split(","))
-    est = {"ccpo": "ccpo", "grpo": "grpo", "gigpo": "gigpo"}[cfg["arm"]]
+    est = {"ccpo": "ccpo", "grpo": "grpo", "gigpo": "gigpo", "hgpo": "hgpo"}[cfg["arm"]]
+    is_hgpo = cfg["arm"] == "hgpo"
     _is_search = "search" in str(cfg["env_name"]).lower()
     _is_webshop = "webshop" in str(cfg["env_name"]).lower()
     if _is_search:
@@ -465,7 +466,7 @@ def build_command(cfg, exp_dir):
         _val_f = f"{cfg['data_dir']}/text/test.parquet"
     ckpt = os.path.join(exp_dir, "outputs", "checkpoints")
     args = [
-        "python3", "-m", "verl.trainer.main_ppo",
+        "python3", "-m", "recipe.hgpo.main_hgpo" if is_hgpo else "verl.trainer.main_ppo",
         f"algorithm.adv_estimator={est}",
         f"data.train_files={_train_f}",
         f"data.val_files={_val_f}",
@@ -474,7 +475,7 @@ def build_command(cfg, exp_dir):
         f"data.max_prompt_length={cfg['max_prompt_length']}",
         f"data.max_response_length={cfg['max_response_length']}",
         "data.filter_overlong_prompts=True",
-        "data.truncation=error",
+        "data.truncation=left" if is_hgpo else "data.truncation=error",
         "data.return_raw_chat=True",
         f"actor_rollout_ref.model.path={cfg['model_path']}",
         f"actor_rollout_ref.actor.optim.lr={cfg['lr']}",
@@ -511,8 +512,12 @@ def build_command(cfg, exp_dir):
         "actor_rollout_ref.actor.invalid_action_penalty_coef=0.1",
         "algorithm.use_kl_in_reward=False",
         f"algorithm.gamma={cfg['gamma']}",
-        f"algorithm.gigpo.step_advantage_w={cfg['step_advantage_w']}",
-        f"algorithm.gigpo.mode={cfg['adv_mode']}",
+        *(["algorithm.hgpo.weight_type=length",
+           "algorithm.hgpo.length_weight_alpha=1.0",
+           "algorithm.hgpo.base_group=False",
+           f"algorithm.hgpo.mode={cfg['adv_mode']}"] if is_hgpo else [
+           f"algorithm.gigpo.step_advantage_w={cfg['step_advantage_w']}",
+           f"algorithm.gigpo.mode={cfg['adv_mode']}"]),
         f"env.env_name={cfg['env_name']}",
         f"env.seed={cfg['seed']}",
         f"env.max_steps={cfg['max_steps']}",
@@ -528,7 +533,7 @@ def build_command(cfg, exp_dir):
         f"ray_init.num_cpus={cfg['ray_num_cpus']}",
         "trainer.critic_warmup=0",
         "trainer.logger=[console,jsonl]",
-        f"trainer.project_name=ccpo_{'search' if _is_search else 'webshop' if _is_webshop else 'alfworld'}",
+        f"trainer.project_name={'hgpo' if is_hgpo else 'ccpo'}_{'search' if _is_search else 'webshop' if _is_webshop else 'alfworld'}",
         f"trainer.experiment_name={cfg['exp_id']}",
         f"trainer.n_gpus_per_node={ngpu}",
         "trainer.nnodes=1",
@@ -537,6 +542,11 @@ def build_command(cfg, exp_dir):
         f"trainer.default_local_dir={ckpt}",
         f"trainer.test_freq={cfg['test_freq']}",
         f"trainer.total_epochs={cfg['total_epochs']}",
+        # HGPO has its own trainer: cap trainer iterations explicitly, even
+        # when a different training parquet contains multiple batches per epoch.
+        *([f"trainer.total_training_steps={cfg['total_epochs']}",
+           "trainer.max_actor_ckpt_to_keep=2",
+           f"trainer.val_out={cfg['eval_split'] == 'eval_out_of_distribution'}"] if is_hgpo else []),
         f"trainer.val_before_train={bool(cfg.get('val_only'))}",
     ]
     if cfg.get("val_only"):
@@ -638,7 +648,7 @@ def build_env(cfg, exp_dir):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--name", required=True)
-    ap.add_argument("--arm", default=None, choices=["ccpo", "grpo", "gigpo"])
+    ap.add_argument("--arm", default=None, choices=["ccpo", "grpo", "gigpo", "hgpo"])
     ap.add_argument("--set", action="append", default=[], metavar="KEY=VALUE")
     ap.add_argument("--date", default=datetime.date.today().strftime("%Y%m%d"))
     ap.add_argument("--dry-run", action="store_true")
@@ -752,6 +762,20 @@ def main():
                       and int(cfg["val_batch_size"]) != 128 else []),
         },
     }
+    if cfg["arm"] == "hgpo":
+        benchmark = "webshop" if "webshop" in cfg["env_name"].lower() else "alfworld"
+        size = "7b" if "7B" in cfg["model"] else "1.5b"
+        record["reference_protocol"] = {
+            "source": f"verl-agent/recipe/hgpo/run_qwen2.5_{size}_{benchmark}_train.sh",
+            "upstream_commit": "20bd331bdbc9026a5668e11362178e10ab7400c8",
+            "estimator": "recipe.hgpo.core_hgpo.compute_hgpo_outcome_advantage",
+            "method": {"history_length": cfg["history_length"], "weight_type": "length",
+                       "length_weight_alpha": 1.0, "base_group": False, "mode": cfg["adv_mode"]},
+            "budgets": {"max_prompt_length": cfg["max_prompt_length"],
+                        "max_response_length": cfg["max_response_length"],
+                        "total_training_steps": cfg["total_epochs"], "max_turns": cfg["max_steps"]},
+            "runtime": "Shared local verl-agent overlay; all overrides and environment values recorded above",
+        }
     with open(os.path.join(exp_dir, "config.json"), "w") as fh:
         json.dump(record, fh, indent=2, sort_keys=True)
 

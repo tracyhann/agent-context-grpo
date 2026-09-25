@@ -280,6 +280,34 @@ ABLATIONS = {
               "on 1.5B). Prompt history remains 2; LOO and soft weighting remain. "
               "H/F/episode weights are 1/1/1, with no final fused normalization.",
     ),
+    "future-progress-h2-no-credit-shrinkage-uniform-peers": dict(
+        name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-UNIFORM-PEERS",
+        tag="fph2-noshrink-uniform-peers",
+        title="M10 H2 no shrinkage, EP0, equal peer-occurrence weights",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("alfworld",),
+        delta={"ccpo_lk_fix": 1.0, "ccpo_wmode": "uniform"},
+        removes="context-similarity weighting from history and both potential readouts",
+        asks="does contextual peer weighting help beyond the same groups with arithmetic-mean baselines?",
+        watch="Every eligible peer occurrence has weight one, including task fallback. "
+              "Whole-trajectory exclusion and padding deduplication remain. H/F weights "
+              "stay 1/1, episode 0; this is not the future-only ablation. Features remain "
+              "diagnostic and cannot affect these weights under the exact grouping protocol.",
+    ),
+    "future-progress-h2-no-credit-shrinkage-active-episode-uniform-peers": dict(
+        name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-ACTIVE-EPISODE-UNIFORM-PEERS",
+        tag="fph2-noshrink-ep-uniform-peers",
+        title="M11 H2 no shrinkage, EP1, equal peer-occurrence weights",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("webshop",),
+        delta={"ccpo_lk_fix": 1.0, "ccpo_ep_w": 1.0, "ccpo_wmode": "uniform"},
+        removes="context-similarity weighting under the full-strength EP1 control",
+        asks="does contextual peer weighting help H2 credit with active episode supervision?",
+        watch="History/current/future and task fallback all use arithmetic peer-occurrence "
+              "means. H/F/EP weights stay 1/1/1; LOO, terminal values, normalization and "
+              "padding deduplication remain. Longer/revisiting peer trajectories retain "
+              "their occurrence mass; this is not equal weighting per trajectory.",
+    ),
     "future-progress-h2-no-credit-shrinkage-cosine": dict(
         name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-COS",
         tag="fph2-noshrink-cos",

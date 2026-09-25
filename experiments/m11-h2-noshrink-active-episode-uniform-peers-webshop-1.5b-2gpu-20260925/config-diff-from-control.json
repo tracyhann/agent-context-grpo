@@ -1,0 +1,17 @@
+{
+  "changes": {
+    "ccpo_wmode": {
+      "control": "soft",
+      "prepared": "uniform"
+    },
+    "exp_id": {
+      "control": "m11-h2-noshrink-active-episode-webshop-1.5b-2gpu-20260920",
+      "prepared": "m11-h2-noshrink-active-episode-uniform-peers-webshop-1.5b-2gpu-20260925"
+    }
+  },
+  "control": "experiments/m11-h2-noshrink-active-episode-webshop-1.5b-2gpu-20260920",
+  "missing_control_defaults": {
+    "ccpo_loo": 1,
+    "ccpo_progress_history_weight": 1.0
+  }
+}

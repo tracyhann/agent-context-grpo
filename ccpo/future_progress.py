@@ -228,6 +228,7 @@ def ccpo_future_progress_advantage(*, turn_index, episode_lengths, horizon=1,
     if arrays['target'].ndim > 1:
         arrays['target'] = (arrays['target'] * _numpy(canonical['response_mask'])).sum(-1)
     diag.update(progress_enabled=1., progress_loo=diag['loo'],
+                progress_uniform_weighting=diag['uniform_weighting'],
                 progress_future_active=float(horizon > 0 and progress_weight > 0),
                 progress_horizon=float(horizon), progress_weight=float(progress_weight),
                 progress_history_weight=float(history_weight), progress_episode_weight=0., progress_original_edge_weight=0.,

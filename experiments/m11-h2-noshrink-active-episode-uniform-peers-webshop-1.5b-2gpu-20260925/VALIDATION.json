@@ -1,0 +1,41 @@
+{
+  "status": "passed",
+  "validated_at": "2026-09-25T05:50:44.104691+00:00",
+  "scope": "CPU estimator/config/actual trainer function and PPO loss; no Ray or GPU launch",
+  "launched": false,
+  "queued": false,
+  "gpu_smoke_test": false,
+  "commands": [
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES='' OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 .venv-webshop/bin/python -m unittest discover -s tests -p test_uniform_peer_ablations.py -v",
+      "tests": 6,
+      "status": "passed"
+    },
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES='' OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 PYTHONPATH=tests .venv-webshop/bin/python -m unittest test_future_progress_active_episode test_webshop_ep1_ablations test_official_ccpo -v",
+      "tests": 9,
+      "status": "passed",
+      "details": "Includes 48 official-method parity scenarios."
+    },
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 CUDA_VISIBLE_DEVICES='' OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 .venv-webshop/bin/python ablations/test_ablations.py",
+      "status": "passed"
+    },
+    {
+      "command": "git diff --check",
+      "status": "passed"
+    }
+  ],
+  "checks": [
+    "manual uniform occurrence-mean oracle including task fallback",
+    "same-trajectory exclusion and repeated-visit mass",
+    "padding deduplication and no-peer support behavior",
+    "feature/tau invariance with similarity-weighted positive control",
+    "future-only differs from uniform H+F credit",
+    "ALFWorld EP0 gradient isolation and WebShop EP1 fusion",
+    "actual PPO gradient, masked tokens and H+F+EP logging identity",
+    "prepared environment in fresh process and exact matched-control delta",
+    "prepared source hashes match tested files",
+    "bash syntax checked during preparation"
+  ]
+}

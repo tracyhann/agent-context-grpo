@@ -1497,3 +1497,38 @@ hidden states and prompt history. Cosine reuses the existing clipped-cosine
 implementation. Episode credit remains active and is added without final
 renormalization. Earlier EP0 and cosine preparations are preserved.
 **Prepared only: none launched or queued.**
+
+### 2026-09-24: HGPO baseline with matched training budgets
+
+Prepared HGPO K=2 for **Qwen2.5-1.5B-Instruct and Qwen2.5-7B-Instruct**, each on
+ALFWorld and WebShop, using the unaltered official HGPO core. All four runs
+explicitly cap training at **150 training iterations**.
+Prompt / response limits are **2048 / 512 tokens per turn**; WebShop train/eval
+turn ceiling is **15**, ALFWorld remains 50. Length weighting alpha=1 and
+`base_group=False` retain the official method. The 1.5B runs configure four GPUs
+and TP=1; 7B configures eight GPUs and TP=2. Paired learning settings are identical.
+The generator also supports K=4, with independent prompt/response limits.
+
+[Protocol, method details, budget interpretation and reproduction](HGPO_BASELINE.md).
+Historical WebShop controls used prompt 4096, so a strict comparison requires a
+2048-input control. **Prepared only: no launch, queue or GPU reservation.**
+
+### 2026-09-25: H2 no-shrink uniform peer weighting
+
+Two **1.5B / 150-step / two-GPU** ablations replace similarity weights with equal
+weight per eligible peer occurrence. They retain both history and future credit,
+whole-trajectory LOO, exact observation groups, task fallback and padding dedup.
+Every usable readout has full strength. The only method change from each matched
+control is `ccpo_wmode: soft -> uniform`.
+
+| Arm | H / F / EP | Notes |
+|---|---|---|
+| M10 ALFWorld uniform peers | 1 / 1 / 0 | [NOTES](m10-h2-noshrink-uniform-peers-alfworld-1.5b-2gpu-20260925/NOTES.md) |
+| M11 WebShop uniform peers + episode | 1 / 1 / 1 | [NOTES](m11-h2-noshrink-active-episode-uniform-peers-webshop-1.5b-2gpu-20260925/NOTES.md) |
+
+Uniform weighting applies to history/current/future readouts and fallback;
+repeated real peer visits retain their occurrence mass. This tests similarity
+weighting, whereas future-only removes history credit. Frozen feature diagnostics
+remain enabled, but cannot affect uniform credit under exact grouping.
+[Equations, protocol, comparison and reproduction](UNIFORM_PEER_ABLATIONS.md).
+**Prepared only; neither launched nor queued.**

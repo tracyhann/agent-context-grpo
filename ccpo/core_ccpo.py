@@ -61,6 +61,8 @@ _GATE = os.environ.get("ACG_CCPO_GATE", "hard").lower()
 # phi vectors, clipped at 0. tau does not enter, so the weight falls off linearly in
 # the angle rather than exponentially in the distance: the ablation for whether the
 # exponential kernel earns its place over a plain similarity score.
+# "uniform" gives every eligible peer occurrence weight one, at every backoff
+# level. Repeated visits retain occurrence mass; trajectories are not equalized.
 _WMODE = os.environ.get("ACG_CCPO_WMODE", "soft").strip().lower()
 # Default: exclude the complete query trajectory. 0 permits every matched
 # occurrence, including the query itself; padding is still deduplicated upstream.
@@ -833,7 +835,12 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
                 other = [b for b in range(len(idx)) if not loo or trajs[b] != trajs[a]]
                 if not other:
                     continue
-                if _WMODE == "hard":
+                if _WMODE == "uniform":
+                    # Keep exactly the same peer pool and trajectory exclusion.
+                    # This applies to history and potential targets, including
+                    # task fallback. No radius/nearest-neighbour selection.
+                    w = np.ones(len(other), dtype=np.float64)
+                elif _WMODE == "hard":
                     # 0/1 gate at the kernel radius. If tau excludes every neighbour the
                     # row would lose its baseline entirely, which is not an ablation but
                     # a different estimator, so the nearest trajectory is always kept.
@@ -1170,6 +1177,7 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
         detail['credibility_values'][i] = lk
     return out, dict(
         **detail, level_values=level_of, prepared_phi_values=PHI, loo=float(loo),
+        uniform_weighting=float(_WMODE == "uniform"),
         lam_u_mean=float(np.mean(lam_all)) if lam_all else 0.0,
         lam_u_gt50=float(np.mean(np.array(lam_all) > 0.5)) if lam_all else 0.0,
         lam_pooled=(float(lam_pooled) if lam_pooled is not None else float('nan')),

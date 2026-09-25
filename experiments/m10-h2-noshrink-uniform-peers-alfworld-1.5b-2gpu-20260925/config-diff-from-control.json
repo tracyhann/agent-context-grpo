@@ -1,0 +1,17 @@
+{
+  "changes": {
+    "ccpo_wmode": {
+      "control": "soft",
+      "prepared": "uniform"
+    },
+    "exp_id": {
+      "control": "m10-h2-no-credit-shrinkage-alfworld-1.5b-2gpu-20260919",
+      "prepared": "m10-h2-noshrink-uniform-peers-alfworld-1.5b-2gpu-20260925"
+    }
+  },
+  "control": "experiments/m10-h2-no-credit-shrinkage-alfworld-1.5b-2gpu-20260919",
+  "missing_control_defaults": {
+    "ccpo_loo": 1,
+    "ccpo_progress_history_weight": 1.0
+  }
+}
