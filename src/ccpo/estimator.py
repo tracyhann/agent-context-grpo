@@ -1,4 +1,4 @@
-"""The no-shrinkage CCPO estimator. All calculations are detached CPU NumPy."""
+"""Contextual Credit Policy Optimization. Calculations use CPU NumPy."""
 from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass, fields
@@ -196,10 +196,11 @@ def _normalize(values, task_ids, active, *, divide_std, keep_singleton):
 
 
 def compute_advantages(batch: RolloutBatch, config: CCPOConfig = CCPOConfig()) -> CCPOResult:
-    """Compute H + standardized future progress, optionally adding episode credit.
+    """Compute CCPO credit, optionally adding episode advantage.
 
-    No shrinkage, learned critic, original edge bonus, or final episode-fusion
-    normalization. All returned arrays follow the original input row order.
+    Contextual baselines are applied directly. Episode credit is added after
+    benchmark-specific contextual normalization. Returned arrays follow the
+    original input row order.
     """
     original = _validate(batch)
     batch, restore, trajectories = _canonicalize(original)

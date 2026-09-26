@@ -1,4 +1,4 @@
-"""Contextual Credit Policy Optimization, without shrinkage."""
+"""Contextual Credit Policy Optimization (CCPO)."""
 from .estimator import CCPOConfig, CCPOResult, RolloutBatch, compute_advantages
 from .features import build_features, context_statistics
 

@@ -2,9 +2,8 @@
 
 CCPO assigns credit to each agent turn using a context-conditioned historical
 return residual and a future potential increase. This package contains the
-**no-shrinkage main method**, with episode advantage either disabled or added
-with unit weight. It is a standalone advantage estimator for PPO, independent
-of the surrounding research repository.
+CCPO advantage estimator for PPO, with episode advantage either disabled
+or added with unit weight.
 
 ## Install and run
 
@@ -67,8 +66,8 @@ near-zero median is replaced by 1. If no other trajectory matches the observatio
 back off to all turns of the same task outside the query trajectory and recompute
 the kernel within that task bucket. If no such peers exist, contextual credit is
 unsupported and zero. Repeated visits retain their occurrence weights; support
-is counted by distinct trajectories. Every usable baseline is applied at full
-strength: **no shrinkage toward a uniform baseline or task prior**.
+is counted by distinct trajectories. Every usable baseline is the contextual
+weighted mean defined above, applied directly.
 
 ### History and future credit
 
@@ -83,8 +82,8 @@ Z_{i,t}=\gamma^{T_i-t}R_i.
 The API accepts Y as `returns`, the unpenalized R as `episode_rewards`, and
 R-p as `episode_scores`; the penalty is not reapplied by the estimator.
 Y discounts environment rewards, then subtracts only the current turn's penalty.
-Potential targets Z exclude invalid-action penalties and intentionally have one
-additional discount, matching the original edge convention.
+Potential targets Z exclude invalid-action penalties and use the discount
+exponent T_i-t.
 
 \[
 H_{i,t}=Y_{i,t}-C_{i,t}[Y],\quad V_{i,t}=C_{i,t}[Z],\qquad
@@ -96,9 +95,8 @@ representation. At a terminal endpoint V_i,T_i=R_i, including 0 for unsuccessful
 horizon exhaustion. Future differences require supported current and endpoint
 values; unsupported differences are zero and excluded from their task moments.
 The task z-score uses sample standard deviation plus 1e-6; fewer than two eligible
-rows give zero future credit. There is no extra gamma^h multiplier, immediate
-reward term, or original edge bonus. This is a progress signal, not a TD residual
-or a claim of unbiased causal attribution to a single action.
+rows give zero future credit. Future credit is the standardized potential
+increase between the two endpoints, measuring progress over the horizon h.
 
 ### Episode modes and normalization
 
@@ -114,8 +112,8 @@ A=A_{\mathrm{CC}}+\eta A_{\mathrm{EP}},\qquad \eta\in\{0,1\}.
 | Episode advantage | Task z-score of episode_scores | Task mean-centering of episode_scores |
 | Episode fusion | Add after N; no further normalization | Add after N; no further normalization |
 
-Episode statistics use **turn rows**, preserving the existing length weighting;
-they do not count each trajectory just once. A task with one episode-score row
+Episode statistics use **turn rows**, so longer trajectories contribute
+more observations to these moments. A task with one episode-score row
 uses mean=0 and std=1. The combined contextual transform leaves a single supported
 row unchanged. Episode rewards still define Y and Z when eta=0; only the separate
 episode-advantage channel is disabled.
@@ -141,7 +139,7 @@ PPO minibatches. Padding copies are removed before feature processing, peer
 selection and future-term normalization. Duplicate rows must agree exactly,
 including their hidden states: extract once per source turn, then copy, rather
 than independently re-encoding training padding. Final contextual and episode
-moments follow restored trainer rows, preserving existing padded-batch semantics.
+moments use restored trainer rows.
 Prefer computing before padding when the trainer permits it.
 
 For a verl-agent `DataProto` containing aligned `ccpo_phi_feats` and explicit
@@ -185,6 +183,6 @@ the actor itself remains trainable.
 | Sampling temperature / learning rate | 1.0 / 1e-6 | Same |
 | Discount / KL loss coefficient | 0.95 / 0.01 | Same |
 
-These are rollout/trainer settings, not hidden side effects of the estimator.
-This release contains source, tests and a synthetic usage example only. It does
-not bundle training infrastructure, model weights, datasets or experiment outputs.
+Configure these benchmark settings in the rollout collector and PPO trainer.
+This package provides the CCPO estimator, feature processing, a PyTorch adapter,
+tests and a synthetic usage example.
