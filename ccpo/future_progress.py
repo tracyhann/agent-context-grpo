@@ -159,8 +159,8 @@ def ccpo_future_progress_advantage(*, turn_index, episode_lengths, horizon=1,
                          '(phi=hidden or hidden+ctx, with phi_feats supplied)')
     if core._STD_MODE == 'local' or core._JW_C != 0 or core._LAM_FIX != '1' and core._LAM_FIX != '1.0':
         raise ValueError('Future progress requires the M3/M5 attention readout without local scaling/J weighting')
-    if core._GATE != 'hard' or float(kwargs.get('sim') or core._SIM) != 0 or core._SIM_BACKOFF != 0:
-        raise ValueError('Future progress requires exact observation groups with task backoff')
+    if core._GATE not in ('hard', 'cross_task') or float(kwargs.get('sim') or core._SIM) != 0 or core._SIM_BACKOFF != 0:
+        raise ValueError('Future progress requires exact observation groups or cross_task soft grouping')
     take, restore, groups = canonical_trajectory_rows(
         kwargs['index'], kwargs['traj_index'], turn_index, episode_lengths)
     canonical = dict(kwargs)
@@ -229,6 +229,7 @@ def ccpo_future_progress_advantage(*, turn_index, episode_lengths, horizon=1,
         arrays['target'] = (arrays['target'] * _numpy(canonical['response_mask'])).sum(-1)
     diag.update(progress_enabled=1., progress_loo=diag['loo'],
                 progress_uniform_weighting=diag['uniform_weighting'],
+                progress_cross_task_grouping=diag['cross_task_grouping'],
                 progress_future_active=float(horizon > 0 and progress_weight > 0),
                 progress_horizon=float(horizon), progress_weight=float(progress_weight),
                 progress_history_weight=float(history_weight), progress_episode_weight=0., progress_original_edge_weight=0.,
@@ -247,14 +248,16 @@ def ccpo_future_progress_advantage(*, turn_index, episode_lengths, horizon=1,
                            ('task_prior', 'task_prior_values'), ('J', 'support_values'),
                            ('n_eff', 'effective_support_values'), ('lambda_k', 'credibility_values'),
                            ('level', 'level_values'), ('self_mass', 'self_mass_values'),
-                           ('same_traj_mass', 'same_traj_mass_values'), ('peer_rows', 'peer_rows_values')]:
+                           ('same_traj_mass', 'same_traj_mass_values'), ('peer_rows', 'peer_rows_values'),
+                           ('cross_task_mass', 'cross_task_mass_values'), ('peer_tasks', 'peer_tasks_values'),
+                           ('kernel_tau', 'kernel_tau_values')]:
             x = np.asarray(src[key]).copy(); arrays[source + '_' + label] = x
             _stats(diag, source + '_' + label, x, hist_live if source == 'history' else np.isfinite(current))
             if source == 'current':
                 y = np.full(n, np.nan); y[~terminal] = x[endpoint[~terminal]]
                 arrays['future_' + label] = y
                 _stats(diag, 'future_' + label, y, eligible & ~terminal)
-    diag['progress_current_exact_frac'] = float(np.mean(value_diag['level_values'] == 0))
+    diag['progress_current_exact_frac'] = float(np.mean(value_diag['level_values'] == 0)) if core._GATE == 'hard' else 0.
     diag['progress_current_backoff_frac'] = float(np.mean(value_diag['level_values'] > 0))
     for label, x in [('future_edge', progress), ('history_edge', history), ('combined_edge', mixed)]:
         diag['progress_' + label + '_corr'] = _corr(x, m5_edge, eligible)

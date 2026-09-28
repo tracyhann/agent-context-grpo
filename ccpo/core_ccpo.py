@@ -51,6 +51,8 @@ _SHRINK = os.environ.get("ACG_CCPO_SHRINK", "eb").lower()
 # (6,912 occurrences, both targets): LOO residual R2 0.4579 -> 0.4841 at
 # tau_scale 0.15 on return-to-go, 0.7434 -> 0.7604 at 0.25 on nextnode.
 _GATE = os.environ.get("ACG_CCPO_GATE", "hard").lower()
+# "cross_task" uses the entire canonical rollout batch, with no task or
+# observation matching. Legacy "global" remains a separate pool per task.
 # Neighbour weighting mode. "soft" (default) is the phi kernel exp(-d/tau); "hard"
 # thresholds it to 0/1 at the same tau, i.e. uniform weight over the neighbours inside
 # the kernel radius and nothing outside. This is the ablation that asks whether the
@@ -413,6 +415,10 @@ def cluster_keys(anchor_obs, index, sim_thresh=0.0):
     """
     n = len(anchor_obs)
     keys = np.empty(n, dtype=object)
+    if _GATE == "cross_task":
+        for i in range(n):
+            keys[i] = ("cross_task",)
+        return keys
     if _GATE == "global":
         # One bucket per task: every occurrence is a candidate neighbour of every
         # other, and exp(-d/tau) does the gating. Nothing falls dead for want of
@@ -585,7 +591,9 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
     loo=0 includes matching rows from the query trajectory, including the query.
     min_traj retains its minimum peer support of max(1, min_traj-1); in no-LOO
     mode the query trajectory can supply one of those peer trajectories.
-    Same-task observation gating and occurrence weighting are unchanged.
+    The default gate matches task and observation. cross_task instead uses all
+    other-trajectory rows in the batch with no hard matching or task fallback.
+    Both retain occurrence weighting.
 
     phi_feats: optional (n, d) array of per-sample affinity features. When given
     and ACG_CCPO_PHI=hidden, distances are taken on these (whitened batch-wide)
@@ -610,6 +618,11 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
     edge_w = _EDGE_W if edge_w is None else float(edge_w)
     sim = _SIM if sim is None else float(sim)
     sim_backoff = _SIM_BACKOFF if sim_backoff is None else float(sim_backoff)
+    if _GATE == "cross_task" and (not loo or _WMODE != "soft" or
+            _LAM_FIX not in ("1", "1.0") or _LK_FIX not in ("1", "1.0") or
+            sim != 0 or sim_backoff != 0):
+        raise ValueError("Cross-task grouping requires soft weights, whole-trajectory LOO, "
+                         "lambda_u=lambda_k=1 and no similarity backoff")
 
     dev = step_rewards.device
     scores = (step_rewards * response_mask).sum(-1) if step_rewards.dim() > 1 else step_rewards
@@ -662,7 +675,7 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
 
     # Task credibility prior follows the same trajectory-exclusion policy.
     B_TASK = None
-    if (_PRIOR_KAPPA > 0.0 or _LK_FIX != "") and _GATE != "global":
+    if (_PRIOR_KAPPA > 0.0 or _LK_FIX != "") and _GATE not in ("global", "cross_task"):
         _ts, _tn = defaultdict(float), defaultdict(int)
         _js, _jn = defaultdict(float), defaultdict(int)
         for _i in range(n):
@@ -768,7 +781,7 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
         if sim_backoff > 0.0:
             levels.append((1, cluster_keys(anchor_obs, index, sim_backoff),
                            rho * _BACKOFF_RHO))
-        if _BACKOFF_TASK and _GATE != "global" and not exact_only:
+        if _BACKOFF_TASK and _GATE not in ("global", "cross_task") and not exact_only:
             # last-resort level: the whole task. Credits only rows every finer
             # level left unassigned, so level-0 rows are untouched.
             _kt = np.empty(n, dtype=object)
@@ -778,6 +791,18 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
 
     assigned = np.zeros(n, dtype=bool)
     level_of = np.full(n, -1, dtype=np.int64)
+    cross_diag = None
+    if _GATE == "cross_task":
+        from ccpo.cross_task import peer_records
+        features = PHI if PHI is not None else np.stack([phi(anchor_obs[i], ctx[i]) for i in range(n)])
+        _rec, cross_diag = peer_records(features, TGT, index, traj_index,
+            float(_TAU_ENV) if _TAU_ENV else tau_scale, min_traj, VALUE)
+        for rec in _rec:
+            assigned[rec['i']] = True
+            level_of[rec['i']] = 0
+        _rel_all.append(cross_diag['phi_rel_corr'])
+        _rel_slope.append(cross_diag['phi_rel_slope'])
+        levels = []  # The batch pool has no task/observation fallback levels.
 
     for lvl, keys, rho_l in levels:
         buckets = defaultdict(list)
@@ -952,7 +977,9 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
     for _r in _rec:
         i, b_loo, b_obs = _r["i"], _r["b_loo"], _r["b_obs"]
         s2, var_gain, rho_l = _r["s2"], _r["var_gain"], _r["rho"]
-        if _GATE == "global":
+        if _GATE == "cross_task":
+            lam = 1.0  # Batch-wide context kernel, no uniform/task-prior mixture.
+        elif _GATE == "global":
             # b_obs here is the uniform mean over the whole task, which measured
             # 0.4248 against the hard gate's 0.4579 -- WORSE. The quantity that
             # measured better (0.4841) is the phi-weighted b_loo. Shrinking toward
@@ -1161,7 +1188,8 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
     detail = {k: np.full(n, np.nan) for k in
               ('kernel_values', 'uniform_values', 'task_prior_values', 'support_values',
                'effective_support_values', 'credibility_values',
-               'self_mass_values', 'same_traj_mass_values', 'peer_rows_values')}
+               'self_mass_values', 'same_traj_mass_values', 'peer_rows_values',
+               'cross_task_mass_values', 'peer_tasks_values', 'kernel_tau_values')}
     for rec in _rec:
         i = rec['i']
         detail['kernel_values'][i] = rec['b_loo']
@@ -1171,6 +1199,8 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
         detail['effective_support_values'][i] = rec['ne']
         for key in ('self_mass', 'same_traj_mass', 'peer_rows'):
             detail[key + '_values'][i] = rec[key]
+        for key, default in (('cross_task_mass', 0.), ('peer_tasks', 1.), ('kernel_tau', np.nan)):
+            detail[key + '_values'][i] = rec.get(key, default)
         lk = rec['J']/(rec['J']+_PRIOR_KAPPA) if B_TASK is not None and rec['lvl']==0 else 1.
         if _LK_FIX != "" and B_TASK is not None and rec['lvl']==0:
             lk = min(1.,max(0.,float(_LK_FIX)))
@@ -1178,6 +1208,7 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
     return out, dict(
         **detail, level_values=level_of, prepared_phi_values=PHI, loo=float(loo),
         uniform_weighting=float(_WMODE == "uniform"),
+        cross_task_grouping=float(_GATE == "cross_task"),
         lam_u_mean=float(np.mean(lam_all)) if lam_all else 0.0,
         lam_u_gt50=float(np.mean(np.array(lam_all) > 0.5)) if lam_all else 0.0,
         lam_pooled=(float(lam_pooled) if lam_pooled is not None else float('nan')),
@@ -1193,10 +1224,10 @@ def ccpo_step_advantage(step_rewards, response_mask, anchor_obs, index,
         lam_eb_obs=float(np.mean(_lam_eb_obs)),
         lam_eb_obs_gt0=float(np.mean(_lam_eb_obs > 0)),
         n_eff_mean=float(np.mean(neff_all)) if neff_all else 0.0,
-        E_w=float(np.mean(w_all)) if w_all else float("nan"),
+        E_w=cross_diag['E_w'] if cross_diag is not None else float(np.mean(w_all)) if w_all else float("nan"),
         live_frac=float(_live.mean()), live_mask=_live,
         baseline_values=baseline_values, bootstrap_values=bootstrap_values,
-        n_buckets=len(_exact),
+        n_buckets=int(n > 0) if _GATE == "cross_task" else len(_exact),
         lvl1_frac=float((level_of == 1).mean()),
         phi_mode=(_PHI_MODE if PHI is not None else "bow"), rho=rho,
         target=target, sim=sim, sim_backoff=sim_backoff,

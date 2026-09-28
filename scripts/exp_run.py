@@ -261,6 +261,8 @@ DEFAULTS = {
     # b_obs degenerates to the uniform task mean, which measures WORSE than the
     # hard gate -- see H-M in experiments/hypothesis.md.
     "ccpo_gate": "hard",
+    # "cross_task" removes both task and observation gates from the batch-wide
+    # soft readout. No task prior/backoff; whole-trajectory LOO and no shrinkage.
     "ccpo_tau": 1.0,
     # "task" = divide the step credit by the per-task sd in the trainer (default).
     # "local" = divide by the phi-weighted sd over the same soft neighbourhood that
@@ -427,6 +429,18 @@ def validate_future_progress_config(cfg):
         return
     if str(cfg.get("ccpo_loo", 1)) not in ("0", "1"):
         raise ValueError("ccpo_loo must be 0 or 1")
+    if cfg.get("ccpo_gate") == "cross_task":
+        import math
+        required = dict(ccpo_wmode="soft", ccpo_loo=1, ccpo_lam_fix=1., ccpo_lk_fix=1.,
+                        ccpo_sim=0., ccpo_sim_backoff=0.)
+        for key, expected in required.items():
+            actual = cfg.get(key, DEFAULTS[key])
+            matches = str(actual) == expected if isinstance(expected, str) else float(actual or 0) == expected
+            if not matches:
+                raise ValueError(f"Cross-task grouping requires {key}={expected}")
+        tau = float(cfg.get("ccpo_tau", DEFAULTS["ccpo_tau"]))
+        if not math.isfinite(tau) or tau <= 0:
+            raise ValueError("Cross-task grouping requires finite positive ccpo_tau")
     horizon = cfg.get("ccpo_progress_horizon", 0)
     if isinstance(horizon, bool) or not isinstance(horizon, int) or horizon not in range(5):
         raise ValueError("ccpo_progress_horizon must be an integer from 0 through 4")

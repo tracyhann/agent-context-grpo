@@ -1532,3 +1532,19 @@ weighting, whereas future-only removes history credit. Frozen feature diagnostic
 remain enabled, but cannot affect uniform credit under exact grouping.
 [Equations, protocol, comparison and reproduction](UNIFORM_PEER_ABLATIONS.md).
 **Prepared only; neither launched nor queued.**
+
+## Cross-task contextual soft grouping — 2026-09-28
+
+`future-progress-h2-no-credit-shrinkage-cross-task` adds ALFWorld and WebShop
+1.5B arms with **EP=0 on both**. It changes the no-shrink H2 main method's
+`ccpo_gate` from `hard` to `cross_task`: all other-trajectory rows in the
+canonical rollout batch become contextual soft-weight candidates, with no
+task/observation matching, task prior, or task fallback. Hidden+ctx features,
+exponential weighting (tau scale 0.15), H/F weights 1/1, whole-trajectory LOO
+and task-wise normalization stay enabled. Legacy `global` remains task-local.
+
+[Definition, prepared configurations and diagnostics](CROSS_TASK_SOFT_GROUPING.md).
+
+Variant: `CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-CROSS-TASK`.
+Canonical IDs: `ccpo-attncred-abl-fph2-noshrink-cross-task-alfworld-1.5b` and
+`ccpo-attncred-abl-fph2-noshrink-cross-task-ws-1.5b`. Both are prepared only.

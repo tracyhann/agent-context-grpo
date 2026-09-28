@@ -132,3 +132,6 @@ peers, remove context statistics, or replace soft weights with clipped cosine.
 Each retains H2/no shrinkage and active episode weight 1 on the same 1.5B,
 150-step, 15-turn WebShop protocol. They compare against the EP1 control; the
 primary method designation above remains EP0. All are prepared only.
+
+[Cross-task soft grouping](CROSS_TASK_SOFT_GROUPING.md) removes both hard peer
+gates while retaining the H2 no-shrink EP0 main method on both benchmarks.

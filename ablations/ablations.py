@@ -225,6 +225,19 @@ ABLATIONS = {
               "and soft exponential weights remain enabled. Usable lambda_k=1, "
               "episode/original-edge weights=0; episode advantage is diagnostic only.",
     ),
+    "future-progress-h2-no-credit-shrinkage-cross-task": dict(
+        name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-CROSS-TASK",
+        tag="fph2-noshrink-cross-task",
+        title="M10/M11 H2 no shrinkage, EP0, batch-wide contextual soft grouping",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("alfworld", "webshop"),
+        delta={"ccpo_lk_fix": 1.0, "ccpo_gate": "cross_task"},
+        removes="both task identity and exact-observation matching from contextual peer selection",
+        asks="can contextual similarity alone select useful peers across tasks?",
+        watch="History and both potentials use all other-trajectory occurrences in the rollout batch. "
+              "Keep hidden+ctx, exponential weights, tau=0.15, whole-trajectory LOO, and "
+              "task-wise advantage normalization. No task prior/backoff; EP=0 on both benchmarks.",
+    ),
     "future-progress-h2-no-credit-shrinkage": dict(
         name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK",
         tag="fph2-noshrink",
