@@ -182,7 +182,7 @@ class PromptAndConfigTests(unittest.TestCase):
             self.assertEqual((cfg['history_length'],cfg['ccpo_progress_horizon']),(h,f))
             self.assertEqual((cfg['ccpo_progress_history_weight'],cfg['ccpo_progress_weight']),(float(h>0),float(f>0)))
             self.assertEqual(record['hydra_overrides'],prep.er.build_command(cfg,str(folder))[3:])
-            for k,e in prep.er.ENV_KEYS.items():self.assertEqual(record['env'][e],str(cfg[k]))
+            for k,e in ((k, v) for k, v in prep.er.ENV_KEYS.items() if k != 'ccpo_progress_mode' or k in cfg):self.assertEqual(record['env'][e],str(cfg[k]))
             self.assertEqual(cfg['ccpo_ep_w'],0);self.assertEqual(cfg['ccpo_lk_fix'],1);self.assertEqual(cfg['ccpo_loo'],1)
             status=json.loads((folder/'PREPARED.json').read_text());self.assertFalse(status['launched']);self.assertFalse(status['queued'])
             self.assertFalse(any(f.is_file() for f in (folder/'outputs').rglob('*')))

@@ -49,7 +49,7 @@ class WebshopEp1Tests(unittest.TestCase):
             for k, v in built.items():
                 self.assertEqual(cfg[k], v, k)
             self.assertEqual(saved['hydra_overrides'], prep.er.build_command(cfg, str(folder))[3:])
-            for k, env in prep.er.ENV_KEYS.items():
+            for k, env in ((k, v) for k, v in prep.er.ENV_KEYS.items() if k != 'ccpo_progress_mode' or k in cfg):
                 self.assertEqual(saved['env'][env], str(cfg[k]))
             self.assertIn('trainer.n_gpus_per_node=2', saved['hydra_overrides'])
             self.assertIn('  ACG_CCPO_EP_W=1.0 ', (folder/'run.sh').read_text())

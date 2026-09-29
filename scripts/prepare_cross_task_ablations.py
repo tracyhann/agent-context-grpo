@@ -43,7 +43,7 @@ def prepare(benchmark, stamp):
     canonical, method = ablations.build(key_for(benchmark), benchmark)
     control = ROOT/'experiments'/CONTROLS[benchmark]
     old = json.loads((control/'config.json').read_text())['config']
-    missing = {k: v for k, v in IMPLIED.items() if k not in old}
+    missing = {k: v for k, v in {**IMPLIED, 'ccpo_progress_mode': 'difference'}.items() if k not in old}
     old.update(missing)
     folder = ROOT/'experiments'/run_name(benchmark, stamp)
     if folder.exists():

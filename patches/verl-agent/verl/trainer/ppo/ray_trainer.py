@@ -387,9 +387,14 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
         if _progress_horizon not in range(5):
             raise ValueError("Future-progress horizon must be 0 through 4")
         _progress_weight = float(os.environ.get('ACG_CCPO_PROGRESS_WEIGHT', '1'))
+        _progress_mode = os.environ.get('ACG_CCPO_PROGRESS_MODE', 'difference')
+        if _progress_mode not in ('difference', 'discount_aligned'):
+            raise ValueError('Invalid future-progress mode')
         # (horizon=0, weight=0) explicitly requests history-only credit through
         # the same canonicalization, component logging and support-mask path.
         _progress_enabled = _progress_horizon > 0 or _progress_weight == 0.0
+        if not _progress_enabled and _progress_mode != 'difference':
+            raise ValueError('Discount-aligned mode requires an enabled future-progress arm')
         if _progress_enabled:
             if _fixed_anchor or _outlook_horizon != 0 or _outlook_beta != 0:
                 raise ValueError("Future progress cannot be combined with another OUTLOOK variant")
@@ -400,6 +405,7 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
                 episode_lengths=data.non_tensor_batch['episode_lengths'],
                 horizon=_progress_horizon,
                 progress_weight=_progress_weight,
+                progress_mode=_progress_mode,
                 history_weight=float(os.environ.get('ACG_CCPO_PROGRESS_HISTORY_WEIGHT', '1')))
         elif _fixed_anchor:
             if _outlook_horizon != 0 or _outlook_beta != 0:
@@ -456,7 +462,7 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
               f"r_vs_g2po={diag.get('r_vs_g2po', float('nan')):.4f} "
               f"outlook_horizon={_outlook_horizon} outlook_beta={_outlook_beta:.2f} "
               f"outlook_delta={diag.get('outlook_delta_absmean', 0.0):.4f} "
-              f"progress_horizon={_progress_horizon} "
+              f"progress_horizon={_progress_horizon} progress_mode={_progress_mode} "
               f"progress_edge_r={diag.get('progress_future_edge_corr', float('nan')):.4f}", flush=True)
         # Step-term scaling. 'mode' (default) follows the episode term:
         #   mean_std_norm -> standardise per task, both terms unit-variance

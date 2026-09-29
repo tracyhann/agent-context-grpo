@@ -1,6 +1,7 @@
 """Context-conditioned endpoint value increases, with M3/M5 credit scaling.
 
-H_t = Y_t - B_t; P_t = V_context(t+h) - V_context(t).
+H_t = Y_t - B_t; P_t = V_context(t+h) - V_context(t) by default.
+The discount_aligned ablation uses gamma**(t_plus-t) * V_context(t_plus) - V_context(t).
 A_pre = history_weight * H_t + progress_weight * task_standardize(P_t).
 Only enabled components contribute to the trainer normalization support mask.
 The trainer then applies its existing benchmark-specific combined normalization.
@@ -34,13 +35,20 @@ def endpoint_map(groups, n, horizon):
     return endpoint, window
 
 
-def progress_from_values(values, groups, episode_rewards, horizon=1, success_reward=10.):
+def progress_from_values(values, groups, episode_rewards, horizon=1, success_reward=10.,
+                         *, gamma=.95, mode='difference'):
     """M5 terminal convention: success potential 10, other endings 0.
 
-    There is no added reward or outer gamma here. Discounting is already in the
-    value labels. Multi-step windows telescope over the same value function.
+    The legacy difference has no outer discount. discount_aligned expresses
+    the endpoint value in current-time units using the ACTUAL clipped window,
+    including terminal sentinels. Neither mode adds an immediate reward.
+    Discounted multi-step residuals telescope with gamma-weighted one-step terms.
     Horizon 0 is the history-only mode: current endpoints, no eligible progress.
     """
+    if mode not in ('difference', 'discount_aligned'):
+        raise ValueError('Unknown future-progress mode: ' + str(mode))
+    if not np.isfinite(gamma) or not 0 <= gamma <= 1:
+        raise ValueError('Invalid discount')
     values = np.asarray(values, dtype=float)
     rewards = np.asarray(episode_rewards, dtype=float)
     endpoint, window = endpoint_map(groups, len(values), horizon)
@@ -49,7 +57,8 @@ def progress_from_values(values, groups, episode_rewards, horizon=1, success_rew
     future[~terminal] = values[endpoint[~terminal]]
     eligible = np.isfinite(values) & np.isfinite(future) & (horizon > 0)
     raw = np.zeros(len(values))
-    raw[eligible] = future[eligible] - values[eligible]
+    discount = np.power(gamma, window) if mode == 'discount_aligned' else np.ones(len(values))
+    raw[eligible] = discount[eligible] * future[eligible] - values[eligible]
     return raw, future, endpoint, window, eligible
 
 
@@ -133,14 +142,17 @@ def _check_round_trip(kwargs, canonical, restore):
 
 
 def ccpo_future_progress_advantage(*, turn_index, episode_lengths, horizon=1,
-                                   progress_weight=1., history_weight=1., readout='context', **kwargs):
-    """Independently weighted historical residual and future-state value increase.
+                                   progress_weight=1., history_weight=1., readout='context',
+                                   progress_mode='difference', **kwargs):
+    """Historical residual plus either future difference or discount-aligned residual.
 
     readout='m5' is a CPU parity/reference option: self-inclusive uniform node
     potentials. The registered training method always uses readout='context'.
     """
     if isinstance(horizon, (bool, np.bool_)) or not isinstance(horizon, (int, np.integer)) or horizon not in range(5):
         raise ValueError('Invalid future-progress horizon: expected integer 0 through 4')
+    if progress_mode not in ('difference', 'discount_aligned'):
+        raise ValueError('Unknown future-progress mode: ' + str(progress_mode))
     if horizon == 0 and progress_weight != 0:
         raise ValueError('Zero future horizon requires progress_weight=0')
     for name, weight in [('history', history_weight), ('future', progress_weight)]:
@@ -197,8 +209,15 @@ def ccpo_future_progress_advantage(*, turn_index, episode_lengths, horizon=1,
     if readout == 'm5':
         current = m5_current.copy()
     raw, future, endpoint, window, eligible = progress_from_values(
-        current, groups, episodes, horizon, success_reward)
+        current, groups, episodes, horizon, success_reward, gamma=gamma, mode=progress_mode)
     progress, norm_mean, norm_std = standardize_progress(raw, tasks, eligible)
+    # Audit the reviewer's decomposition before task-wise standardization.
+    # Unsupported rows stay zero; they never enter the future normalization set.
+    endpoint_discount = np.power(gamma, window)
+    undiscounted_raw = np.zeros(n); discount_aligned_raw = np.zeros(n); time_passage_raw = np.zeros(n)
+    undiscounted_raw[eligible] = future[eligible] - current[eligible]
+    discount_aligned_raw[eligible] = endpoint_discount[eligible] * future[eligible] - current[eligible]
+    time_passage_raw[eligible] = (1. - endpoint_discount[eligible]) * future[eligible]
     # Diagnostic reference is the ORIGINAL one-step edge, including for horizon 2.
     m5_raw = core._successor_values(m5_values, successors, n) - m5_current
     m5_edge, _, _ = standardize_progress(m5_raw, tasks, np.ones(n, dtype=bool))
@@ -219,6 +238,9 @@ def ccpo_future_progress_advantage(*, turn_index, episode_lengths, horizon=1,
         history_baseline=np.asarray(diag['baseline_values']).copy(), history_adv=history,
         weighted_history=weighted_history,
         current_value=current, future_value=future, raw_progress=raw,
+        endpoint_discount=endpoint_discount, future_credit_mode=np.full(n, progress_mode),
+        undiscounted_raw=undiscounted_raw, discount_aligned_raw=discount_aligned_raw,
+        time_passage_raw=time_passage_raw,
         progress_normalized=progress, weighted_progress=weighted_progress,
         progress_norm_mean=norm_mean, progress_norm_std=norm_std, combined_pre=mixed,
         m5_edge_raw=m5_raw, m5_edge_normalized=m5_edge, eligible=eligible,
@@ -232,13 +254,16 @@ def ccpo_future_progress_advantage(*, turn_index, episode_lengths, horizon=1,
                 progress_cross_task_grouping=diag['cross_task_grouping'],
                 progress_future_active=float(horizon > 0 and progress_weight > 0),
                 progress_horizon=float(horizon), progress_weight=float(progress_weight),
+                progress_discount_aligned=float(progress_mode == 'discount_aligned'), progress_gamma=gamma,
+                progress_decomposition_max_error=float(np.max(abs(undiscounted_raw - discount_aligned_raw - time_passage_raw))) if n else 0.,
                 progress_history_weight=float(history_weight), progress_episode_weight=0., progress_original_edge_weight=0.,
                 progress_live_frac=float(live.mean()),
                 progress_eligible_frac=float(eligible.mean()), progress_terminal_frac=float(terminal.mean()),
                 progress_unique_rows=float(n), progress_padding_frac=float(1 - n / len(restore)),
                 progress_m5_reference_mode=float(readout == 'm5'), **phi_diag)
     for key in ('target', 'value_target', 'history_baseline', 'history_adv', 'weighted_history', 'current_value',
-                'future_value', 'raw_progress', 'progress_normalized', 'weighted_progress', 'combined_pre',
+                'future_value', 'raw_progress', 'undiscounted_raw', 'discount_aligned_raw', 'time_passage_raw',
+                'progress_normalized', 'weighted_progress', 'combined_pre',
                 'progress_norm_mean', 'progress_norm_std', 'm5_edge_normalized'):
         _stats(diag, key, arrays[key], live)
     # Value diagnostics describe the unpenalized contextual estimator. Terminal

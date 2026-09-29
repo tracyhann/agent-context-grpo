@@ -1,0 +1,11 @@
+{
+  "ablations/ablations.py": "402f65ffd40a558053790b04a4cf0168b29fa6434df23d002e30561f8f321a77",
+  "ccpo/arms.py": "4c930ee857e7846cf4709a69b0a012f833e3f7b135757fff9d6138f37ea07585",
+  "ccpo/core_ccpo.py": "0224d9a1f739d204438b58a3e3756d8f675ba16f6677af7e2df58263014a8da0",
+  "ccpo/future_progress.py": "5abd69ca397f7e9a2daf4f577f43228b5569268a08221569e7ad72f595ebd2f1",
+  "patches/verl-agent/verl/trainer/ppo/ray_trainer.py": "9bb7f0b767507377e622db9cae6a4a7942d772b06736aa55ecb01d1881a25bfc",
+  "scripts/exp_run.py": "244e24da9a1879774befd804eade5a806cfb48b6bc55fc3d7f6c9f67c0dcb240",
+  "scripts/prepare_discount_aligned_ablations.py": "5e1f55eb071d3fee6cfbf7b175194f2c57d42718a8b1a96e8ba4a0c1f14eb736",
+  "tests/test_discount_aligned_future.py": "0e3a68dfe1fd9eca21f2a4f1107e4d0e1f61af4e3916e6736767c87d4cd4ab45",
+  "verl-agent/verl/trainer/ppo/ray_trainer.py": "9bb7f0b767507377e622db9cae6a4a7942d772b06736aa55ecb01d1881a25bfc"
+}

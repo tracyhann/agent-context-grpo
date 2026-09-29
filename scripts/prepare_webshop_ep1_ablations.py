@@ -42,7 +42,7 @@ def prepare(variant,stamp):
     spec=CASES[variant];canonical,method=ablations.build(spec['key'],'webshop')
     control=ROOT/'experiments'/CONTROL
     old=json.loads((control/'config.json').read_text())['config']
-    missing={k:v for k,v in IMPLIED.items() if k not in old};old.update(missing)
+    missing={k:v for k,v in {**IMPLIED, 'ccpo_progress_mode': 'difference'}.items() if k not in old};old.update(missing)
     folder=ROOT/'experiments'/run_name(variant,stamp)
     if folder.exists():raise FileExistsError(f'Refusing to overwrite existing experiment: {folder}')
     cfg={k:v for k,v in old.items() if k in er.DEFAULTS};cfg.update(method)

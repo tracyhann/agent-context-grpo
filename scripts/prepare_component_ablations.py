@@ -47,6 +47,7 @@ def prepare(benchmark, component, stamp):
     old = json.loads((control/'config.json').read_text())['config']
     old.setdefault('ccpo_progress_history_weight', 1.0)  # Implicit legacy coefficient.
     old.setdefault('ccpo_loo', 1)  # Implicit legacy trajectory exclusion.
+    old.setdefault('ccpo_progress_mode', 'difference')  # Legacy future residual.
     name = run_name(benchmark, component, stamp)
     folder = ROOT/'experiments'/name
     if folder.exists():

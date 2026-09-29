@@ -153,7 +153,7 @@ class PreparedNoLooTests(unittest.TestCase):
                 ccpo_phi='hidden+ctx',ccpo_ctx_w=1.,total_epochs=150,model='Qwen/Qwen2.5-1.5B-Instruct').items():
                 self.assertEqual(cfg[k],v,k)
             self.assertEqual(record['hydra_overrides'],prep.er.build_command(cfg,str(folder))[3:])
-            for k,e in prep.er.ENV_KEYS.items():self.assertEqual(record['env'][e],str(cfg[k]))
+            for k,e in ((k, v) for k, v in prep.er.ENV_KEYS.items() if k != 'ccpo_progress_mode' or k in cfg):self.assertEqual(record['env'][e],str(cfg[k]))
             self.assertIn('  ACG_CCPO_LOO=0 ',(folder/'run.sh').read_text())
             status=json.loads((folder/'PREPARED.json').read_text())
             self.assertFalse(status['launched']);self.assertFalse(status['queued'])

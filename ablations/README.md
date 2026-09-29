@@ -227,3 +227,16 @@ exponential weighting (tau scale 0.15), H/F weights 1/1, whole-trajectory LOO
 and task-wise normalization stay enabled. Legacy `global` remains task-local.
 
 [Definition, prepared configurations and diagnostics](../experiments/CROSS_TASK_SOFT_GROUPING.md).
+
+## Discount-aligned future residual — 2026-09-29
+
+`future-progress-h2-no-credit-shrinkage-discount-aligned` prepares M10 ALFWorld
+EP0, and `future-progress-h2-no-credit-shrinkage-discount-aligned-active-episode`
+prepares M11 WebShop EP1. Both retain the 1.5B no-shrink H2 matched-group controls
+and change only the future mode to `discount_aligned`. The future term becomes
+`z_task(gamma^(t_plus-t) * V(t_plus) - V(t))`, including clipped terminal windows.
+History is unchanged, and the decomposition's time-passage term is logged.
+
+[Equations, controls and prepared runs](../experiments/DISCOUNT_ALIGNED_FUTURE_RESIDUAL.md).
+Prepare with `python scripts/prepare_discount_aligned_ablations.py --date 20260929`;
+this only generates configurations and launch scripts.

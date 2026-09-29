@@ -186,7 +186,7 @@ class CrossTaskTests(unittest.TestCase):
             self.assertEqual(cfg['model'],'Qwen/Qwen2.5-1.5B-Instruct')
             self.assertEqual(saved['hydra_overrides'],prep.er.build_command(cfg,str(folder))[3:])
             self.assertIn('ACG_CCPO_GATE=cross_task', (folder/'run.sh').read_text())
-            for key,env in prep.er.ENV_KEYS.items(): self.assertEqual(saved['env'][env],str(cfg[key]))
+            for key,env in ((k, v) for k, v in prep.er.ENV_KEYS.items() if k != 'ccpo_progress_mode' or k in cfg): self.assertEqual(saved['env'][env],str(cfg[key]))
             self.assertFalse(saved['preparation']['launched']); self.assertFalse(saved['preparation']['queued'])
             result=subprocess.run([sys.executable,'-c',"from ccpo import core_ccpo as c; assert c._GATE == 'cross_task'; assert c._WMODE == 'soft'; assert float(c._LK_FIX) == 1"],
                 cwd=ROOT,env=dict(os.environ,**saved['env']),capture_output=True,text=True,timeout=60)

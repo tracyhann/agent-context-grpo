@@ -245,6 +245,7 @@ DEFAULTS = {
     "ccpo_edge_w": 0.0,
     "ccpo_progress_horizon": 0,  # 1..4 enables progress; 0 + progress_weight=0 selects history-only logging
     "ccpo_progress_weight": 1.0,
+    "ccpo_progress_mode": "difference",  # or discount_aligned: gamma**actual_window * V_future - V_current
     "ccpo_progress_history_weight": 1.0,  # 0 isolates future progress; progress_weight=0 isolates history
     "ccpo_progress_snapshot_every": 1,
     "ccpo_fixed_anchor": 0,
@@ -361,6 +362,7 @@ ENV_KEYS = {
     "ccpo_step_norm": "ACG_CCPO_STEP_NORM",
     "ccpo_progress_horizon": "ACG_CCPO_PROGRESS_HORIZON",
     "ccpo_progress_weight": "ACG_CCPO_PROGRESS_WEIGHT",
+    "ccpo_progress_mode": "ACG_CCPO_PROGRESS_MODE",
     "ccpo_progress_history_weight": "ACG_CCPO_PROGRESS_HISTORY_WEIGHT",
     "ccpo_progress_snapshot_every": "ACG_CCPO_PROGRESS_SNAPSHOT_EVERY",
     "ccpo_fixed_anchor": "ACG_CCPO_FIXED_ANCHOR",
@@ -441,6 +443,9 @@ def validate_future_progress_config(cfg):
         tau = float(cfg.get("ccpo_tau", DEFAULTS["ccpo_tau"]))
         if not math.isfinite(tau) or tau <= 0:
             raise ValueError("Cross-task grouping requires finite positive ccpo_tau")
+    mode = cfg.get("ccpo_progress_mode", "difference")
+    if mode not in ("difference", "discount_aligned"):
+        raise ValueError("ccpo_progress_mode must be difference or discount_aligned")
     horizon = cfg.get("ccpo_progress_horizon", 0)
     if isinstance(horizon, bool) or not isinstance(horizon, int) or horizon not in range(5):
         raise ValueError("ccpo_progress_horizon must be an integer from 0 through 4")
@@ -450,6 +455,8 @@ def validate_future_progress_config(cfg):
         if not math.isfinite(value) or value < 0:
             raise ValueError(f"{key} must be finite and nonnegative")
     enabled = horizon > 0 or float(cfg.get("ccpo_progress_weight", 1.0)) == 0.0
+    if not enabled and mode != "difference":
+        raise ValueError("Discount-aligned mode requires a future-progress or explicit history-only arm")
     if not enabled and float(cfg.get("ccpo_progress_history_weight", 1.0)) != 1.0:
         raise ValueError("History component ablation requires a future-progress or explicit history-only arm")
     if enabled:

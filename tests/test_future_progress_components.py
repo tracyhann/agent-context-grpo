@@ -141,7 +141,7 @@ class PreparedComponentTests(unittest.TestCase):
                     self.assertEqual(cfg['ccpo_ctx_w'],1.);self.assertEqual(cfg['total_epochs'],150)
                     self.assertEqual(cfg['model'],'Qwen/Qwen2.5-1.5B-Instruct')
                     self.assertEqual(record['hydra_overrides'],prep.er.build_command(cfg,str(folder))[3:])
-                    for k,e in prep.er.ENV_KEYS.items():
+                    for k,e in ((k, v) for k, v in prep.er.ENV_KEYS.items() if k != 'ccpo_progress_mode' or k in cfg):
                         if k == 'ccpo_loo' and k not in cfg:
                             self.assertEqual(prep.er.DEFAULTS[k],1); self.assertNotIn(e,record['env'])
                         else:

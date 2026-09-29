@@ -67,7 +67,7 @@ class UniformPeerTests(unittest.TestCase):
             self.assertEqual(cfg['total_epochs'], 150)
             self.assertEqual(cfg['model'], 'Qwen/Qwen2.5-1.5B-Instruct')
             self.assertEqual(saved['hydra_overrides'], prep.er.build_command(cfg, str(folder))[3:])
-            for k, env in prep.er.ENV_KEYS.items():
+            for k, env in ((k, v) for k, v in prep.er.ENV_KEYS.items() if k != 'ccpo_progress_mode' or k in cfg):
                 self.assertEqual(saved['env'][env], str(cfg[k]))
             self.assertIn('  ACG_CCPO_WMODE=uniform ', (folder/'run.sh').read_text())
             status = json.loads((folder/'PREPARED.json').read_text())

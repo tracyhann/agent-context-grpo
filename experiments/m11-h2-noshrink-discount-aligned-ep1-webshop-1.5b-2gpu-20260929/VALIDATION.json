@@ -1,0 +1,36 @@
+{
+  "validated_at": "2026-09-29T21:26:53.875804+00:00",
+  "related_regression_tests": {
+    "environment": ".venv",
+    "tests": 102,
+    "result": "passed",
+    "patterns": [
+      "test_discount_aligned_future.py",
+      "test_future_progress*.py",
+      "test_episode_adv_isolation.py",
+      "test_cross_task_ablations.py",
+      "test_uniform_peer_ablations.py",
+      "test_webshop_ep*_ablations.py",
+      "test_alfworld_windows.py",
+      "test_main_7b.py"
+    ]
+  },
+  "webshop_environment": {
+    "command": ".venv-webshop/bin/python -m unittest discover -s tests -p test_discount_aligned_future.py",
+    "tests": 8,
+    "result": "passed"
+  },
+  "registry_and_kernel_guards": {
+    "command": ".venv/bin/python ablations/test_ablations.py",
+    "result": "passed"
+  },
+  "checks": {
+    "baseline_method_diff_only_ccpo_progress_mode": true,
+    "recorded_source_hashes_match": true,
+    "active_trainer_matches_overlay": true,
+    "bash_syntax": true,
+    "git_diff_check": true
+  },
+  "training_launched": false,
+  "training_results": null
+}

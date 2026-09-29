@@ -20,6 +20,32 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(
 import arms                                                   # noqa: E402
 
 ABLATIONS = {
+    "future-progress-h2-no-credit-shrinkage-discount-aligned": dict(
+        name="CCPO-ATTNCRED-H2-NOSHRINK-DISCOUNT-ALIGNED",
+        tag="fph2-noshrink-discount-aligned",
+        title="M10 historical + discount-aligned future residual, EP0",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("alfworld",),
+        delta={"ccpo_lk_fix": 1.0, "ccpo_progress_mode": "discount_aligned"},
+        removes="the (1-gamma**h)*V_future time-passage term from the raw future difference",
+        asks="does the future channel help after expressing the endpoint value in current-time discount units?",
+        watch="Use actual clipped h=t_plus-t, including terminal endpoints. Preserve historical credit, "
+              "task-observation matching, soft weights, LOO, hidden+ctx, and task-wise z-scoring. "
+              "Log raw difference = discount-aligned residual + time-passage component; no extra reward term.",
+    ),
+    "future-progress-h2-no-credit-shrinkage-discount-aligned-active-episode": dict(
+        name="CCPO-ATTNCRED-H2-NOSHRINK-DISCOUNT-ALIGNED-EPISODE",
+        tag="fph2-noshrink-discount-aligned-ep",
+        title="M11 historical + discount-aligned future residual, EP1",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("webshop",),
+        delta={"ccpo_lk_fix": 1.0, "ccpo_progress_mode": "discount_aligned", "ccpo_ep_w": 1.0},
+        removes="the (1-gamma**h)*V_future time-passage term from the raw future difference",
+        asks="does the future channel help after expressing the endpoint value in current-time discount units?",
+        watch="Use actual clipped h=t_plus-t, including terminal endpoints. Preserve historical credit, "
+              "task-observation matching, soft weights, LOO, hidden+ctx, and task-wise z-scoring. "
+              "Log raw difference = discount-aligned residual + time-passage component; no extra reward term.",
+    ),
     "future-progress-noshrink-history4-future0": dict(
         name="CCPO-ATTNCRED-NOSHRINK-HISTORYFOUR-FUTUREZERO",
         tag="noshrink-hist4-fut0",

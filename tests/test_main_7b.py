@@ -69,7 +69,7 @@ class MainSevenBTests(unittest.TestCase):
             self.assertIn('trainer.n_gpus_per_node=8',record['hydra_overrides'])
             self.assertIn('actor_rollout_ref.rollout.tensor_model_parallel_size=2',record['hydra_overrides'])
             self.assertEqual(record['env']['CUDA_VISIBLE_DEVICES'],'0,1,2,3,4,5,6,7')
-            for key,env in prep.er.ENV_KEYS.items():
+            for key,env in ((k, v) for k, v in prep.er.ENV_KEYS.items() if k != 'ccpo_progress_mode' or k in cfg):
                 if key in ('ccpo_progress_history_weight', 'ccpo_loo') and key not in cfg:
                     self.assertEqual(prep.er.DEFAULTS[key], 1.0); self.assertNotIn(env, record['env'])
                 else:

@@ -40,7 +40,7 @@ def prepare(window,stamp):
     h,f=WINDOWS[window];key=key_for(window);canonical,method=ablations.build(key,'alfworld')
     control=ROOT/'experiments'/CONTROL
     old=json.loads((control/'config.json').read_text())['config']
-    missing={k:v for k,v in IMPLIED.items() if k not in old};old.update(missing)
+    missing={k:v for k,v in {**IMPLIED, 'ccpo_progress_mode': 'difference'}.items() if k not in old};old.update(missing)
     folder=ROOT/'experiments'/run_name(window,stamp)
     if folder.exists():raise FileExistsError(f'Refusing to overwrite existing experiment: {folder}')
     cfg={k:v for k,v in old.items() if k in er.DEFAULTS};cfg.update(method)

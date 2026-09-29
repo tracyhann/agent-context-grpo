@@ -1,0 +1,18 @@
+{
+  "changes": {
+    "ccpo_progress_mode": {
+      "control": "difference",
+      "prepared": "discount_aligned"
+    },
+    "exp_id": {
+      "control": "m10-h2-no-credit-shrinkage-alfworld-1.5b-2gpu-20260919",
+      "prepared": "m10-h2-noshrink-discount-aligned-ep0-alfworld-1.5b-2gpu-20260929"
+    }
+  },
+  "control": "experiments/m10-h2-no-credit-shrinkage-alfworld-1.5b-2gpu-20260919",
+  "missing_control_defaults": {
+    "ccpo_loo": 1,
+    "ccpo_progress_history_weight": 1.0,
+    "ccpo_progress_mode": "difference"
+  }
+}
