@@ -1,18 +1,25 @@
-# M10/M11 H2 no shrinkage, EP0: cross-task contextual soft grouping
+# M10 EP0 / M11 EP1 H2 no shrinkage: cross-task contextual soft grouping
 
 This variant removes task and observation matching from the selected
-[main method](MAIN_METHOD.md). Both 1.5B runs retain episode weight zero.
-Registry: `future-progress-h2-no-credit-shrinkage-cross-task`.
-Variant: `CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-CROSS-TASK`.
+[main method](MAIN_METHOD.md). ALFWorld keeps episode weight zero; WebShop
+ablations use the active-episode (EP1) control, so the WebShop arm keeps
+episode weight one.
 
-| Benchmark | Canonical ID | Prepared experiment |
-|---|---|---|
-| ALFWorld | `ccpo-attncred-abl-fph2-noshrink-cross-task-alfworld-1.5b` | [M10 notes](m10-h2-noshrink-cross-task-alfworld-1.5b-2gpu-20260928/NOTES.md) |
-| WebShop | `ccpo-attncred-abl-fph2-noshrink-cross-task-ws-1.5b` | [M11 notes](m11-h2-noshrink-cross-task-webshop-1.5b-2gpu-20260928/NOTES.md) |
+| Benchmark | Registry / variant | Canonical ID | Prepared experiment |
+|---|---|---|---|
+| ALFWorld EP0 | `future-progress-h2-no-credit-shrinkage-cross-task` / `CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-CROSS-TASK` | `ccpo-attncred-abl-fph2-noshrink-cross-task-alfworld-1.5b` | [M10 notes](m10-h2-noshrink-cross-task-alfworld-1.5b-2gpu-20260928/NOTES.md) |
+| WebShop EP1 | `future-progress-h2-no-credit-shrinkage-active-episode-cross-task` / `CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-ACTIVE-EPISODE-CROSS-TASK` | `ccpo-attncred-abl-fph2-noshrink-ep-cross-task-ws-1.5b` | `m11-h2-noshrink-cross-task-ep1-webshop-1.5b-2gpu-20261007` (to be prepared) |
 
 Both configurations change only `ccpo_gate=hard` to `ccpo_gate=cross_task`
-plus experiment identity relative to their no-shrink EP0 control. Legacy
+plus experiment identity relative to their no-shrink control: ALFWorld
+`m10-h2-no-credit-shrinkage-alfworld-1.5b-2gpu-20260919` (EP0) and WebShop
+`m11-h2-noshrink-active-episode-webshop-1.5b-2gpu-20260920` (EP1). Legacy
 implicit LOO and history coefficient defaults are recorded explicitly.
+
+**Correction, 2026-10-07.** The WebShop arm first prepared on 2026-09-28
+(`m11-h2-noshrink-cross-task-webshop-1.5b-2gpu-20260928`) used the EP0
+control by mistake. It was never launched and has been removed; the WebShop
+arm is re-prepared against the EP1 control above.
 
 ## Peer pool and weights
 
@@ -52,13 +59,14 @@ H_i = Y_i - C_i[Y]
 Z_i = gamma^(T_i-t_i) R_i; V_i = C_i[Z]
 F_i = z_task(V_min(t_i+2,T_i) - V_i)
 ALFWorld: A = mask * N_task(H + F)
-WebShop:  A = mask * (H + F)
+WebShop:  A = mask * (E + H + F)
 ```
 
 Y retains the existing invalid-action penalty; Z does not. Nonterminal future
 endpoints use their own context and the batch-wide pool. Terminal potential
-remains success 10 / failure 0. Gamma=0.95. H/F/EP weights are 1/1/0 and the
-original edge weight is zero. Lambda_u=lambda_k=1. Task IDs remain available
+remains success 10 / failure 0. Gamma=0.95. H/F/EP weights are 1/1/0 on
+ALFWorld and 1/1/1 on WebShop, where the episode channel is added after the
+step channel exactly as in the EP1 control. The original edge weight is zero. Lambda_u=lambda_k=1. Task IDs remain available
 for task-wise normalization and diagnostics, not neighbor eligibility.
 
 Both use Qwen2.5-1.5B-Instruct, seed 0, 150 steps, 16 tasks x 8 rollouts,
@@ -87,13 +95,16 @@ mean exact observation matching. Terminal future rows have no neighborhood.
 Prepare new dated configurations (refuses existing directories):
 
 ```bash
-.venv/bin/python scripts/prepare_cross_task_ablations.py --date YYYYMMDD
+.venv/bin/python scripts/prepare_cross_task_ablations.py --date YYYYMMDD [--benchmark webshop]
 ```
 
 Each experiment includes its configuration diff, source hashes, preparation
 command and validation record. Preparation does not start or queue training.
 
 ## Validation on 2026-09-28
+
+This validation covered the ALFWorld arm and the superseded WebShop EP0 arm.
+The WebShop EP1 arm must be re-validated after it is prepared.
 
 The focused CPU suite passed 67 tests, including the new cross-task tests and
 existing future-progress/uniform-peer regression tests. The separate WebShop

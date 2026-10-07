@@ -19,7 +19,8 @@ from ccpo.cross_task import peer_records
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT/'scripts'))
 import prepare_cross_task_ablations as prep
-STAMP = '20260928'
+# WebShop was re-prepared against its EP1 control; ALFWorld keeps its EP0 arm.
+STAMPS = {'alfworld': '20260928', 'webshop': '20261007'}
 
 
 def batch():
@@ -38,7 +39,7 @@ def cross_settings(**extra):
 
 
 def record(benchmark):
-    folder = ROOT/'experiments'/prep.run_name(benchmark, STAMP)
+    folder = ROOT/'experiments'/prep.run_name(benchmark, STAMPS[benchmark])
     return folder, json.loads((folder/'config.json').read_text())
 
 
@@ -182,7 +183,7 @@ class CrossTaskTests(unittest.TestCase):
             for key, value in prep.IMPLIED.items(): control.setdefault(key,value)
             self.assertEqual(set(cfg),set(control))
             self.assertEqual({k for k in cfg if cfg[k] != control[k]}, {'exp_id','ccpo_gate'})
-            self.assertEqual(cfg['ccpo_gate'],'cross_task'); self.assertEqual(cfg['ccpo_ep_w'],0)
+            self.assertEqual(cfg['ccpo_gate'],'cross_task'); self.assertEqual(cfg['ccpo_ep_w'],int(benchmark=='webshop'))
             self.assertEqual(cfg['model'],'Qwen/Qwen2.5-1.5B-Instruct')
             self.assertEqual(saved['hydra_overrides'],prep.er.build_command(cfg,str(folder))[3:])
             self.assertIn('ACG_CCPO_GATE=cross_task', (folder/'run.sh').read_text())
@@ -192,7 +193,7 @@ class CrossTaskTests(unittest.TestCase):
                 cwd=ROOT,env=dict(os.environ,**saved['env']),capture_output=True,text=True,timeout=60)
             self.assertEqual(result.returncode,0,result.stdout+result.stderr)
             with patch.object(prep.subprocess,'run') as run:
-                with self.assertRaises(FileExistsError): prep.prepare(benchmark,STAMP)
+                with self.assertRaises(FileExistsError): prep.prepare(benchmark,STAMPS[benchmark])
                 run.assert_not_called()
 
     def train(self, benchmark, episode_shift=0., changed_features=False):
@@ -209,31 +210,36 @@ class CrossTaskTests(unittest.TestCase):
                 a={k:v.copy() for k,v in file.items()}
         return data,policy_gradient(data)[1],a,kw
 
-    def test_actual_trainer_ppo_gradients_masks_normalization_and_ep0_in_both_benchmarks(self):
+    def test_actual_trainer_ppo_gradients_masks_normalization_and_episode_weight_in_both_benchmarks(self):
         for benchmark in prep.CONTROLS:
             with self.subTest(benchmark=benchmark):
+                ep=int(benchmark=='webshop')
                 data,grad,a,kw=self.train(benchmark)
                 shifted,shift_grad,_,_=self.train(benchmark,episode_shift=99)
                 changed,changed_grad,_,_=self.train(benchmark,changed_features=True)
-                torch.testing.assert_close(data.batch['advantages'],shifted.batch['advantages'],rtol=0,atol=0)
-                torch.testing.assert_close(grad,shift_grad,rtol=0,atol=0)
+                mask=kw['response_mask']
+                if ep:
+                    torch.testing.assert_close(shifted.batch['advantages']-data.batch['advantages'],99.*mask,rtol=1e-6,atol=3e-5)
+                    self.assertFalse(torch.allclose(grad,shift_grad))
+                else:
+                    torch.testing.assert_close(data.batch['advantages'],shifted.batch['advantages'],rtol=0,atol=0)
+                    torch.testing.assert_close(grad,shift_grad,rtol=0,atol=0)
+                    np.testing.assert_array_equal(a['episode_applied'],0)
                 self.assertFalse(torch.allclose(grad,changed_grad))
                 self.assertTrue(torch.isfinite(grad).all()); self.assertGreater(grad.abs().sum(),0)
                 self.assertFalse(data.batch['advantages'].requires_grad)
-                mask=kw['response_mask']
                 np.testing.assert_array_equal(data.batch['advantages'][mask==0].numpy(),0)
-                np.testing.assert_array_equal(a['episode_applied'],0)
-                np.testing.assert_allclose(a['actor_applied'],a['history_applied']+a['future_applied'],atol=3e-5)
+                np.testing.assert_allclose(a['actor_applied'],a['history_applied']+a['future_applied']+a['episode_applied'],atol=3e-5)
                 np.testing.assert_allclose(a['actor_applied'],data.batch['advantages'][:,0].numpy(),atol=1e-6)
                 self.assertEqual(data.meta_info['ccpo_diag']['ccpo/progress_cross_task_grouping'],1)
-                self.assertEqual(data.meta_info['ccpo_diag']['ccpo/progress_episode_weight'],0)
+                self.assertEqual(data.meta_info['ccpo_diag']['ccpo/progress_episode_weight'],ep)
                 if benchmark=='alfworld':
                     for task in np.unique(a['uid']):
                         values=a['actor_applied'][a['uid']==task]
                         self.assertAlmostEqual(values.mean(),0.,places=5)
                         self.assertAlmostEqual(values.std(ddof=1),1.,places=5)
                 else:
-                    np.testing.assert_allclose(a['actor_applied'],a['combined_pre'],atol=1e-6)
+                    np.testing.assert_allclose(a['actor_applied']-a['episode_applied'],a['combined_pre'],atol=3e-5)
 
 
 if __name__=='__main__':

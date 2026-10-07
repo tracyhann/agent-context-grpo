@@ -134,4 +134,4 @@ Each retains H2/no shrinkage and active episode weight 1 on the same 1.5B,
 primary method designation above remains EP0. All are prepared only.
 
 [Cross-task soft grouping](CROSS_TASK_SOFT_GROUPING.md) removes both hard peer
-gates while retaining the H2 no-shrink EP0 main method on both benchmarks.
+gates while retaining H2 no shrinkage: ALFWorld uses EP0; WebShop uses its EP1 comparison.

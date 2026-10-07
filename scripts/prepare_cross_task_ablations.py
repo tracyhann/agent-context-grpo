@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare ALFWorld and WebShop 1.5B H2 no-shrink EP0 cross-task arms; never launch."""
+"""Prepare ALFWorld EP0 and WebShop EP1 1.5B H2 no-shrink cross-task arms; never launch."""
 import argparse
 from datetime import date, datetime, timezone
 import hashlib
@@ -16,7 +16,7 @@ import exp_run as er
 
 CONTROLS = {
     'alfworld': 'm10-h2-no-credit-shrinkage-alfworld-1.5b-2gpu-20260919',
-    'webshop': 'm11-h2-no-credit-shrinkage-webshop-1.5b-2gpu-20260919',
+    'webshop': 'm11-h2-noshrink-active-episode-webshop-1.5b-2gpu-20260920',
 }
 IMPLIED = {'ccpo_loo': 1, 'ccpo_progress_history_weight': 1.0}
 SOURCES = ['ccpo/cross_task.py', 'ccpo/core_ccpo.py', 'ccpo/future_progress.py', 'ccpo/arms.py',
@@ -31,12 +31,15 @@ def dump(path, value):
 
 
 def key_for(benchmark):
+    if benchmark == 'webshop':
+        return 'future-progress-h2-no-credit-shrinkage-active-episode-cross-task'
     return 'future-progress-h2-no-credit-shrinkage-cross-task'
 
 
 def run_name(benchmark, stamp):
     prefix = 'm10' if benchmark == 'alfworld' else 'm11'
-    return f'{prefix}-h2-noshrink-cross-task-{benchmark}-1.5b-2gpu-{stamp}'
+    ep = '-ep1' if benchmark == 'webshop' else ''
+    return f'{prefix}-h2-noshrink-cross-task{ep}-{benchmark}-1.5b-2gpu-{stamp}'
 
 
 def prepare(benchmark, stamp):
@@ -69,7 +72,7 @@ def prepare(benchmark, stamp):
         if new[k] != v:
             raise ValueError(f'Method mismatch: {k}')
     assert new['ccpo_gate'] == 'cross_task' and new['ccpo_wmode'] == 'soft' and new['ccpo_loo'] == 1
-    assert new['ccpo_ep_w'] == 0 and new['ccpo_edge_w'] == 0
+    assert new['ccpo_ep_w'] == int(benchmark == 'webshop') and new['ccpo_edge_w'] == 0
     assert new['ccpo_lk_fix'] == new['ccpo_lam_fix'] == 1
     assert new['ccpo_progress_weight'] == new['ccpo_progress_history_weight'] == 1
     assert new['history_length'] == new['ccpo_progress_horizon'] == 2
@@ -100,8 +103,13 @@ def prepare(benchmark, stamp):
 
 
 def notes(p):
-    formula = 'A = mask * N_task(H + F)' if p['benchmark'] == 'alfworld' else 'A = mask * (H + F)'
-    return f'''# {p['benchmark'].upper()} H2 no shrinkage, EP0: cross-task soft grouping
+    ep = int(p['episode_weight'])
+    formula = 'A = mask * N_task(H + F)' if p['benchmark'] == 'alfworld' else 'A = mask * (E + H + F)'
+    fusion = ('ALFWorld retains its combined per-task mean/sample-std normalization.'
+              if p['benchmark'] == 'alfworld' else
+              'WebShop retains mean_norm, without final contextual normalization, and adds\n'
+              'its episode channel after the step channel, exactly as the EP1 control.')
+    return f'''# {p['benchmark'].upper()} H2 no shrinkage, EP{ep}: cross-task soft grouping
 
 **Prepared only; not launched or queued.** Qwen2.5-1.5B-Instruct, 150 training
 steps, seed {p['seed']}, two GPUs (`{p['gpus']}` configured, not reserved).
@@ -112,8 +120,8 @@ Registry key `{p['ablation']}`; canonical ID `{p['canonical_id']}`.
 Change only `ccpo_gate: hard -> cross_task` from `{p['control']}`.
 [Full config diff](config-diff-from-control.json) also records experiment identity;
 legacy implicit history weight and whole-trajectory LOO are made explicit.
-Both benchmarks retain EP=0, lambda_u=lambda_k=1, history=2, future horizon=2,
-binary-return targets, and the original soft kernel with tau scale 0.15.
+This arm retains the control's EP={ep}, lambda_u=lambda_k=1, history=2, future
+horizon=2, binary-return targets, and the original soft kernel with tau scale 0.15.
 
 For query i, P_i contains every occurrence in this canonical rollout batch
 except occurrences belonging to i's own trajectory. Neither task UID nor
@@ -144,9 +152,8 @@ not. Terminal potentials remain success 10 / failure 0, gamma=0.95. The future
 endpoint uses its own context to weight the same batch-wide candidate pool.
 Task IDs still define task-wise advantage normalization, not peer eligibility.
 
-**{formula}**. H/F/EP weights are **1 / 1 / 0** on BOTH benchmarks, original
-edge weight zero. ALFWorld retains its combined per-task mean/sample-std
-normalization. WebShop retains mean_norm, without final contextual normalization.
+**{formula}**. H/F/EP weights are **1 / 1 / {ep}** (ALFWorld EP0, WebShop EP1),
+original edge weight zero. {fusion}
 The actor/reference prompts retain history length 2 and the task goal.
 
 ## Protocol and diagnostics
@@ -164,7 +171,7 @@ mass is zero; cross-task mass can be zero for a one-task batch. Terminal future
 rows have no neighborhood statistics. Existing H/F/EP actor-sum logging remains.
 
 ```bash
-python scripts/prepare_cross_task_ablations.py --date YYYYMMDD
+python scripts/prepare_cross_task_ablations.py --date YYYYMMDD --benchmark {p['benchmark']}
 # Launch from the project root when ready:
 bash experiments/{p['experiment']}/run.sh
 ```
@@ -180,15 +187,18 @@ No training result or GPU smoke test is claimed.
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--date', default=date.today().strftime('%Y%m%d'))
+    parser.add_argument('--benchmark', choices=sorted(CONTROLS), action='append',
+                        help='Prepare only this benchmark; repeatable (default: both).')
     args = parser.parse_args()
     try:
         datetime.strptime(args.date, '%Y%m%d')
     except ValueError:
         parser.error('Use a YYYYMMDD date')
-    for benchmark in CONTROLS:
+    benchmarks = [b for b in CONTROLS if b in (args.benchmark or CONTROLS)]
+    for benchmark in benchmarks:
         if (ROOT/'experiments'/run_name(benchmark, args.date)).exists():
             parser.error(f'Experiment exists: {run_name(benchmark, args.date)}')
-    folders = [prepare(b, args.date) for b in CONTROLS]
+    folders = [prepare(b, args.date) for b in benchmarks]
     print(json.dumps(dict(status='prepared_not_launched', experiments=[str(p.relative_to(ROOT)) for p in folders])))
 
 

@@ -9,8 +9,8 @@ Registry key `future-progress-h2-no-credit-shrinkage-cross-task`; canonical ID `
 Change only `ccpo_gate: hard -> cross_task` from `experiments/m10-h2-no-credit-shrinkage-alfworld-1.5b-2gpu-20260919`.
 [Full config diff](config-diff-from-control.json) also records experiment identity;
 legacy implicit history weight and whole-trajectory LOO are made explicit.
-Both benchmarks retain EP=0, lambda_u=lambda_k=1, history=2, future horizon=2,
-binary-return targets, and the original soft kernel with tau scale 0.15.
+This arm retains the control's EP=0, lambda_u=lambda_k=1, history=2, future
+horizon=2, binary-return targets, and the original soft kernel with tau scale 0.15.
 
 For query i, P_i contains every occurrence in this canonical rollout batch
 except occurrences belonging to i's own trajectory. Neither task UID nor
@@ -41,9 +41,9 @@ not. Terminal potentials remain success 10 / failure 0, gamma=0.95. The future
 endpoint uses its own context to weight the same batch-wide candidate pool.
 Task IDs still define task-wise advantage normalization, not peer eligibility.
 
-**A = mask * N_task(H + F)**. H/F/EP weights are **1 / 1 / 0** on BOTH benchmarks, original
-edge weight zero. ALFWorld retains its combined per-task mean/sample-std
-normalization. WebShop retains mean_norm, without final contextual normalization.
+**A = mask * N_task(H + F)**. H/F/EP weights are **1 / 1 / 0** (ALFWorld EP0;
+the WebShop cross-task arm uses its EP1 control), original edge weight zero.
+ALFWorld retains its combined per-task mean/sample-std normalization.
 The actor/reference prompts retain history length 2 and the task goal.
 
 ## Protocol and diagnostics

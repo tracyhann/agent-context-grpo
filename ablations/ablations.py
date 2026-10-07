@@ -254,15 +254,28 @@ ABLATIONS = {
     "future-progress-h2-no-credit-shrinkage-cross-task": dict(
         name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-CROSS-TASK",
         tag="fph2-noshrink-cross-task",
-        title="M10/M11 H2 no shrinkage, EP0, batch-wide contextual soft grouping",
+        title="M10 H2 no shrinkage, EP0, batch-wide contextual soft grouping",
         base_method="attncred-context-future-progress-h2",
-        benchmarks=("alfworld", "webshop"),
+        benchmarks=("alfworld",),
         delta={"ccpo_lk_fix": 1.0, "ccpo_gate": "cross_task"},
         removes="both task identity and exact-observation matching from contextual peer selection",
         asks="can contextual similarity alone select useful peers across tasks?",
         watch="History and both potentials use all other-trajectory occurrences in the rollout batch. "
               "Keep hidden+ctx, exponential weights, tau=0.15, whole-trajectory LOO, and "
-              "task-wise advantage normalization. No task prior/backoff; EP=0 on both benchmarks.",
+              "task-wise advantage normalization. No task prior/backoff; EP=0.",
+    ),
+    "future-progress-h2-no-credit-shrinkage-active-episode-cross-task": dict(
+        name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-ACTIVE-EPISODE-CROSS-TASK",
+        tag="fph2-noshrink-ep-cross-task",
+        title="M11 H2 no shrinkage, EP1, batch-wide contextual soft grouping",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("webshop",),
+        delta={"ccpo_lk_fix": 1.0, "ccpo_ep_w": 1.0, "ccpo_gate": "cross_task"},
+        removes="both task identity and exact-observation matching from contextual peer selection",
+        asks="can contextual similarity alone select useful peers across tasks under the EP1 control?",
+        watch="History and both potentials use all other-trajectory occurrences in the rollout batch. "
+              "Keep hidden+ctx, exponential weights, tau=0.15, whole-trajectory LOO, and "
+              "task-wise advantage normalization. No task prior/backoff; H/F/EP weights 1/1/1.",
     ),
     "future-progress-h2-no-credit-shrinkage": dict(
         name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK",
