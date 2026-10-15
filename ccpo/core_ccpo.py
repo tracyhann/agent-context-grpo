@@ -26,8 +26,8 @@ EPS = 1e-6
 class CCPOConfig:
     """CCPO hyperparameters. Defaults are the values used in the paper.
 
-    benchmark: normalization convention. "alfworld" z-scores A_CC and A^EP
-        within each task; "webshop" leaves A_CC unchanged and mean-centers A^EP.
+    benchmark: normalization convention. "alfworld" z-scores C^H + C^F and A^EP
+        within each task. "webshop" leaves C^H + C^F unscaled and mean-centers A^EP.
     episode_weight: alpha_EP. 0 gives CCPO, 1 gives the A_CC + A_EP variant.
     future_horizon: K_F, the number of realized steps spanned by future credit.
     gamma: discount factor of the outcome target Z.

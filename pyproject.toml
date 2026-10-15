@@ -1,13 +1,14 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "ccpo"
 version = "0.1.0"
-description = "Contextual Credit Policy Optimization: step-level credit for LLM agents from historical and future contextual credit"
+description = "Contextual Credit Policy Optimization (CCPO): step-level credit assignment for LLM agents"
 readme = "README.md"
-license = {text = "Apache-2.0"}
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
 dependencies = ["numpy>=1.24"]
 

@@ -32,8 +32,10 @@ class VerlAdapterTests(unittest.TestCase):
             last_prompt_hidden(hidden * float('nan'), mask, 3)
 
     def data(self):
-        batch = fixture(); n = len(batch.steps)
-        mask = torch.ones(n, 4); mask[::2, -1] = 0
+        batch = fixture()
+        n = len(batch.steps)
+        mask = torch.ones(n, 4)
+        mask[::2, -1] = 0
         rewards = torch.zeros_like(mask)
         rewards[torch.arange(n), mask.sum(-1).long()-1] = torch.tensor(batch.episode_scores, dtype=torch.float32)
         data = SimpleNamespace(
@@ -58,7 +60,8 @@ class VerlAdapterTests(unittest.TestCase):
         for benchmark in ['alfworld', 'webshop']:
             gradients, outputs = [], []
             for weight in [0, 1]:
-                data = self.data(); mask = data.batch['response_mask']
+                data = self.data()
+                mask = data.batch['response_mask']
                 advantages, result = compute_verl_advantages(data, CCPOConfig(
                     benchmark=benchmark, episode_weight=weight))
                 self.assertFalse(advantages.requires_grad)
@@ -75,7 +78,8 @@ class VerlAdapterTests(unittest.TestCase):
                 self.assertGreater(float(logits.grad[:, 0].abs().sum()), 0.)
                 for name in ['step_rewards', 'token_level_rewards', HIDDEN_KEY]:
                     self.assertIsNone(data.batch[name].grad)
-                gradients.append(logits.grad); outputs.append((advantages, result))
+                gradients.append(logits.grad)
+                outputs.append((advantages, result))
             self.assertFalse(torch.allclose(gradients[0], gradients[1]))
             expected = torch.tensor(outputs[1][1].episode, dtype=torch.float32)[:, None] * mask
             torch.testing.assert_close(outputs[1][0] - outputs[0][0], expected, atol=2e-6, rtol=1e-6)
@@ -95,7 +99,8 @@ class VerlAdapterTests(unittest.TestCase):
         data.batch['token_level_rewards'][0, -1] = 1
         with self.assertRaisesRegex(ValueError, 'Masked'):
             compute_verl_advantages(data)
-        data = self.data(); data.batch['response_mask'][0, 0] = .5
+        data = self.data()
+        data.batch['response_mask'][0, 0] = .5
         with self.assertRaisesRegex(ValueError, 'binary'):
             compute_verl_advantages(data)
 

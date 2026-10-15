@@ -49,6 +49,8 @@ def context_features(
     37 coordinates: thermometer encodings of t, n_{i,t} and n_{i,t}/(t+1) with
     12 coordinates each and upper bounds 30, 25 and 1, plus the revisit bit.
     Both blocks have equal weight. No reward enters this construction.
+    With at most num_removed_pcs rows no directions are removed, and a single
+    row keeps its raw hidden state.
     """
     hidden = np.asarray(hidden, dtype=np.float64)
     statistics = np.asarray(statistics, dtype=np.float64)

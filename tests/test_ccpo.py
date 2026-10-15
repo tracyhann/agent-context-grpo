@@ -15,7 +15,8 @@ def fixture():
     lengths = np.repeat([4, 4, 3, 3], [4, 4, 3, 3])
     steps = np.concatenate([np.arange(n) for n in [4, 4, 3, 3]])
     outcomes = np.repeat([10., 0., 10., 0.], [4, 4, 3, 3])
-    penalties = np.zeros(len(steps)); penalties[1] = .1
+    penalties = np.zeros(len(steps))
+    penalties[1] = .1
     return RolloutBatch(
         task_ids=np.array(['task'] * len(steps)),
         trajectory_ids=np.repeat(['a', 'b', 'c', 'd'], [4, 4, 3, 3]),
@@ -37,7 +38,8 @@ def standardize(values):
 class ContextTests(unittest.TestCase):
     def test_statistics_use_the_prefix_and_exact_observation_text(self):
         obs = np.array(['A', 'B', 'A', 'C', 'a'])
-        steps = np.arange(5); order = np.array([3, 0, 4, 2, 1])
+        steps = np.arange(5)
+        order = np.array([3, 0, 4, 2, 1])
         actual = trajectory_statistics(obs[order], ['traj'] * 5, steps[order])
         expected = np.array([[0, 1, 0, 1], [1, 2, 0, 1], [2, 2, 1, 2/3],
                              [3, 3, 0, 3/4], [4, 4, 0, 4/5]])
@@ -58,7 +60,8 @@ class ContextTests(unittest.TestCase):
         np.testing.assert_array_equal(a, b)
 
     def test_hidden_states_are_centered_over_the_batch(self):
-        batch = fixture(); hidden = batch.hidden.copy()
+        batch = fixture()
+        hidden = batch.hidden.copy()
         statistics = trajectory_statistics(batch.observations, batch.trajectory_ids, batch.steps)
         a = context_features(hidden, statistics)
         b = context_features(hidden + np.arange(8), statistics)
@@ -86,16 +89,19 @@ class CreditTests(unittest.TestCase):
         self.assertFalse(result.used_fallback.any())
 
     def test_query_trajectory_is_excluded_from_its_own_peers(self):
-        batch = fixture(); own = batch.trajectory_ids == 'a'
-        returns = batch.returns.copy(); returns[own] += 6
-        outcomes = batch.outcomes.copy(); outcomes[own] = 0
+        batch = fixture()
+        own = batch.trajectory_ids == 'a'
+        returns = batch.returns.copy()
+        returns[own] += 6
+        outcomes = batch.outcomes.copy()
+        outcomes[own] = 0
         before = compute_ccpo_advantage(batch)
         after = compute_ccpo_advantage(replace(batch, returns=returns, outcomes=outcomes))
         np.testing.assert_array_equal(before.baseline[own], after.baseline[own])
         np.testing.assert_array_equal(before.value[own], after.value[own])
         self.assertGreater(np.max(abs(before.value[~own] - after.value[~own])), .1)
 
-    def test_task_fallback_without_cross_task_peers(self):
+    def test_task_fallback_and_tasks_without_peers(self):
         batch = fixture()
         unique = replace(batch, observations=np.array(['unique-' + str(i) for i in range(len(batch.steps))]))
         result = compute_ccpo_advantage(unique)
@@ -170,16 +176,19 @@ class CreditTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Incomplete'):
             compute_ccpo_advantage(take(batch, np.arange(1, len(batch.steps))))
         padded = take(batch, np.r_[np.arange(len(batch.steps)), 0])
-        bad = padded.hidden.copy(); bad[-1, 0] += 1
+        bad = padded.hidden.copy()
+        bad[-1, 0] += 1
         with self.assertRaisesRegex(ValueError, 'disagree'):
             compute_ccpo_advantage(replace(padded, hidden=bad))
         bad[-1, 0] = np.nan
         with self.assertRaisesRegex(ValueError, 'non-finite'):
             compute_ccpo_advantage(replace(padded, hidden=bad))
-        tasks = batch.task_ids.copy(); tasks[0] = 'other'
+        tasks = batch.task_ids.copy()
+        tasks[0] = 'other'
         with self.assertRaisesRegex(ValueError, 'unique across tasks'):
             compute_ccpo_advantage(replace(batch, task_ids=tasks))
-        outcomes = batch.outcomes.copy(); outcomes[0] = 0
+        outcomes = batch.outcomes.copy()
+        outcomes[0] = 0
         with self.assertRaisesRegex(ValueError, 'constant'):
             compute_ccpo_advantage(replace(batch, outcomes=outcomes))
         with self.assertRaises(ValueError):
