@@ -79,6 +79,10 @@ The adapter also reads `response_mask`, `token_level_rewards` and `step_rewards`
 
 Other defaults follow the paper. The prompt history (2 steps) and the invalid-action penalty (0.1) are set in the environment.
 
+## Acknowledgement
+
+Our experiments use [verl-agent](https://github.com/langfengQ/verl-agent), which is built upon [veRL](https://github.com/volcengine/verl), with the [ALFWorld](https://github.com/alfworld/alfworld) and [WebShop](https://github.com/princeton-nlp/WebShop) environments. CCPO also builds on prior group-based policy optimization methods, including [GRPO](https://arxiv.org/abs/2402.03300), [GiGPO](https://arxiv.org/abs/2505.10978), [HGPO](https://openreview.net/forum?id=T8Dev99qnz) and [G2PO](https://arxiv.org/abs/2606.22995). We thank the authors and contributors of these projects for their valuable work.
+
 ## License
 
 This project is released under the [Apache License 2.0](LICENSE).
