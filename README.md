@@ -93,7 +93,8 @@ This project is released under the [Apache License 2.0](LICENSE).
 ```bibtex
 @misc{han2026contextualcreditpolicyoptimization,
   title         = {Contextual Credit Policy Optimization},
-  author        = {Huiwen Han and Ziyao Zeng and Zihao Zhu and Sisong Bei and Hao Wang and Hongyu Xu and Yan Han and Degui Zhi and Zhiwen Fan},
+  author        = {Huiwen Han and Ziyao Zeng and Zihao Zhu and Sisong Bei and
+                   Hao Wang and Hongyu Xu and Yan Han and Degui Zhi and Zhiwen Fan},
   year          = {2026},
   eprint        = {2610.19103},
   archivePrefix = {arXiv},
