@@ -73,11 +73,12 @@ The adapter also reads `response_mask`, `token_level_rewards` and `step_rewards`
 
 | Parameter | Default | Meaning |
 |---|---|---|
-| `benchmark` | `alfworld` | Advantage normalization of the paper's ALFWorld or WebShop runs |
+| `env.history_length` | 2 | History window: preceding observation-action pairs in each prompt |
+| `future_horizon` | 2 | Future horizon: steps covered by future credit |
 | `episode_weight` | 0 | 0 for CCPO, 1 to add the episode advantage |
-| `future_horizon` | 2 | Number of steps covered by future credit |
+| `benchmark` | `alfworld` | Advantage normalization of the paper's ALFWorld or WebShop runs |
 
-Other defaults follow the paper. The prompt history (2 steps) and the invalid-action penalty (0.1) are set in the environment.
+The history window is a verl-agent setting because it defines the prompt whose last-token hidden state CCPO uses. The invalid-action penalty (`actor_rollout_ref.actor.invalid_action_penalty_coef=0.1`) is also set in verl-agent. Other defaults follow the paper.
 
 ## Acknowledgement
 
