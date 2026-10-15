@@ -30,13 +30,11 @@ Historical credit compares the return $Y_{i,t}$ with its contextual baseline. Fu
 C^{\mathrm H}_{i,t}=Y_{i,t}-\mathcal B_{i,t}[Y],
 \qquad
 C^{\mathrm F}_{i,t}=z_{x_i}\bigl[V_{i,t^+}-V_{i,t}\bigr],
-\qquad
-V_{i,s}=\begin{cases}\mathcal B_{i,s}[Z], & s<T_i,\\ R_i, & s=T_i,\end{cases}
-\qquad
-Z_{i,s}=\gamma^{T_i-s}R_i.
 ```
 
-The two credits give the step advantage
+where $V_{i,s}=\mathcal B_{i,s}[Z]$ with $Z_{i,s}=\gamma^{T_i-s}R_i$ for $s<T_i$, and $V_{i,T_i}=R_i$ at the end of the trajectory.
+
+The step advantage is
 
 ```math
 A_{i,t}=\mathcal N_{x_i}\bigl[C^{\mathrm H}+C^{\mathrm F}\bigr]_{i,t}+\alpha_{\mathrm{EP}}A^{\mathrm{EP}}_{i,t},
