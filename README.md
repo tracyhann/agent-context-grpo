@@ -1,6 +1,6 @@
 # Contextual Credit Policy Optimization
 
-[Project page](https://agent-ccpo.github.io) | [Paper](https://agent-ccpo.github.io/static/paper/ccpo.pdf)
+[Project page](https://agent-ccpo.github.io) | [Paper](https://arxiv.org/abs/2610.19103)
 
 Official implementation of **Contextual Credit Policy Optimization (CCPO)**, a critic-free method that assigns step-level credit to LLM agents trained with group-based reinforcement learning on long-horizon tasks.
 
@@ -91,11 +91,13 @@ This project is released under the [Apache License 2.0](LICENSE).
 ## Citation
 
 ```bibtex
-@article{han2026ccpo,
-  title  = {Contextual Credit Policy Optimization},
-  author = {Han, Huiwen and Zeng, Ziyao and Zhu, Zihao and
-            Bei, Sisong and Wang, Hao and Xu, Hongyu and
-            Han, Yan and Zhi, Degui and Fan, Zhiwen},
-  year   = {2026}
+@misc{han2026contextualcreditpolicyoptimization,
+  title         = {Contextual Credit Policy Optimization},
+  author        = {Huiwen Han and Ziyao Zeng and Zihao Zhu and Sisong Bei and Hao Wang and Hongyu Xu and Yan Han and Degui Zhi and Zhiwen Fan},
+  year          = {2026},
+  eprint        = {2610.19103},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  url           = {https://arxiv.org/abs/2610.19103}
 }
 ```
