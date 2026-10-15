@@ -18,24 +18,31 @@ Recent methods derive step-level credit by comparing observation-matched steps a
 
 For step $t$ of trajectory $i$ on task $x_i$, peers $\mathcal P_{i,t}$ are steps of other trajectories on the same task with the same observation, or all steps of other same-task trajectories when none match. Each step has a context feature $\phi_{i,t}$ that joins the frozen model's hidden state at the last prompt token with trajectory statistics. The contextual readout of a target $r$ is
 
-$$
+```math
 \mathcal B_{i,t}[r]=\sum_{(j,s)\in\mathcal P_{i,t}}\bar w_{(i,t),(j,s)}\,r_{j,s},
 \qquad
 \bar w_{(i,t),(j,s)}\propto\exp\bigl(-\lVert\phi_{i,t}-\phi_{j,s}\rVert_2/\tau_B\bigr).
-$$
+```
 
 Historical credit compares the return $Y_{i,t}$ with its contextual baseline. Future credit standardizes the change in contextual outcome value $V$ over $K_{\mathrm F}$ steps, with $t^+=\min(t+K_{\mathrm F},T_i)$:
 
-$$
+```math
 C^{\mathrm H}_{i,t}=Y_{i,t}-\mathcal B_{i,t}[Y],
 \qquad
 C^{\mathrm F}_{i,t}=z_{x_i}\bigl[V_{i,t^+}-V_{i,t}\bigr],
 \qquad
-V_{i,s}=\begin{cases}\mathcal B_{i,s}[Z], & s<T_i\\ R_i, & s=T_i\end{cases},
-\quad Z_{i,s}=\gamma^{T_i-s}R_i.
-$$
+V_{i,s}=\begin{cases}\mathcal B_{i,s}[Z], & s<T_i,\\ R_i, & s=T_i,\end{cases}
+\qquad
+Z_{i,s}=\gamma^{T_i-s}R_i.
+```
 
-The step advantage $A_{i,t}=\mathcal N_{x_i}[C^{\mathrm H}+C^{\mathrm F}]_{i,t}+\alpha_{\mathrm{EP}}A^{\mathrm{EP}}_{i,t}$ is applied to every response token of the step in the PPO objective. CCPO uses $\alpha_{\mathrm{EP}}=0$, and the episode-augmented variant adds the GRPO episode advantage with $\alpha_{\mathrm{EP}}=1$.
+The two credits give the step advantage
+
+```math
+A_{i,t}=\mathcal N_{x_i}\bigl[C^{\mathrm H}+C^{\mathrm F}\bigr]_{i,t}+\alpha_{\mathrm{EP}}A^{\mathrm{EP}}_{i,t},
+```
+
+which is applied to every response token of the step in the PPO objective. CCPO uses $\alpha_{\mathrm{EP}}=0$, and the episode-augmented variant adds the GRPO episode advantage with $\alpha_{\mathrm{EP}}=1$.
 
 ## Repository structure
 
@@ -89,8 +96,10 @@ With verl-agent, take the hidden states from the frozen reference model and comp
 from ccpo import CCPOConfig
 from ccpo.verl_adapter import compute_verl_advantages, last_prompt_hidden
 
-data.batch["ccpo_hidden"] = last_prompt_hidden(ref_hidden, data.batch["attention_mask"], response_length)
-advantages, result = compute_verl_advantages(data, CCPOConfig(benchmark="webshop", episode_weight=1))
+hidden = last_prompt_hidden(ref_hidden, data.batch["attention_mask"], response_length)
+data.batch["ccpo_hidden"] = hidden
+config = CCPOConfig(benchmark="webshop", episode_weight=1)
+advantages, result = compute_verl_advantages(data, config)
 data.batch["advantages"] = advantages
 data.batch["returns"] = advantages
 ```
