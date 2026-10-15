@@ -122,6 +122,10 @@ The adapter reads `response_mask`, `token_level_rewards`, `step_rewards` ($Y$) a
 
 The prompt history $K_{\mathrm H}=2$ and the invalid-action penalty $\eta=0.1$ are set in the environment, since they determine the prompts and the returns passed to CCPO.
 
+## License
+
+This project is released under the [Apache License 2.0](LICENSE).
+
 ## Citation
 
 ```bibtex
