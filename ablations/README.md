@@ -244,3 +244,29 @@ History is unchanged, and the decomposition's time-passage term is logged.
 [Equations, controls and prepared runs](../experiments/DISCOUNT_ALIGNED_FUTURE_RESIDUAL.md).
 Prepare with `python scripts/prepare_discount_aligned_ablations.py --date 20260929`;
 this only generates configurations and launch scripts.
+
+## Rebuttal future-channel ablations (E2, E5) — 2026-11
+
+Four new `ccpo_progress_mode` values, each against the same 1.5B no-shrink H2
+controls as the discount-aligned arms (ALFWorld EP0, WebShop EP1). Only the raw
+future signal changes; eligible rows, task-wise z-scoring, history credit and the
+logged decomposition columns are unchanged. A terminal window has u = min(t+2, T) = T.
+
+| Mode | Raw future signal | Plan | Benchmarks |
+| --- | --- | --- | --- |
+| `terminal_difference` | discount-aligned; `V_u - V_t` on terminal windows | E5a | ALFWorld |
+| `terminal_aligned` | `V_u - V_t`; discount-aligned on terminal windows | E5b | ALFWorld |
+| `remaining_turns` | `-(T - t)` | E2 P1 | both |
+| `terminal_proximity` | `gamma^(T-t) * R`, R = 10 on success else 0 | E2 P2 | both |
+
+Registry keys: `future-progress-h2-no-credit-shrinkage-<mode with dashes>`, plus
+`-active-episode` for WebShop. Order of use, from the repository root:
+
+```bash
+bash scripts/sync_patches.sh
+.venv/bin/python -m unittest discover -s tests -p test_rebuttal_progress_modes_ccpo.py
+.venv/bin/python scripts/prepare_rebuttal_progress_ablations_ccpo.py --arm all
+```
+
+Preparation writes machine-specific absolute paths, so run it on the training
+machine. It never launches or queues a run.

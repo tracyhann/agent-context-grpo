@@ -388,13 +388,15 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
             raise ValueError("Future-progress horizon must be 0 through 4")
         _progress_weight = float(os.environ.get('ACG_CCPO_PROGRESS_WEIGHT', '1'))
         _progress_mode = os.environ.get('ACG_CCPO_PROGRESS_MODE', 'difference')
-        if _progress_mode not in ('difference', 'discount_aligned'):
+        # Keep in sync with ccpo.future_progress.PROGRESS_MODES (tested).
+        if _progress_mode not in ('difference', 'discount_aligned', 'terminal_difference', 'terminal_aligned',
+                                  'remaining_turns', 'terminal_proximity'):
             raise ValueError('Invalid future-progress mode')
         # (horizon=0, weight=0) explicitly requests history-only credit through
         # the same canonicalization, component logging and support-mask path.
         _progress_enabled = _progress_horizon > 0 or _progress_weight == 0.0
         if not _progress_enabled and _progress_mode != 'difference':
-            raise ValueError('Discount-aligned mode requires an enabled future-progress arm')
+            raise ValueError('A non-default future-progress mode requires an enabled future-progress arm')
         if _progress_enabled:
             if _fixed_anchor or _outlook_horizon != 0 or _outlook_beta != 0:
                 raise ValueError("Future progress cannot be combined with another OUTLOOK variant")

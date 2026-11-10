@@ -46,6 +46,78 @@ ABLATIONS = {
               "task-observation matching, soft weights, LOO, hidden+ctx, and task-wise z-scoring. "
               "Log raw difference = discount-aligned residual + time-passage component; no extra reward term.",
     ),
+    # Rebuttal 2026-11 (E5): which window carries the Eq. 7 vs discount-aligned difference.
+    "future-progress-h2-no-credit-shrinkage-terminal-difference": dict(
+        name="CCPO-ATTNCRED-H2-NOSHRINK-TERMINAL-DIFFERENCE",
+        tag="fph2-noshrink-terminal-difference",
+        title="M10 future residual: discount-aligned, undiscounted on terminal windows, EP0",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("alfworld",),
+        delta={"ccpo_lk_fix": 1.0, "ccpo_progress_mode": "terminal_difference"},
+        removes="the time-passage term on non-terminal windows only (u < T); terminal windows keep V_u - V_t",
+        asks="is the gap between Eq. 7 and the discount-aligned arm carried by the terminal windows?",
+        watch="Close to the Eq. 7 control supports the terminal-window account. Compare the final-turn "
+              "and turns 1-4-before-end future credit of successful rollouts with both controls.",
+    ),
+    "future-progress-h2-no-credit-shrinkage-terminal-aligned": dict(
+        name="CCPO-ATTNCRED-H2-NOSHRINK-TERMINAL-ALIGNED",
+        tag="fph2-noshrink-terminal-aligned",
+        title="M10 future residual: undiscounted, discount-aligned on terminal windows, EP0",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("alfworld",),
+        delta={"ccpo_lk_fix": 1.0, "ccpo_progress_mode": "terminal_aligned"},
+        removes="the time-passage term on terminal windows only (u = T); other windows keep V_u - V_t",
+        asks="is the gap carried by the small 0.0975*V_u ramp on non-terminal windows?",
+        watch="Mirror of terminal-difference. Close to the Eq. 7 control points at the non-terminal ramp "
+              "(or seed noise), not at the terminal windows.",
+    ),
+    # Rebuttal 2026-11 (E2): clock-only terminal-proximity controls (no value estimate).
+    "future-progress-h2-no-credit-shrinkage-remaining-turns": dict(
+        name="CCPO-ATTNCRED-H2-NOSHRINK-REMAINING-TURNS",
+        tag="fph2-noshrink-remaining-turns",
+        title="M10 future channel replaced by -(T - t), EP0",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("alfworld",),
+        delta={"ccpo_lk_fix": 1.0, "ccpo_progress_mode": "remaining_turns"},
+        removes="the contextual value estimate from the future channel; keeps only the turn count",
+        asks="does a signal that only counts turns to the end reproduce the future channel?",
+        watch="Same eligible rows and task-wise z-scoring as the control. Independent of outcome.",
+    ),
+    "future-progress-h2-no-credit-shrinkage-remaining-turns-active-episode": dict(
+        name="CCPO-ATTNCRED-H2-NOSHRINK-REMAINING-TURNS-EPISODE",
+        tag="fph2-noshrink-remaining-turns-ep",
+        title="M11 future channel replaced by -(T - t), EP1",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("webshop",),
+        delta={"ccpo_lk_fix": 1.0, "ccpo_progress_mode": "remaining_turns", "ccpo_ep_w": 1.0},
+        removes="the contextual value estimate from the future channel; keeps only the turn count",
+        asks="does a signal that only counts turns to the end reproduce the future channel?",
+        watch="Same eligible rows and task-wise z-scoring as the control. Independent of outcome.",
+    ),
+    "future-progress-h2-no-credit-shrinkage-terminal-proximity": dict(
+        name="CCPO-ATTNCRED-H2-NOSHRINK-TERMINAL-PROXIMITY",
+        tag="fph2-noshrink-terminal-proximity",
+        title="M10 future channel replaced by gamma**(T - t) * R, EP0",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("alfworld",),
+        delta={"ccpo_lk_fix": 1.0, "ccpo_progress_mode": "terminal_proximity"},
+        removes="the contextual value estimate from the future channel; keeps proximity to a successful end",
+        asks="does proximity to a successful terminal reward alone reproduce the future channel?",
+        watch="R is the success potential (10) or 0, as for terminal sentinels. Same eligible rows and "
+              "task-wise z-scoring as the control.",
+    ),
+    "future-progress-h2-no-credit-shrinkage-terminal-proximity-active-episode": dict(
+        name="CCPO-ATTNCRED-H2-NOSHRINK-TERMINAL-PROXIMITY-EPISODE",
+        tag="fph2-noshrink-terminal-proximity-ep",
+        title="M11 future channel replaced by gamma**(T - t) * R, EP1",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("webshop",),
+        delta={"ccpo_lk_fix": 1.0, "ccpo_progress_mode": "terminal_proximity", "ccpo_ep_w": 1.0},
+        removes="the contextual value estimate from the future channel; keeps proximity to a successful end",
+        asks="does proximity to a successful terminal reward alone reproduce the future channel?",
+        watch="R is the success potential (10) or 0, as for terminal sentinels. Same eligible rows and "
+              "task-wise z-scoring as the control.",
+    ),
     "future-progress-noshrink-history4-future0": dict(
         name="CCPO-ATTNCRED-NOSHRINK-HISTORYFOUR-FUTUREZERO",
         tag="noshrink-hist4-fut0",

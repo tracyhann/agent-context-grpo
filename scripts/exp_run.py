@@ -245,7 +245,10 @@ DEFAULTS = {
     "ccpo_edge_w": 0.0,
     "ccpo_progress_horizon": 0,  # 1..4 enables progress; 0 + progress_weight=0 selects history-only logging
     "ccpo_progress_weight": 1.0,
-    "ccpo_progress_mode": "difference",  # or discount_aligned: gamma**actual_window * V_future - V_current
+    # difference | discount_aligned (gamma**actual_window * V_future - V_current) |
+    # terminal_difference | terminal_aligned (switch discount on terminal windows) |
+    # remaining_turns | terminal_proximity (clock-only controls); see ccpo/future_progress.py
+    "ccpo_progress_mode": "difference",
     "ccpo_progress_history_weight": 1.0,  # 0 isolates future progress; progress_weight=0 isolates history
     "ccpo_progress_snapshot_every": 1,
     "ccpo_fixed_anchor": 0,
@@ -425,6 +428,11 @@ def versions(python):
         return {"error": str(e)}
 
 
+# Keep in sync with ccpo.future_progress.PROGRESS_MODES (tested).
+PROGRESS_MODES = ("difference", "discount_aligned", "terminal_difference", "terminal_aligned",
+                  "remaining_turns", "terminal_proximity")
+
+
 def validate_future_progress_config(cfg):
     """Reject unsupported feature modes before setup, model probes or launch."""
     if cfg.get("arm", "ccpo") != "ccpo":
@@ -444,8 +452,8 @@ def validate_future_progress_config(cfg):
         if not math.isfinite(tau) or tau <= 0:
             raise ValueError("Cross-task grouping requires finite positive ccpo_tau")
     mode = cfg.get("ccpo_progress_mode", "difference")
-    if mode not in ("difference", "discount_aligned"):
-        raise ValueError("ccpo_progress_mode must be difference or discount_aligned")
+    if mode not in PROGRESS_MODES:
+        raise ValueError("ccpo_progress_mode must be one of " + ", ".join(PROGRESS_MODES))
     horizon = cfg.get("ccpo_progress_horizon", 0)
     if isinstance(horizon, bool) or not isinstance(horizon, int) or horizon not in range(5):
         raise ValueError("ccpo_progress_horizon must be an integer from 0 through 4")
@@ -456,7 +464,7 @@ def validate_future_progress_config(cfg):
             raise ValueError(f"{key} must be finite and nonnegative")
     enabled = horizon > 0 or float(cfg.get("ccpo_progress_weight", 1.0)) == 0.0
     if not enabled and mode != "difference":
-        raise ValueError("Discount-aligned mode requires a future-progress or explicit history-only arm")
+        raise ValueError("A non-default ccpo_progress_mode requires a future-progress or explicit history-only arm")
     if not enabled and float(cfg.get("ccpo_progress_history_weight", 1.0)) != 1.0:
         raise ValueError("History component ablation requires a future-progress or explicit history-only arm")
     if enabled:

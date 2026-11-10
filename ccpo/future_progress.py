@@ -2,6 +2,12 @@
 
 H_t = Y_t - B_t; P_t = V_context(t+h) - V_context(t) by default.
 The discount_aligned ablation uses gamma**(t_plus-t) * V_context(t_plus) - V_context(t).
+Reviewer ablations (rebuttal, 2026-11):
+  terminal_difference  discount_aligned, except the undiscounted difference on terminal windows
+  terminal_aligned     difference, except discount_aligned on terminal windows
+  remaining_turns      -(T - t), the number of turns left; no value estimate
+  terminal_proximity   gamma**(T - t) * R, R = success potential or 0; no value estimate
+A terminal window is one whose clipped endpoint t_plus = min(t+h, T) is the terminal sentinel.
 A_pre = history_weight * H_t + progress_weight * task_standardize(P_t).
 Only enabled components contribute to the trainer normalization support mask.
 The trainer then applies its existing benchmark-specific combined normalization.
@@ -18,6 +24,12 @@ import torch
 
 from ccpo import core_ccpo as core
 from ccpo.outlook import canonical_trajectory_rows, _take
+
+# Keep in sync with scripts/exp_run.py and the patched ray_trainer.py (tested).
+PROGRESS_MODES = ('difference', 'discount_aligned', 'terminal_difference', 'terminal_aligned',
+                  'remaining_turns', 'terminal_proximity')
+# Modes that ignore the contextual value estimate and use only the turn count.
+CLOCK_ONLY_MODES = ('remaining_turns', 'terminal_proximity')
 
 
 def endpoint_map(groups, n, horizon):
@@ -44,8 +56,15 @@ def progress_from_values(values, groups, episode_rewards, horizon=1, success_rew
     including terminal sentinels. Neither mode adds an immediate reward.
     Discounted multi-step residuals telescope with gamma-weighted one-step terms.
     Horizon 0 is the history-only mode: current endpoints, no eligible progress.
+
+    terminal_difference / terminal_aligned switch between the two discounts by
+    window: terminal windows (endpoint is the sentinel) take one, the rest the other.
+    remaining_turns / terminal_proximity are clock-only controls: they ignore
+    `values` in the raw signal but keep the same eligible rows, so the task-wise
+    normalization population is unchanged. T - t counts the current turn, so the
+    last turn has T - t = 1, matching the value labels gamma**(T-t) * R.
     """
-    if mode not in ('difference', 'discount_aligned'):
+    if mode not in PROGRESS_MODES:
         raise ValueError('Unknown future-progress mode: ' + str(mode))
     if not np.isfinite(gamma) or not 0 <= gamma <= 1:
         raise ValueError('Invalid discount')
@@ -53,11 +72,22 @@ def progress_from_values(values, groups, episode_rewards, horizon=1, success_rew
     rewards = np.asarray(episode_rewards, dtype=float)
     endpoint, window = endpoint_map(groups, len(values), horizon)
     terminal = endpoint < 0
-    future = np.where(np.abs(rewards - success_reward) < 1e-9, success_reward, 0.)
+    terminal_value = np.where(np.abs(rewards - success_reward) < 1e-9, success_reward, 0.)
+    future = terminal_value.copy()
     future[~terminal] = values[endpoint[~terminal]]
     eligible = np.isfinite(values) & np.isfinite(future) & (horizon > 0)
     raw = np.zeros(len(values))
-    discount = np.power(gamma, window) if mode == 'discount_aligned' else np.ones(len(values))
+    if mode in CLOCK_ONLY_MODES:
+        remaining = np.zeros(len(values))
+        for ids in groups:
+            remaining[ids] = len(ids) - np.arange(len(ids))
+        signal = -remaining if mode == 'remaining_turns' else np.power(gamma, remaining) * terminal_value
+        raw[eligible] = signal[eligible]
+        return raw, future, endpoint, window, eligible
+    aligned = np.power(gamma, window)
+    discount = dict(difference=np.ones(len(values)), discount_aligned=aligned,
+                    terminal_difference=np.where(terminal, 1., aligned),
+                    terminal_aligned=np.where(terminal, aligned, 1.))[mode]
     raw[eligible] = discount[eligible] * future[eligible] - values[eligible]
     return raw, future, endpoint, window, eligible
 
@@ -151,7 +181,7 @@ def ccpo_future_progress_advantage(*, turn_index, episode_lengths, horizon=1,
     """
     if isinstance(horizon, (bool, np.bool_)) or not isinstance(horizon, (int, np.integer)) or horizon not in range(5):
         raise ValueError('Invalid future-progress horizon: expected integer 0 through 4')
-    if progress_mode not in ('difference', 'discount_aligned'):
+    if progress_mode not in PROGRESS_MODES:
         raise ValueError('Unknown future-progress mode: ' + str(progress_mode))
     if horizon == 0 and progress_weight != 0:
         raise ValueError('Zero future horizon requires progress_weight=0')
@@ -255,6 +285,7 @@ def ccpo_future_progress_advantage(*, turn_index, episode_lengths, horizon=1,
                 progress_future_active=float(horizon > 0 and progress_weight > 0),
                 progress_horizon=float(horizon), progress_weight=float(progress_weight),
                 progress_discount_aligned=float(progress_mode == 'discount_aligned'), progress_gamma=gamma,
+                **{'progress_' + m: float(progress_mode == m) for m in PROGRESS_MODES[2:]},
                 progress_decomposition_max_error=float(np.max(abs(undiscounted_raw - discount_aligned_raw - time_passage_raw))) if n else 0.,
                 progress_history_weight=float(history_weight), progress_episode_weight=0., progress_original_edge_weight=0.,
                 progress_live_frac=float(live.mean()),
