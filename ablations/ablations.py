@@ -349,6 +349,37 @@ ABLATIONS = {
               "Keep hidden+ctx, exponential weights, tau=0.15, whole-trajectory LOO, and "
               "task-wise advantage normalization. No task prior/backoff; H/F/EP weights 1/1/1.",
     ),
+    # Rebuttal 2026-11: observation matching removed, task identity kept. The
+    # cross-task arms above drop both gates at once and cannot separate the two.
+    "future-progress-h2-no-credit-shrinkage-task-gate": dict(
+        name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-TASK-GATE",
+        tag="fph2-noshrink-task-gate",
+        title="M10 H2 no shrinkage, EP0, task-level contextual soft grouping",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("alfworld",),
+        delta={"ccpo_lk_fix": 1.0, "ccpo_gate": "global"},
+        removes="exact-observation matching from contextual peer selection; task identity is kept",
+        asks="how much of the method depends on observations recurring across rollouts of a task?",
+        watch="History and both potentials use every other-trajectory occurrence of the same task, "
+              "which is the bucket the hard gate uses only as its fallback. Keep hidden+ctx, "
+              "exponential weights, tau=0.15, whole-trajectory LOO and task-wise normalization. "
+              "No task prior applies; exact and backoff fractions read zero; EP=0.",
+    ),
+    "future-progress-h2-no-credit-shrinkage-active-episode-task-gate": dict(
+        name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-ACTIVE-EPISODE-TASK-GATE",
+        tag="fph2-noshrink-ep-task-gate",
+        title="M11 H2 no shrinkage, EP1, task-level contextual soft grouping",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("webshop",),
+        delta={"ccpo_lk_fix": 1.0, "ccpo_ep_w": 1.0, "ccpo_gate": "global"},
+        removes="exact-observation matching from contextual peer selection; task identity is kept",
+        asks="how much of the method depends on observations recurring across rollouts of a task, "
+             "under the EP1 control?",
+        watch="History and both potentials use every other-trajectory occurrence of the same task, "
+              "which is the bucket the hard gate uses only as its fallback. Keep hidden+ctx, "
+              "exponential weights, tau=0.15, whole-trajectory LOO and task-wise normalization. "
+              "No task prior applies; exact and backoff fractions read zero; H/F/EP weights 1/1/1.",
+    ),
     "future-progress-h2-no-credit-shrinkage": dict(
         name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK",
         tag="fph2-noshrink",

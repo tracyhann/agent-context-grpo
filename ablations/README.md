@@ -270,3 +270,19 @@ bash scripts/sync_patches.sh
 
 Preparation writes machine-specific absolute paths, so run it on the training
 machine. It never launches or queues a run.
+
+## Rebuttal task-gate ablation — 2026-11
+
+`future-progress-h2-no-credit-shrinkage-task-gate` (ALFWorld EP0) and
+`future-progress-h2-no-credit-shrinkage-active-episode-task-gate` (WebShop EP1)
+change the no-shrink H2 controls' `ccpo_gate` from `hard` to `global`: exact
+observation matching is removed and task identity is kept, so every turn reads the
+task bucket that the control uses only as its fallback. Hidden+ctx features,
+exponential weighting (tau scale 0.15), H/F weights 1/1, whole-trajectory LOO and
+task-wise normalization stay enabled. The cross-task arms drop the task gate as
+well and cannot separate the two conditions.
+
+[Definition, reading and verification](../experiments/TASK_GATE_ABLATION.md).
+Prepare on the training host with
+`python scripts/prepare_rebuttal_task_gate_ccpo.py`; this only generates
+configurations and launch scripts.

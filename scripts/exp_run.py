@@ -265,6 +265,9 @@ DEFAULTS = {
     "ccpo_gate": "hard",
     # "cross_task" removes both task and observation gates from the batch-wide
     # soft readout. No task prior/backoff; whole-trajectory LOO and no shrinkage.
+    # Under future progress "global" is the task-gate ablation: observation matching
+    # is removed and task identity kept, so every row reads the task bucket that
+    # "hard" uses only as its fallback.
     "ccpo_tau": 1.0,
     # "task" = divide the step credit by the per-task sd in the trainer (default).
     # "local" = divide by the phi-weighted sd over the same soft neighbourhood that
@@ -497,6 +500,8 @@ def versions(python):
 # Keep in sync with ccpo.future_progress.PROGRESS_MODES (tested).
 PROGRESS_MODES = ("difference", "discount_aligned", "terminal_difference", "terminal_aligned",
                   "remaining_turns", "terminal_proximity")
+# Keep in sync with ccpo.future_progress.SUPPORTED_GATES (tested).
+FUTURE_PROGRESS_GATES = ("hard", "global", "cross_task")
 
 
 def validate_future_progress_config(cfg):
@@ -542,6 +547,9 @@ def validate_future_progress_config(cfg):
     if enabled and str(cfg.get("ccpo_phi", "hidden")).lower() not in ("hidden", "hidden+ctx"):
         raise ValueError("Future progress requires ccpo_phi=hidden or hidden+ctx; "
                          "hidden-only also supports hidden+ctx with ccpo_ctx_w=0")
+    # The estimator rejects any other gate on the first step; stop at launch instead.
+    if enabled and str(cfg.get("ccpo_gate", DEFAULTS["ccpo_gate"])) not in FUTURE_PROGRESS_GATES:
+        raise ValueError("Future progress requires ccpo_gate in " + ", ".join(FUTURE_PROGRESS_GATES))
 
 
 def validate_search_config(cfg):

@@ -1553,3 +1553,24 @@ Variants: `CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-CROSS-TASK` (ALFWorld
 `CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-ACTIVE-EPISODE-CROSS-TASK` (WebShop EP1).
 Canonical IDs: `ccpo-attncred-abl-fph2-noshrink-cross-task-alfworld-1.5b` and
 `ccpo-attncred-abl-fph2-noshrink-ep-cross-task-ws-1.5b`. Both are prepared only.
+
+## Rebuttal task-gate ablation — 2026-11
+
+`future-progress-h2-no-credit-shrinkage-task-gate` (ALFWorld EP0) and
+`future-progress-h2-no-credit-shrinkage-active-episode-task-gate` (WebShop EP1)
+change the no-shrink H2 controls' `ccpo_gate` from `hard` to `global`: exact
+observation matching is removed and task identity is kept, so every turn reads the
+task bucket that the control uses only as its fallback. Hidden+ctx features,
+exponential weighting (tau scale 0.15), H/F weights 1/1, whole-trajectory LOO and
+task-wise normalization stay enabled. The cross-task arms drop the task gate as
+well and cannot separate the two conditions.
+
+[Definition, reading and verification](TASK_GATE_ABLATION.md).
+Prepare on the training host with
+`python scripts/prepare_rebuttal_task_gate_ccpo.py`; this only generates
+configurations and launch scripts.
+
+Variants: `CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-TASK-GATE` and
+`CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-ACTIVE-EPISODE-TASK-GATE`.
+Canonical IDs: `ccpo-attncred-abl-fph2-noshrink-task-gate-alfworld-1.5b` and
+`ccpo-attncred-abl-fph2-noshrink-ep-task-gate-ws-1.5b`. Both are to be prepared.

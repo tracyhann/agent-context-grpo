@@ -30,6 +30,12 @@ PROGRESS_MODES = ('difference', 'discount_aligned', 'terminal_difference', 'term
                   'remaining_turns', 'terminal_proximity')
 # Modes that ignore the contextual value estimate and use only the turn count.
 CLOCK_ONLY_MODES = ('remaining_turns', 'terminal_proximity')
+# Peer gates the history and potential readouts accept. Keep in sync with
+# scripts/exp_run.py (tested).
+#   hard        same task and same observation, task bucket as the fallback
+#   global      same task; no observation matching and no fallback level
+#   cross_task  the whole rollout batch
+SUPPORTED_GATES = ('hard', 'global', 'cross_task')
 
 
 def endpoint_map(groups, n, horizon):
@@ -222,8 +228,11 @@ def ccpo_future_progress_advantage(*, turn_index, episode_lengths, horizon=1,
                          '(phi=hidden or hidden+ctx, with phi_feats supplied)')
     if core._STD_MODE == 'local' or core._JW_C != 0 or core._LAM_FIX != '1' and core._LAM_FIX != '1.0':
         raise ValueError('Future progress requires the M3/M5 attention readout without local scaling/J weighting')
-    if core._GATE not in ('hard', 'cross_task') or float(kwargs.get('sim') or core._SIM) != 0 or core._SIM_BACKOFF != 0:
-        raise ValueError('Future progress requires exact observation groups or cross_task soft grouping')
+    # 'global' keeps the task gate and drops observation matching: every row reads
+    # the task bucket that the hard gate uses only as its fallback.
+    if core._GATE not in SUPPORTED_GATES or float(kwargs.get('sim') or core._SIM) != 0 or core._SIM_BACKOFF != 0:
+        raise ValueError('Future progress requires exact observation groups (hard), the task-level '
+                         'gate (global) or cross_task soft grouping, without similarity clustering')
     take, restore, groups = canonical_trajectory_rows(
         kwargs['index'], kwargs['traj_index'], turn_index, episode_lengths)
     canonical = dict(kwargs)
@@ -304,6 +313,7 @@ def ccpo_future_progress_advantage(*, turn_index, episode_lengths, horizon=1,
     diag.update(progress_enabled=1., progress_loo=diag['loo'],
                 progress_uniform_weighting=diag['uniform_weighting'],
                 progress_cross_task_grouping=diag['cross_task_grouping'],
+                progress_task_grouping=float(core._GATE == 'global'),
                 progress_future_active=float(horizon > 0 and progress_weight > 0),
                 progress_horizon=float(horizon), progress_weight=float(progress_weight),
                 progress_discount_aligned=float(progress_mode == 'discount_aligned'), progress_gamma=gamma,

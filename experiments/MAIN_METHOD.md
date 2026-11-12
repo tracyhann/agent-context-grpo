@@ -135,3 +135,6 @@ primary method designation above remains EP0. All are prepared only.
 
 [Cross-task soft grouping](CROSS_TASK_SOFT_GROUPING.md) removes both hard peer
 gates while retaining H2 no shrinkage: ALFWorld uses EP0; WebShop uses its EP1 comparison.
+
+[The task-gate ablation](TASK_GATE_ABLATION.md) removes exact-observation matching
+only and keeps task identity, on the same controls.
