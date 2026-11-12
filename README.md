@@ -9,6 +9,8 @@ configurations and ablations. Earlier shrinkage and episode-on arms remain
 historical comparators.
 
 * Benchmarks: **ALFWorld**, **WebShop** · Backbones: **Qwen2.5-1.5B / 7B-Instruct**
+* Rebuttal benchmark, prepared and not yet run: **Search-R1**, see
+  [experiments/SEARCH_R1.md](experiments/SEARCH_R1.md)
 * Target hardware: **A100 (sm_80)** and **H100 (sm_90)**
 * Checkpoint backups: **https://huggingface.co/tracyhan816/ccpo-variants**
 

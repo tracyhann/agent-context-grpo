@@ -72,6 +72,12 @@ class SearchEnvironmentManager(EnvironmentManagerBase):
     """
     def __init__(self, envs, projection_f, config):
         self.memory = SearchMemory()
+        # ACG_SEARCH_REWARD_SCALE: the env's exact-match reward is 1/0, while ALFWorld
+        # and WebShop reach the trainer as 10/0 and the CCPO estimators assume that
+        # scale (future progress hardcodes a success potential of 10). The launcher
+        # sets 10; unset keeps upstream's reward. info['won'] is decided upstream on
+        # the unscaled reward, so success_rate is unaffected.
+        self.reward_scale = float(os.environ.get("ACG_SEARCH_REWARD_SCALE", "1.0"))
         super().__init__(envs, projection_f, config)
 
     def reset(self, kwargs) -> Tuple[Dict[str, Any], List[Dict]]:
@@ -106,6 +112,8 @@ class SearchEnvironmentManager(EnvironmentManagerBase):
             info["is_action_valid"] = to_numpy(valids[i])
 
         rewards = to_numpy(rewards)
+        if self.reward_scale != 1.0:
+            rewards = rewards * self.reward_scale
         dones = to_numpy(dones)
 
         return next_observations, rewards, dones, infos

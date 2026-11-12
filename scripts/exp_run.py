@@ -169,10 +169,8 @@ DEFAULTS = {
     "env_name": "alfworld/AlfredTWEnv",
     # Search-augmented QA (Search-R1 suite via verl-agent's `search` env). Selected by
     # env_name=search; the keys below are ignored for every other benchmark. GiGPO's
-    # published protocol (examples/gigpo_trainer/run_search.sh): group 5, 4 turns,
-    # history 4, prompt 4096, KL 0.001, invalid-action penalty 0.01, and -- critically --
-    # similarity grouping at 0.9, because retrieved-passage observations never repeat
-    # verbatim and exact-match grouping is degenerate on this benchmark.
+    # published protocol (examples/gigpo_trainer/run_search.sh) is applied by
+    # SEARCH_PROTOCOL and SEARCH_FIXED below.
     "search_train_files": os.path.join(ROOT, "envdata", "searchr1", "train.parquet"),
     "search_val_files": os.path.join(ROOT, "envdata", "searchr1", "test.parquet"),
     "search_url": "http://127.0.0.1:8000/retrieve",
@@ -349,6 +347,74 @@ _WEBSHOP_DELTA = [
     "1,000-product catalogue (env.webshop.use_small=True) -- verl-agent's default and\n     what the published scripts run, so 67.4% (GiGPO, Qwen2.5-1.5B) is on this subset",
 ]
 
+# ---------------------------------------------------------------------------
+# Search-R1 protocol, applied by env_name=search where the command line was silent.
+# Source: verl-agent examples/gigpo_trainer/run_search.sh at the pinned upstream
+# revision 20bd331 -- GiGPO's published script for this benchmark, asserted by
+# tests/test_search_protocol.py.
+# ---------------------------------------------------------------------------
+SEARCH_PROTOCOL = {
+    "train_batch_size": 256,                 # questions per step
+    "group_size": 5,
+    "val_batch_size": 512,
+    "max_steps": 4,
+    # The whole episode stays in the prompt: the agent answers from what it retrieved.
+    "history_length": 4,
+    "max_prompt_length": 4096,
+    "kl_loss_coef": 0.001,
+    "ppo_mini_batch_size": 512,
+    # Inert while dynamic_bsz is on, kept at the reference values as on WebShop.
+    "ppo_micro_batch_size_per_gpu": 16,
+    "log_prob_micro_batch_size_per_gpu": 32,
+    # The reference leaves val_kwargs at verl's defaults: greedy decoding.
+    "val_temperature": 0,
+    "test_freq": 50,
+    "save_freq": 50,
+    # A STEP budget on this benchmark. The parquet holds real questions, so one
+    # epoch is many steps and build_command caps trainer.total_training_steps with
+    # this value. 662 = one pass over the 169,615 training questions at 256 per step
+    # with drop_last, i.e. the reference's total_epochs=1.
+    "total_epochs": 662,
+    # Questions come from the dataloader, whose state the checkpoint restores. The
+    # resume burns call envs.reset() without questions, which this env cannot do.
+    "align_val_on_resume": 0,
+    "align_train_on_resume": 0,
+}
+
+# Search-R1 settings that are not launcher keys. They are deliberately kept out of
+# DEFAULTS: every prepare script asserts that a prepared config has exactly its
+# control's keys, so a new key would invalidate all of them.
+SEARCH_FIXED = {
+    "truncation": "left",                    # reference; "error" aborts on a long history
+    "lr_warmup_steps_ratio": 0.1,            # reference
+    "entropy_coeff": 0,                      # reference; verl's default is 0.001
+    # GiGPO arm only: its published grouping on this benchmark. Retrieved passages
+    # repeat verbatim only when two rollouts issue the same query, so exact-match
+    # groups are sparse after the first turn. CCPO keeps its own gate: exact peers
+    # where they exist, the task bucket elsewhere.
+    "gigpo_enable_similarity": True,
+    "gigpo_similarity_thresh": 0.9,
+    # The env's exact-match reward is 1/0. Every estimator in this tree assumes the
+    # 10/0 scale of ALFWorld and WebShop: future progress hardcodes a success
+    # potential of 10 (ccpo/future_progress.py), so at 1/0 every terminal potential
+    # would read as failure. SearchEnvironmentManager multiplies the reward by this.
+    # With the invalid-action penalty left at 0.1 the penalty/reward ratio equals the
+    # reference's 0.01/1, so GRPO and GiGPO under mean_std_norm are unchanged.
+    "reward_scale": 10.0,
+}
+
+_SEARCH_DELTA = [
+    "Search-R1 protocol from run_search.sh: batch 256 x group 5, 4 turns, history 4,\n     prompt 4096, KL 0.001, mini-batch 512, warmup 0.1, entropy 0, truncation left,\n     greedy validation -- see SEARCH_PROTOCOL and SEARCH_FIXED",
+    "reward scaled x10 to 10/0 with invalid-action penalty 0.1 (reference: 1/0 with\n     0.01); the same ratio, so standardized advantages are unchanged. val/test_score\n     is therefore 10x the exact-match rate; success_rate is exact match itself",
+    "gpu_memory_utilization and use_dynamic_bsz follow this tree's defaults, not the\n     reference's 0.6 and fixed micro-batches",
+    "total_epochs is a step cap (trainer.total_training_steps); 662 steps at batch 256\n     is the reference's single epoch",
+]
+
+
+def is_search(cfg):
+    return "search" in str(cfg.get("env_name", "")).lower()
+
+
 ENV_KEYS = {
     "ccpo_phi": "ACG_CCPO_PHI", "ccpo_rho": "ACG_CCPO_RHO",
     "ccpo_shrink": "ACG_CCPO_SHRINK", "ccpo_whiten": "ACG_CCPO_WHITEN",
@@ -478,12 +544,27 @@ def validate_future_progress_config(cfg):
                          "hidden-only also supports hidden+ctx with ccpo_ctx_w=0")
 
 
+def validate_search_config(cfg):
+    """Reject Search-R1 launches that would fail or mislead after startup."""
+    if not is_search(cfg):
+        return
+    if cfg.get("arm", "ccpo") == "hgpo":
+        raise ValueError("The HGPO recipe is not set up for Search-R1")
+    if cfg.get("arm", "ccpo") == "ccpo" and str(cfg.get("ccpo_target", "return")).lower() != "return":
+        raise ValueError("Search-R1 requires ccpo_target=return: only WebShop supplies a dense score, "
+                         "and nextnode has not been checked on this benchmark")
+    steps = cfg.get("total_epochs")
+    if isinstance(steps, bool) or not isinstance(steps, int) or steps < 1:
+        raise ValueError("On Search-R1 total_epochs is the step budget and must be a positive integer")
+
+
 def build_command(cfg, exp_dir):
     validate_future_progress_config(cfg)
+    validate_search_config(cfg)
     ngpu = len(cfg["gpus"].split(","))
     est = {"ccpo": "ccpo", "grpo": "grpo", "gigpo": "gigpo", "hgpo": "hgpo"}[cfg["arm"]]
     is_hgpo = cfg["arm"] == "hgpo"
-    _is_search = "search" in str(cfg["env_name"]).lower()
+    _is_search = is_search(cfg)
     _is_webshop = "webshop" in str(cfg["env_name"]).lower()
     if _is_search:
         _train_f, _val_f = cfg["search_train_files"], cfg["search_val_files"]
@@ -504,10 +585,14 @@ def build_command(cfg, exp_dir):
         f"data.max_prompt_length={cfg['max_prompt_length']}",
         f"data.max_response_length={cfg['max_response_length']}",
         "data.filter_overlong_prompts=True",
-        "data.truncation=left" if is_hgpo else "data.truncation=error",
+        "data.truncation=left" if is_hgpo
+        else f"data.truncation={SEARCH_FIXED['truncation']}" if _is_search
+        else "data.truncation=error",
         "data.return_raw_chat=True",
         f"actor_rollout_ref.model.path={cfg['model_path']}",
         f"actor_rollout_ref.actor.optim.lr={cfg['lr']}",
+        *([f"actor_rollout_ref.actor.optim.lr_warmup_steps_ratio={SEARCH_FIXED['lr_warmup_steps_ratio']}",
+           f"actor_rollout_ref.actor.entropy_coeff={SEARCH_FIXED['entropy_coeff']}"] if _is_search else []),
         f"actor_rollout_ref.model.use_remove_padding={cfg['remove_padding']}",
         f"actor_rollout_ref.actor.ppo_mini_batch_size={cfg['ppo_mini_batch_size']}",
         f"actor_rollout_ref.actor.ppo_micro_batch_size_per_gpu={cfg['ppo_micro_batch_size_per_gpu']}",
@@ -534,7 +619,10 @@ def build_command(cfg, exp_dir):
         f"actor_rollout_ref.rollout.val_kwargs.temperature={cfg['val_temperature']}",
         f"actor_rollout_ref.rollout.val_kwargs.top_p={cfg['val_top_p']}",
         f"actor_rollout_ref.rollout.val_kwargs.top_k={cfg['val_top_k']}",
-        "actor_rollout_ref.rollout.val_kwargs.do_sample=True",
+        # Search-R1's reference validates greedily; do_sample follows the temperature
+        # there so an explicit val_temperature still samples.
+        f"actor_rollout_ref.rollout.val_kwargs.do_sample={float(cfg['val_temperature']) > 0}"
+        if _is_search else "actor_rollout_ref.rollout.val_kwargs.do_sample=True",
         f"actor_rollout_ref.ref.log_prob_micro_batch_size_per_gpu={cfg['log_prob_micro_batch_size_per_gpu']}",
         "actor_rollout_ref.ref.fsdp_config.param_offload=True",
         "actor_rollout_ref.actor.use_invalid_action_penalty=True",
@@ -547,6 +635,9 @@ def build_command(cfg, exp_dir):
            f"algorithm.hgpo.mode={cfg['adv_mode']}"] if is_hgpo else [
            f"algorithm.gigpo.step_advantage_w={cfg['step_advantage_w']}",
            f"algorithm.gigpo.mode={cfg['adv_mode']}"]),
+        *([f"algorithm.gigpo.enable_similarity={SEARCH_FIXED['gigpo_enable_similarity']}",
+           f"algorithm.gigpo.similarity_thresh={SEARCH_FIXED['gigpo_similarity_thresh']}"]
+          if _is_search and cfg["arm"] == "gigpo" else []),
         f"env.env_name={cfg['env_name']}",
         f"env.seed={cfg['seed']}",
         f"env.max_steps={cfg['max_steps']}",
@@ -571,6 +662,9 @@ def build_command(cfg, exp_dir):
         f"trainer.default_local_dir={ckpt}",
         f"trainer.test_freq={cfg['test_freq']}",
         f"trainer.total_epochs={cfg['total_epochs']}",
+        # Search-R1 trains on a real question set: one epoch is many steps, so the
+        # step budget is the cap and total_epochs only has to be large enough.
+        *([f"trainer.total_training_steps={cfg['total_epochs']}"] if _is_search else []),
         # HGPO has its own trainer: cap trainer iterations explicitly, even
         # when a different training parquet contains multiple batches per epoch.
         *([f"trainer.total_training_steps={cfg['total_epochs']}",
@@ -667,6 +761,9 @@ def build_env(cfg, exp_dir):
         # diagnostic arm whose only purpose is to characterise the grouping.
         **({"ACG_CCPO_GDUMP": os.path.join(exp_dir, "outputs", "grouping.jsonl")}
            if cfg.get("gdump") else {}),
+        # Search-R1 only, and for every arm: see SEARCH_FIXED["reward_scale"].
+        **({"ACG_SEARCH_REWARD_SCALE": str(SEARCH_FIXED["reward_scale"])}
+           if is_search(cfg) else {}),
     }
     for k, e in ENV_KEYS.items():
         # Historical recorded configs predate new knobs; use their runtime defaults.
@@ -700,9 +797,14 @@ def main():
         for k, v in WEBSHOP_PROTOCOL.items():
             if k not in explicit:
                 cfg[k] = v
+    if is_search(cfg):
+        for k, v in SEARCH_PROTOCOL.items():
+            if k not in explicit:
+                cfg[k] = v
 
     try:
         validate_future_progress_config(cfg)
+        validate_search_config(cfg)
     except ValueError as error:
         ap.error(str(error))
 
@@ -804,6 +906,17 @@ def main():
                         "max_response_length": cfg["max_response_length"],
                         "total_training_steps": cfg["total_epochs"], "max_turns": cfg["max_steps"]},
             "runtime": "Shared local verl-agent overlay; all overrides and environment values recorded above",
+        }
+    if is_search(cfg):
+        record["reference_protocol"] = {
+            "source": "verl-agent/examples/gigpo_trainer/run_search.sh",
+            "upstream_commit": "20bd331bdbc9026a5668e11362178e10ab7400c8",
+            "protocol": {k: cfg[k] for k in SEARCH_PROTOCOL},
+            "fixed": dict(SEARCH_FIXED),
+            # Every launcher key that departs from the reference, e.g. a shorter step budget.
+            "departures": {k: {"reference": v, "launched": cfg[k]}
+                           for k, v in SEARCH_PROTOCOL.items() if cfg[k] != v},
+            "deltas": _SEARCH_DELTA,
         }
     with open(os.path.join(exp_dir, "config.json"), "w") as fh:
         json.dump(record, fh, indent=2, sort_keys=True)

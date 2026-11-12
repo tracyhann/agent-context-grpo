@@ -171,6 +171,27 @@ def _check_round_trip(kwargs, canonical, restore):
                 progress_phi_duplicate_nonfinite=0.)
 
 
+def check_search_reward_scale(episode_rewards, success_reward=10.):
+    """Stop a Search-R1 run whose returns are not on the success-potential scale.
+
+    The search env rewards exact match with 1. The launcher sets
+    ACG_SEARCH_REWARD_SCALE so that SearchEnvironmentManager returns 10 instead, the
+    value progress_from_values recognises as success. A verl-agent overlay that
+    predates that hook ignores the variable, and every terminal potential would then
+    read as failure without any error. Inactive unless the variable is set, so
+    ALFWorld, WebShop and offline callers are unaffected.
+    """
+    if os.environ.get('ACG_SEARCH_REWARD_SCALE') is None:
+        return
+    rewards = np.asarray(episode_rewards, dtype=float)
+    off_scale = (rewards > 0) & (np.abs(rewards - success_reward) > 1e-6)
+    if off_scale.any():
+        raise ValueError(
+            f'Search-R1 episode returns must be 0 or {success_reward:g}, got '
+            f'{np.unique(rewards[off_scale])[:5].tolist()}. Run scripts/sync_patches.sh so '
+            'verl-agent applies ACG_SEARCH_REWARD_SCALE, and launch through scripts/exp_run.py.')
+
+
 def ccpo_future_progress_advantage(*, turn_index, episode_lengths, horizon=1,
                                    progress_weight=1., history_weight=1., readout='context',
                                    progress_mode='difference', **kwargs):
@@ -218,6 +239,7 @@ def ccpo_future_progress_advantage(*, turn_index, episode_lengths, horizon=1,
     gamma = float(kwargs.get('gamma', .95)); success_reward = float(kwargs.get('success_reward', 10.))
     if not 0 <= gamma <= 1:
         raise ValueError('Invalid discount')
+    check_search_reward_scale(episodes, success_reward)
     labels = np.zeros(n)
     for ids in groups:
         if not np.all(episodes[ids] == episodes[ids[0]]):
