@@ -138,3 +138,6 @@ gates while retaining H2 no shrinkage: ALFWorld uses EP0; WebShop uses its EP1 c
 
 [The task-gate ablation](TASK_GATE_ABLATION.md) removes exact-observation matching
 only and keeps task identity, on the same controls.
+
+[The offline credit-channel analysis](CREDIT_CHANNEL_ANALYSIS.md) compares historical
+with future credit, and future credit with simpler signals, on a run's logged rollouts.

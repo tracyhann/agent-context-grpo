@@ -1574,3 +1574,17 @@ Variants: `CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-TASK-GATE` and
 `CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-ACTIVE-EPISODE-TASK-GATE`.
 Canonical IDs: `ccpo-attncred-abl-fph2-noshrink-task-gate-alfworld-1.5b` and
 `ccpo-attncred-abl-fph2-noshrink-ep-task-gate-ws-1.5b`. Both are to be prepared.
+
+## Rebuttal offline credit-channel analysis — 2026-11
+
+`scripts/analyse_credit_channels.py` reads a future-progress run's per-turn logs
+(`outputs/future_progress/step-NNNN.csv`) and compares, without training: historical
+credit with future credit (correlation, sign disagreement, the share of each
+channel's within-task variance explained by trajectory identity and by outcome), and
+the run's future credit with the one-step value difference, the one-step and K-step
+discount-aligned residuals, the discounted final reward and the episode outcome,
+all recomputed from the logged contextual values. These are statistics of credit
+signals on logged rollouts, not training results.
+
+[Definitions, reading and verification](CREDIT_CHANNEL_ANALYSIS.md). It has not been
+run on a real log.
