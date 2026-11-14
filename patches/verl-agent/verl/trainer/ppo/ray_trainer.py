@@ -575,6 +575,25 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
     return data
 
 
+def pooled_success(per_batch):
+    """{key: (rate, episodes)} over every episode of a validation pass.
+
+    per_batch holds one {key: per-episode values} dict per validation batch. The
+    val/<key> metrics average the batch means instead, so a batch holding one episode
+    of a data source weighs as much as a batch holding five hundred.
+    """
+    parts = {}
+    for batch in per_batch:
+        for key, values in batch.items():
+            parts.setdefault(key, []).append(np.asarray(values, dtype=np.float64).reshape(-1))
+    pooled = {}
+    for key, arrays in parts.items():
+        values = np.concatenate(arrays)
+        if values.size:
+            pooled[key] = (float(values.mean()), int(values.size))
+    return pooled
+
+
 @contextmanager
 def _timer(name: str, timing_raw: Dict[str, float]):
     """Context manager for timing code execution.
@@ -911,6 +930,8 @@ class RayPPOTrainer:
         # wandered. gather_rollout_data writes episode_lengths onto every row.
         episode_length_list = []
         success_rate_dict = {}
+        # ACG: per-episode success values of every batch, for the pooled rates below.
+        success_episode_list = []
 
         # Lists to collect samples for the table
         sample_inputs = []
@@ -994,6 +1015,9 @@ class RayPPOTrainer:
             _el = test_output_gen_batch.non_tensor_batch.get('episode_lengths')
             if _el is not None:
                 episode_length_list.append(_el)
+            _se = (test_output_gen_batch.meta_info or {}).get('success_episodes')
+            if _se is not None:
+                success_episode_list.append(_se)
             # success rate
             for k in test_batch.non_tensor_batch.keys():
                 if 'success_rate' in k:
@@ -1052,6 +1076,14 @@ class RayPPOTrainer:
 
         for k, v in success_rate.items():
             metric_dict[f'val/{k}'] = v
+
+        # ACG: val/<key> above is the mean of the batch means. With unequal batches,
+        # or a data source split across batches, that is not the rate over episodes.
+        # These are; the keys above keep their published definition. Neither name ends
+        # in "success_rate", which is how fit() picks the score for the best checkpoint.
+        for k, (rate, episodes) in pooled_success(success_episode_list).items():
+            metric_dict[f'val/{k}/pooled'] = rate
+            metric_dict[f'val/{k}/episodes'] = episodes
 
         return metric_dict
 

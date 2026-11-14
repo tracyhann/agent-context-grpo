@@ -60,6 +60,7 @@ SOURCES = ['ccpo/future_progress.py', 'ccpo/core_ccpo.py', 'ccpo/arms.py', 'abla
            'scripts/exp_run.py', 'scripts/prepare_search_r1_ccpo.py', 'tests/test_search_protocol.py',
            'tests/test_search_r1_ccpo.py',
            'patches/verl-agent/agent_system/environments/env_manager.py',
+           'patches/verl-agent/agent_system/multi_turn_rollout/rollout_loop.py',
            'patches/verl-agent/verl/trainer/ppo/ray_trainer.py']
 
 
@@ -252,8 +253,9 @@ ALFWorld and WebShop?
 
 **Protocol.** GiGPO's published `run_search.sh`, applied by `scripts/exp_run.py`.
 The exact-match reward is scaled to 10/0 (`ACG_SEARCH_REWARD_SCALE`) with the
-invalid-action penalty at 0.1, the reference's 1/0 and 0.01 times ten, so
-`val/test_score` is ten times exact match and `success_rate` is exact match.
+invalid-action penalty at 0.1, the reference's 1/0 and 0.01 times ten;
+`success_rate` is exact match. Report the per-question rates,
+`val/<dataset>_success_rate/pooled`, with `scripts/report_search_r1.py`.
 Launcher keys that depart from the reference:{departures}{data}{overlay}
 
 Start the retrieval server first (experiments/SEARCH_R1.md), then launch from the

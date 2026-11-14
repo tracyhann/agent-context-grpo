@@ -408,7 +408,7 @@ SEARCH_FIXED = {
 
 _SEARCH_DELTA = [
     "Search-R1 protocol from run_search.sh: batch 256 x group 5, 4 turns, history 4,\n     prompt 4096, KL 0.001, mini-batch 512, warmup 0.1, entropy 0, truncation left,\n     greedy validation -- see SEARCH_PROTOCOL and SEARCH_FIXED",
-    "reward scaled x10 to 10/0 with invalid-action penalty 0.1 (reference: 1/0 with\n     0.01); the same ratio, so standardized advantages are unchanged. val/test_score\n     is therefore 10x the exact-match rate; success_rate is exact match itself",
+    "reward scaled x10 to 10/0 with invalid-action penalty 0.1 (reference: 1/0 with\n     0.01); the same ratio, so standardized advantages are unchanged. success_rate\n     is exact match itself; val/<dataset>/test_score is on the 10/0 scale and averages\n     over turns, not episodes",
     "gpu_memory_utilization and use_dynamic_bsz follow this tree's defaults, not the\n     reference's 0.6 and fixed micro-batches",
     "total_epochs is a step cap (trainer.total_training_steps); 662 steps at batch 256\n     is the reference's single epoch",
 ]

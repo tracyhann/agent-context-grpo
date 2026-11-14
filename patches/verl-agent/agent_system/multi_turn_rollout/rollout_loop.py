@@ -645,5 +645,10 @@ class TrajectoryCollector:
             traj_uid=total_traj_uid,
             tool_callings=totoal_tool_callings,
         )
-        
+        # Validation only. The rows above carry each success key as this batch's mean,
+        # and means of unequal batches cannot be pooled; these are the per-episode values.
+        if not is_train:
+            episodes = {key: np.asarray(value, dtype=np.float64) for key, value in total_success.items()}
+            gen_batch_output.meta_info = {**(gen_batch_output.meta_info or {}), 'success_episodes': episodes}
+
         return gen_batch_output

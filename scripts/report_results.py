@@ -21,7 +21,8 @@ READING RULES, because a single row here is weaker than it looks:
   each block.
 * `All` is val/success_rate, the trainer's own overall. The per-type columns are
   means over validation batches rather than a pooled per-game rate, so they need not
-  average exactly to `All`.
+  average exactly to `All`. Runs launched from 2026-11-14 also log the pooled rate
+  as val/<key>/pooled; this script does not read it.
 """
 
 import argparse

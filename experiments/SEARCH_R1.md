@@ -1,9 +1,9 @@
 # Search-R1: a third benchmark for the rebuttal
 
 **Prepared tooling only. Nothing here has been launched, and none of it has run on
-a GPU.** The launcher, the estimator guard and the prepare script are covered by CPU
-tests; the environment setup below is upstream's and is unverified on this
-project's hosts.
+a GPU.** The launcher, the estimator guard, the prepare script and the pooled
+validation rates are covered by CPU tests; the environment setup below is upstream's
+and is unverified on this project's hosts.
 
 Search-R1 (verl-agent's `search` env) answers the reviewer's concern that ALFWorld
 and WebShop have recurring observations and small action spaces. Actions are
@@ -58,12 +58,16 @@ override by override. Three things depart from it:
   multiplies the reward by `ACG_SEARCH_REWARD_SCALE=10`, which the launcher sets for
   every arm. The invalid-action penalty stays at 0.1, the reference's 0.01 times
   ten, so GRPO and GiGPO see the same standardized advantages as under the
-  reference. `val/test_score` is ten times exact match; `success_rate` is exact
-  match.
+  reference. `success_rate` is exact match. `val/<dataset>/test_score` is on the
+  10/0 scale and averages over turns, so an episode with more turns weighs more; it
+  is not ten times exact match.
 - **Resources.** `gpu_memory_utilization` and dynamic batching keep this tree's
   defaults. Set them with `--set` for the host.
 - **Step cap.** The parquet holds real questions, so `total_epochs` is a step budget
-  here and also caps `trainer.total_training_steps`.
+  here and also caps `trainer.total_training_steps`. The default of 662 is the
+  script's `total_epochs=1`. GiGPO's paper (Appendix E.1) reports 200 iterations;
+  `--steps 200` matches the paper. The learning-rate warmup is a tenth of the
+  budget: 20 steps at 200, 66 at 662.
 
 The prompt-history window is 4 because the agent answers from what it retrieved;
 the future horizon stays 2. This is the one place the "history 2 / future 2" pairing
@@ -110,6 +114,10 @@ against a stub retriever, so it needs neither the index nor a GPU:
 .venv/bin/python tests/test_search_r1_ccpo.py
 ```
 
+```bash
+.venv/bin/python tests/test_pooled_validation.py
+```
+
 ## Prepare and launch
 
 ```bash
@@ -141,8 +149,28 @@ python3 scripts/prepare_search_r1_ccpo.py --backbone 7b --gpus 0,1,2,3,4,5,6,7 -
 
 ## What to report
 
-- Exact match overall and per dataset: `val/success_rate` and
-  `val/<dataset>_success_rate` in `outputs/metrics.jsonl`.
+- Exact match per dataset, for all arms at the same step:
+
+  ```bash
+  python3 scripts/report_search_r1.py experiments/search-<arm>-... experiments/search-<arm>-... --step <N> --markdown
+  ```
+
+  Without `--step` each run is read at its last evaluation. The table holds
+  `val/<dataset>_success_rate/pooled`, the rate over that dataset's questions
+  (`.../episodes` is their count), `Avg`, the unweighted mean over the datasets, and
+  `All`, the rate over every question. The average column of Search-R1's tables
+  equals the unweighted mean of its dataset columns. Runs validated on different
+  question counts are refused.
+- Do not report `val/success_rate` or `val/<dataset>_success_rate` here. The trainer
+  computes them as the mean of the validation batches' means. Validation runs
+  unshuffled in batches of 512, so the questions of a dataset that share a batch
+  with another dataset weigh as much as a full batch, and the full test file, 51,713
+  = 101 x 512 + 1 questions, ends in a batch of one. The error has no preferred
+  direction. Upstream logs only these keys, they keep that definition, and
+  best-checkpoint tracking (`best.json`, `val/best_success_rate`) still reads
+  `val/success_rate`.
+- GiGPO's paper gives its Search-R1 numbers at 200 iterations with greedy validation.
+  It does not say which evaluation it reports or how the average column is formed.
 - Observation recurrence for the CCPO arms: `progress_current_exact_frac` and
   `progress_current_backoff_frac` in `outputs/future_progress/step-*.metrics.json`,
   the share of turns with an exact peer and on the task fallback. The paper reports

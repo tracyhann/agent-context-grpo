@@ -1588,3 +1588,24 @@ signals on logged rollouts, not training results.
 
 [Definitions, reading and verification](CREDIT_CHANNEL_ANALYSIS.md). It has not been
 run on a real log.
+
+## Pooled validation rates — 2026-11
+
+The trainer's `val/<key>` success metrics are the mean of the validation batches'
+means. With unequal batches, or a data source that spans a batch boundary, that is
+not the rate over episodes: on Search-R1 validation runs unshuffled in batches of
+512 over seven datasets, and the full test file ends in a batch of one question.
+`_validate` now also logs `val/<key>/pooled`, the rate over all episodes of the
+validation pass, and `val/<key>/episodes`, their count, for every success key on
+every benchmark. The existing keys, and best-checkpoint tracking on
+`val/success_rate`, are unchanged. On ALFWorld and WebShop the default validation
+batches are equal, so the overall rate was already the pooled one; ALFWorld's
+per-task-type rates were not.
+
+`scripts/report_search_r1.py` prints the Search-R1 table from the pooled rates:
+exact match per dataset, the unweighted mean over datasets, and the rate over all
+questions. See [What to report](SEARCH_R1.md#what-to-report).
+
+Verified by `tests/test_pooled_validation.py`, which runs the overlay's
+`multi_turn_loop`, `gather_rollout_data` and `_validate` on stand-in data. It has
+not run inside the real trainer.
