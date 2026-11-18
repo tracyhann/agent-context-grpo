@@ -1609,3 +1609,26 @@ questions. See [What to report](SEARCH_R1.md#what-to-report).
 Verified by `tests/test_pooled_validation.py`, which runs the overlay's
 `multi_turn_loop`, `gather_rollout_data` and `_validate` on stand-in data. It has
 not run inside the real trainer.
+
+## Rebuttal endpoint-value ablation — 2026-11
+
+`future-progress-h2-no-credit-shrinkage-endpoint-value` (ALFWorld EP0) and
+`future-progress-h2-no-credit-shrinkage-endpoint-value-active-episode` (WebShop EP1)
+change the no-shrink H2 controls' `ccpo_progress_mode` from `difference` to
+`endpoint_value`: the future credit is `z_task(V_u)` instead of `z_task(V_u - V_t)`,
+with `u = min(t+2, T)` and the same terminal potentials (10 on success, else 0).
+Eligible rows, task-wise standardization, history credit and peer groups are
+unchanged. The arm tests whether the future channel needs the change in value or
+only the value reached; see [the ablation notes](../ablations/README.md).
+
+Variants: `CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-ENDPOINT-VALUE` and
+`CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-ACTIVE-EPISODE-ENDPOINT-VALUE`. Canonical IDs:
+`ccpo-attncred-abl-fph2-noshrink-endpoint-value-alfworld-1.5b` and
+`ccpo-attncred-abl-fph2-noshrink-endpoint-value-ep-ws-1.5b`. Both are to be prepared
+on the training host with
+`python scripts/prepare_rebuttal_progress_ablations_ccpo.py --arm endpoint-value`.
+
+Verified by `tests/test_rebuttal_progress_modes_ccpo.py`: the raw signal against
+hand-built cases, and, on a CPU checkout of upstream verl-agent `20bd331` with the
+overlay applied, the estimator and the trainer's advantage routing under both
+controls' recorded environments. No training run of this arm exists.

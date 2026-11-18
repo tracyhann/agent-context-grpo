@@ -118,6 +118,35 @@ ABLATIONS = {
         watch="R is the success potential (10) or 0, as for terminal sentinels. Same eligible rows and "
               "task-wise z-scoring as the control.",
     ),
+    # Rebuttal 2026-11: the endpoint value by itself, without the current-value term.
+    "future-progress-h2-no-credit-shrinkage-endpoint-value": dict(
+        name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-ENDPOINT-VALUE",
+        tag="fph2-noshrink-endpoint-value",
+        title="M10 future channel replaced by V_u alone, EP0",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("alfworld",),
+        delta={"ccpo_lk_fix": 1.0, "ccpo_progress_mode": "endpoint_value"},
+        removes="the -V_t term of the future difference; the endpoint value V_u is standardized by itself",
+        asks="does the future channel need the change in value, or is the value reached two turns later enough?",
+        watch="Same eligible rows, endpoints, terminal potentials and task-wise z-scoring as the control. "
+              "The signal is the level of the state reached, not the change across the window: a turn that "
+              "starts in a high-value state scores high whatever it does. Compare with the terminal-proximity "
+              "arm as well as the control.",
+    ),
+    "future-progress-h2-no-credit-shrinkage-endpoint-value-active-episode": dict(
+        name="CCPO-ATTNCRED-FUTURE-PROGRESS-TWO-STEP-NOSHRINK-ACTIVE-EPISODE-ENDPOINT-VALUE",
+        tag="fph2-noshrink-endpoint-value-ep",
+        title="M11 future channel replaced by V_u alone, EP1",
+        base_method="attncred-context-future-progress-h2",
+        benchmarks=("webshop",),
+        delta={"ccpo_lk_fix": 1.0, "ccpo_progress_mode": "endpoint_value", "ccpo_ep_w": 1.0},
+        removes="the -V_t term of the future difference; the endpoint value V_u is standardized by itself",
+        asks="does the future channel need the change in value, or is the value reached two turns later enough?",
+        watch="Same eligible rows, endpoints, terminal potentials and task-wise z-scoring as the control. "
+              "The signal is the level of the state reached, not the change across the window: a turn that "
+              "starts in a high-value state scores high whatever it does. Compare with the terminal-proximity "
+              "arm as well as the control.",
+    ),
     "future-progress-noshrink-history4-future0": dict(
         name="CCPO-ATTNCRED-NOSHRINK-HISTORYFOUR-FUTUREZERO",
         tag="noshrink-hist4-fut0",

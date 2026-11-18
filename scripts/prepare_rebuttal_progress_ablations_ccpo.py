@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Prepare the rebuttal future-channel ablations (E2, E5) against the H2 no-shrink controls; never launch.
+"""Prepare the rebuttal future-channel ablations against the H2 no-shrink controls; never launch.
 
 E5a terminal-difference   ALFWorld EP0   discount-aligned, but V_u - V_t on terminal windows
 E5b terminal-aligned      ALFWorld EP0   V_u - V_t, but discount-aligned on terminal windows
 E2  remaining-turns (P1)  ALFWorld EP0, WebShop EP1   F = z_task(-(T - t))
 E2  terminal-proximity (P2) ALFWorld EP0, WebShop EP1 F = z_task(gamma^(T-t) * R)
+    endpoint-value        ALFWorld EP0, WebShop EP1   F = z_task(V_u), without the -V_t term
 
 Each prepared config differs from its control in `exp_id` and `ccpo_progress_mode` only.
 Run `bash scripts/sync_patches.sh` first: the source hashes include the live trainer.
@@ -36,6 +37,8 @@ ARMS = {
         formula='F_t = z_task(-(T - t))'),
     'terminal-proximity': dict(mode='terminal_proximity', benchmarks=('alfworld', 'webshop'), plan='E2 P2',
         formula='F_t = z_task(gamma^(T-t) * R),  R = 10 on success, else 0'),
+    'endpoint-value': dict(mode='endpoint_value', benchmarks=('alfworld', 'webshop'), plan='endpoint value',
+        formula='F_t = z_task(V_u),  V_T = 10 on success, else 0'),
 }
 IMPLIED = {'ccpo_loo': 1, 'ccpo_progress_history_weight': 1.0,
            'ccpo_progress_mode': 'difference'}

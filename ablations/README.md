@@ -271,6 +271,39 @@ bash scripts/sync_patches.sh
 Preparation writes machine-specific absolute paths, so run it on the training
 machine. It never launches or queues a run.
 
+## Rebuttal endpoint-value ablation — 2026-11
+
+`ccpo_progress_mode=endpoint_value` replaces the future difference with the endpoint
+value by itself:
+
+```text
+F_t = z_task(V_u),   u = min(t+2, T),   V_T = 10 on success, else 0
+```
+
+against the main method's `z_task(V_u - V_t)`. It asks whether the future channel
+needs the change in value across the window or only the value reached. Eligible
+rows, endpoints, terminal potentials, task-wise z-scoring and history credit are
+unchanged, and no discount enters the signal. Without `-V_t` the signal is the level
+of the state reached: a turn that starts in a high-value state scores high whatever
+it does. With exact potentials in a task where every rollout succeeds in the same
+number of turns, it depends on the turn index alone and equals the
+terminal-proximity control read two turns later.
+
+Registry keys: `future-progress-h2-no-credit-shrinkage-endpoint-value` (ALFWorld
+EP0) and `future-progress-h2-no-credit-shrinkage-endpoint-value-active-episode`
+(WebShop EP1), against the same controls as the other future-channel arms. From the
+repository root on the training machine:
+
+```bash
+bash scripts/sync_patches.sh
+.venv/bin/python -m unittest discover -s tests -p test_rebuttal_progress_modes_ccpo.py
+.venv/bin/python scripts/prepare_rebuttal_progress_ablations_ccpo.py --arm endpoint-value --benchmark alfworld
+```
+
+Without `--benchmark` the WebShop EP1 arm is prepared as well. `--arm all` now
+includes this arm. Preparation never launches or queues a run, and no run of this
+arm exists.
+
 ## Rebuttal task-gate ablation — 2026-11
 
 `future-progress-h2-no-credit-shrinkage-task-gate` (ALFWorld EP0) and

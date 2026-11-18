@@ -390,7 +390,7 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
         _progress_mode = os.environ.get('ACG_CCPO_PROGRESS_MODE', 'difference')
         # Keep in sync with ccpo.future_progress.PROGRESS_MODES (tested).
         if _progress_mode not in ('difference', 'discount_aligned', 'terminal_difference', 'terminal_aligned',
-                                  'remaining_turns', 'terminal_proximity'):
+                                  'remaining_turns', 'terminal_proximity', 'endpoint_value'):
             raise ValueError('Invalid future-progress mode')
         # (horizon=0, weight=0) explicitly requests history-only credit through
         # the same canonicalization, component logging and support-mask path.

@@ -245,7 +245,8 @@ DEFAULTS = {
     "ccpo_progress_weight": 1.0,
     # difference | discount_aligned (gamma**actual_window * V_future - V_current) |
     # terminal_difference | terminal_aligned (switch discount on terminal windows) |
-    # remaining_turns | terminal_proximity (clock-only controls); see ccpo/future_progress.py
+    # remaining_turns | terminal_proximity (clock-only controls) |
+    # endpoint_value (V_future alone); see ccpo/future_progress.py
     "ccpo_progress_mode": "difference",
     "ccpo_progress_history_weight": 1.0,  # 0 isolates future progress; progress_weight=0 isolates history
     "ccpo_progress_snapshot_every": 1,
@@ -499,7 +500,7 @@ def versions(python):
 
 # Keep in sync with ccpo.future_progress.PROGRESS_MODES (tested).
 PROGRESS_MODES = ("difference", "discount_aligned", "terminal_difference", "terminal_aligned",
-                  "remaining_turns", "terminal_proximity")
+                  "remaining_turns", "terminal_proximity", "endpoint_value")
 # Keep in sync with ccpo.future_progress.SUPPORTED_GATES (tested).
 FUTURE_PROGRESS_GATES = ("hard", "global", "cross_task")
 

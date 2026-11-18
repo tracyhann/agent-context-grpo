@@ -7,6 +7,7 @@ Reviewer ablations (rebuttal, 2026-11):
   terminal_aligned     difference, except discount_aligned on terminal windows
   remaining_turns      -(T - t), the number of turns left; no value estimate
   terminal_proximity   gamma**(T - t) * R, R = success potential or 0; no value estimate
+  endpoint_value       V_context(t_plus) alone; the current value is not subtracted
 A terminal window is one whose clipped endpoint t_plus = min(t+h, T) is the terminal sentinel.
 A_pre = history_weight * H_t + progress_weight * task_standardize(P_t).
 Only enabled components contribute to the trainer normalization support mask.
@@ -27,7 +28,7 @@ from ccpo.outlook import canonical_trajectory_rows, _take
 
 # Keep in sync with scripts/exp_run.py and the patched ray_trainer.py (tested).
 PROGRESS_MODES = ('difference', 'discount_aligned', 'terminal_difference', 'terminal_aligned',
-                  'remaining_turns', 'terminal_proximity')
+                  'remaining_turns', 'terminal_proximity', 'endpoint_value')
 # Modes that ignore the contextual value estimate and use only the turn count.
 CLOCK_ONLY_MODES = ('remaining_turns', 'terminal_proximity')
 # Peer gates the history and potential readouts accept. Keep in sync with
@@ -69,6 +70,8 @@ def progress_from_values(values, groups, episode_rewards, horizon=1, success_rew
     `values` in the raw signal but keep the same eligible rows, so the task-wise
     normalization population is unchanged. T - t counts the current turn, so the
     last turn has T - t = 1, matching the value labels gamma**(T-t) * R.
+    endpoint_value is the undiscounted endpoint value by itself, V(t_plus) with the
+    terminal sentinel on terminal windows: the difference without its -V(t) term.
     """
     if mode not in PROGRESS_MODES:
         raise ValueError('Unknown future-progress mode: ' + str(mode))
@@ -89,6 +92,9 @@ def progress_from_values(values, groups, episode_rewards, horizon=1, success_rew
             remaining[ids] = len(ids) - np.arange(len(ids))
         signal = -remaining if mode == 'remaining_turns' else np.power(gamma, remaining) * terminal_value
         raw[eligible] = signal[eligible]
+        return raw, future, endpoint, window, eligible
+    if mode == 'endpoint_value':
+        raw[eligible] = future[eligible]
         return raw, future, endpoint, window, eligible
     aligned = np.power(gamma, window)
     discount = dict(difference=np.ones(len(values)), discount_aligned=aligned,

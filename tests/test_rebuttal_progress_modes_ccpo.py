@@ -1,4 +1,5 @@
-"""Rebuttal future-channel ablations (E2, E5): terminal-window splits and clock-only controls.
+"""Rebuttal future-channel ablations: terminal-window splits (E5), clock-only controls (E2)
+and the endpoint value without the current-value term.
 
 Math and config tests need numpy only (plus importable ccpo modules). The estimator and
 trainer tests need the training environment: torch and the synced verl-agent overlay.
@@ -24,7 +25,7 @@ from ccpo.future_progress import PROGRESS_MODES, progress_from_values, standardi
 import exp_run as er
 import prepare_rebuttal_progress_ablations_ccpo as prep
 
-NEW = ('terminal_difference', 'terminal_aligned', 'remaining_turns', 'terminal_proximity')
+NEW = ('terminal_difference', 'terminal_aligned', 'remaining_turns', 'terminal_proximity', 'endpoint_value')
 VALUE_MODES = ('difference', 'discount_aligned', 'terminal_difference', 'terminal_aligned')
 GAMMA = .95
 
@@ -124,6 +125,59 @@ class ModeMathTests(unittest.TestCase):
         z = standardize_progress(raw, np.r_[['a']*8, ['b']*4, ['c']*2], eligible)[0]
         np.testing.assert_array_equal(z[8:], 0.)
 
+    def test_endpoint_value_is_the_difference_without_the_current_value(self):
+        values, groups, rewards = toy()
+        for horizon in range(1, 5):
+            with self.subTest(horizon=horizon):
+                diff, future, endpoint, window, eligible = progress_from_values(values, groups, rewards, horizon)
+                out = progress_from_values(values, groups, rewards, horizon, gamma=GAMMA, mode='endpoint_value')
+                for got, want in zip(out[1:], (future, endpoint, window, eligible)):
+                    np.testing.assert_array_equal(got, want)
+                self.assertTrue(eligible.all())
+                np.testing.assert_array_equal(out[0], future)
+                np.testing.assert_allclose(out[0], diff + values, atol=1e-14)
+                terminal = endpoint < 0
+                # Terminal windows read the success potential; a partial score is not a success.
+                np.testing.assert_array_equal(out[0][terminal], np.where(rewards == 10., 10., 0.)[terminal])
+                np.testing.assert_array_equal(out[0][~terminal], values[endpoint[~terminal]])
+                # No discount enters the signal.
+                np.testing.assert_array_equal(
+                    progress_from_values(values, groups, rewards, horizon, gamma=.5, mode='endpoint_value')[0], out[0])
+
+    def test_endpoint_value_ignores_the_current_value(self):
+        values, groups, rewards = toy()
+        raw = progress_from_values(values, groups, rewards, 2, mode='endpoint_value')[0]
+        moved = values.copy(); moved[0] += 100.        # a first turn: no window ends there
+        np.testing.assert_array_equal(progress_from_values(moved, groups, rewards, 2, mode='endpoint_value')[0], raw)
+        self.assertEqual(progress_from_values(moved, groups, rewards, 2)[0][0],
+                         progress_from_values(values, groups, rewards, 2)[0][0] - 100.)
+
+    def test_endpoint_value_scores_the_level_reached_not_the_change(self):
+        groups = [np.arange(4), np.arange(4, 8)]
+        values = np.array([8., 0., 8., 0., 2., 0., 6., 0.])   # turn 0: holds 8 -> 8, or climbs 2 -> 6
+        rewards = np.zeros(8)
+        change = progress_from_values(values, groups, rewards, 2)[0]
+        level = progress_from_values(values, groups, rewards, 2, mode='endpoint_value')[0]
+        self.assertEqual((change[0], change[4]), (0., 4.))
+        self.assertEqual((level[0], level[4]), (8., 6.))
+
+    def test_endpoint_value_in_a_solved_equal_length_task_depends_on_the_turn_alone(self):
+        # Exact potentials V_t = gamma^(T-t) * R: the level two turns ahead is fixed by the turn
+        # index, so the signal cannot tell the rollouts apart and matches terminal proximity
+        # two turns later.
+        groups = [np.arange(6), np.arange(6, 12)]
+        values = np.tile(GAMMA**np.arange(6, 0, -1)*10, 2)
+        rewards = np.full(12, 10.)
+        raw, _, _, _, eligible = progress_from_values(values, groups, rewards, 2, gamma=GAMMA, mode='endpoint_value')
+        np.testing.assert_array_equal(raw[:6], raw[6:])
+        self.assertTrue(np.all(np.diff(raw[:6]) >= 0))
+        left = turns_left(groups, 12)
+        proximity = progress_from_values(values, groups, rewards, 2, gamma=GAMMA, mode='terminal_proximity')[0]
+        np.testing.assert_allclose(raw[left > 2], proximity[left > 2]/GAMMA**2, atol=1e-12)
+        np.testing.assert_array_equal(raw[left <= 2], 10.)
+        z = standardize_progress(raw, np.full(12, 'a'), eligible)[0]
+        np.testing.assert_array_equal(z[:6], z[6:])
+
     def test_eligibility_and_history_only_are_unchanged(self):
         values = np.array([np.nan, 3., 4., 5.]); groups = [np.arange(4)]; rewards = np.full(4, 10.)
         base = progress_from_values(values, groups, rewards, 2)[4]
@@ -194,6 +248,11 @@ class ModeEstimatorTests(unittest.TestCase):
                     pick = b['terminal'] if m == 'terminal_difference' else ~b['terminal']
                     np.testing.assert_allclose(b['raw_progress'][pick], b['undiscounted_raw'][pick], atol=1e-12)
                     np.testing.assert_allclose(b['raw_progress'][~pick], b['discount_aligned_raw'][~pick], atol=1e-12)
+                if m == 'endpoint_value':
+                    e = b['eligible']
+                    np.testing.assert_array_equal(b['raw_progress'][e], b['future_value'][e])
+                    np.testing.assert_allclose(b['raw_progress'][e], b['undiscounted_raw'][e] + b['current_value'][e],
+                                               atol=1e-12)
                 for task in np.unique(b['uid']):
                     ids = (b['uid'] == task) & b['eligible']; raw = b['raw_progress'][ids]
                     np.testing.assert_allclose(b['progress_normalized'][ids], (raw-raw.mean())/(raw.std(ddof=1)+1e-6))
